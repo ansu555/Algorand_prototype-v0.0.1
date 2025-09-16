@@ -3,11 +3,11 @@ import React, { useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { BookOpen, X } from "lucide-react"
 import { FUJI_SYMBOL_TO_TOKEN } from "@/lib/tokens"
-import { useChainId } from "wagmi"
+// Removed wagmi import - using static chain configuration
 
 export default function GuidelinesBubble() {
   const [open, setOpen] = useState(false)
-  const chainId = useChainId() || 43113
+  const chainId = 43113 // Static Fuji testnet chain ID
   const chainLabel = 'Avalanche Fuji'
   const nativeSymbol = 'AVAX'
   const TOKENS = FUJI_SYMBOL_TO_TOKEN

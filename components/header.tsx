@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import RuleBuilderModal from "@/components/rule-builder-modal";
 import { toast } from "@/hooks/use-toast";
 import { ModeToggle } from "@/components/mode-toggle";
-import { ConnectKitButton } from "connectkit";
-import { useAccount } from "wagmi";
+// Removed ConnectKit and wagmi imports - using Algorand wallets instead
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 import { useViewport } from "@/hooks/use-viewport";
@@ -22,7 +21,8 @@ export function Header() {
   const { isMobile } = useViewport();
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const modeToggleRef = useRef<HTMLDivElement>(null);
-  const { address } = useAccount();
+  // Using placeholder address for now - will be replaced with Algorand wallet
+  const address = "0x0000000000000000000000000000000000000000";
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -168,13 +168,9 @@ export function Header() {
               toast({ title: "Rule saved", description: describeRule(rule) })
             }}
           />
-          <ConnectKitButton.Custom>
-            {({ isConnected, show, truncatedAddress }) => (
-              <Button onClick={show} variant="outline" size="default">
-                {isConnected ? truncatedAddress : "Connect Wallet"}
-              </Button>
-            )}
-          </ConnectKitButton.Custom>
+          <Button variant="outline" size="default">
+            Connect Wallet
+          </Button>
           <ModeToggle />
         </div>
 
@@ -233,13 +229,9 @@ export function Header() {
                   toast({ title: "Rule saved", description: describeRule(rule) })
                 }}
               />
-              <ConnectKitButton.Custom>
-                {({ isConnected, show, truncatedAddress }) => (
-                  <Button onClick={show} variant="outline" size="default" className="w-full">
-                    {isConnected ? truncatedAddress : "Connect Wallet"}
-                  </Button>
-                )}
-              </ConnectKitButton.Custom>
+              <Button variant="outline" size="default" className="w-full">
+                Connect Wallet
+              </Button>
               <div className="flex justify-center">
                 <div ref={modeToggleRef} data-theme-toggle>
                   <ModeToggle />

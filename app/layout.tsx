@@ -5,7 +5,7 @@ import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Providers as ExistingProviders } from '@/components/providers'
 import { ReduxProvider } from '../components/redux-provider'
-import { WalletProvider } from '@/components/providers/wallet-provider'
+import { TxnLabWalletProvider } from '@/components/providers/txnlab-wallet-provider'
 import { Header } from '@/components/header'
 import { Toaster } from '@/components/ui/toaster'
 import ChatBubble from '@/components/chat-bubble'
@@ -31,12 +31,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning className={`${fontSans.variable} ${fontMono.variable} font-sans relative scroll-smooth`}>
         <ReduxProvider>
           <ExistingProviders>
-            <WalletProvider>
+            <TxnLabWalletProvider>
               <Header />
               {children}
               {/* Floating chat bubble on bottom-right */}
               <ChatBubble variant="floating" align="right" />
-            </WalletProvider>
+            </TxnLabWalletProvider>
           </ExistingProviders>
         </ReduxProvider>
         <SpeedInsights />

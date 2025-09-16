@@ -1,16 +1,8 @@
 import { PeraWalletConnect } from '@perawallet/connect'
 import { DeflyWalletConnect } from '@blockshake/defly-connect'
 import MyAlgoConnect from '@randlabs/myalgo-connect'
-import { SignClient } from '@walletconnect/sign-client'
-import { SessionTypes } from '@walletconnect/types'
-import { 
-  createWalletConnectClient, 
-  SESSION_CONFIG, 
-  getAlgorandAccounts,
-  formatTransactionForWalletConnect,
-  generateMobileWalletURI,
-  MOBILE_WALLET_REGISTRY
-} from './walletconnect-config'
+import type { SignClient } from '@walletconnect/sign-client'
+import type { SessionTypes } from '@walletconnect/types'
 
 export type WalletType = 'pera' | 'defly' | 'myalgo' | 'lute' | 'exodus' | 'walletconnect'
 
@@ -66,6 +58,8 @@ class EnhancedAlgorandWalletManager {
 
   private async initializeWalletConnect() {
     try {
+      // Dynamic import to reduce initial bundle size
+      const { createWalletConnectClient } = await import('./walletconnect-config')
       this.walletConnectClient = await createWalletConnectClient()
       this.setupWalletConnectListeners()
     } catch (error) {
@@ -156,9 +150,15 @@ class EnhancedAlgorandWalletManager {
         // For WalletConnect, check if session still exists
         if (savedWalletType === 'walletconnect' && this.walletConnectClient) {
           const sessions = this.walletConnectClient.session.getAll()
-          const activeSession = sessions.find((session: any) =>
-            getAlgorandAccounts(session).includes(connectionData.selectedAccount)
-          )
+          const activeSession = sessions.find((session: any) => {
+            // Simple check for account in session namespaces
+            const algorandNamespace = session.namespaces?.algorand
+            if (!algorandNamespace) return false
+            
+            return algorandNamespace.accounts?.some((account: string) =>
+              account.split(':')[2] === connectionData.selectedAccount
+            )
+          })
           
           if (activeSession) {
             this.connection = {
@@ -231,6 +231,14 @@ class EnhancedAlgorandWalletManager {
           if (!this.walletConnectClient) {
             throw new Error('WalletConnect client not initialized')
           }
+          
+          // Dynamic import for WalletConnect utilities
+          const {
+            SESSION_CONFIG,
+            getAlgorandAccounts,
+            generateMobileWalletURI,
+            MOBILE_WALLET_REGISTRY
+          } = await import('./walletconnect-config')
           
           const { uri, approval } = await this.walletConnectClient.connect(SESSION_CONFIG)
           
@@ -307,6 +315,8 @@ class EnhancedAlgorandWalletManager {
             throw new Error('WalletConnect session not available')
           }
 
+          // Dynamic import for transaction formatting
+          const { formatTransactionForWalletConnect } = await import('./walletconnect-config')
           const formattedTxn = formatTransactionForWalletConnect(txn)
           const request = {
             topic: session.topic,
