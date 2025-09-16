@@ -10,6 +10,7 @@
     "test:algorand": "tsx scripts/test-algorand.ts"
   },
   "dependencies": {
+    "@agoralabs-sh/avm-web-provider": "^1.7.0",
     "@algorandfoundation/algokit-utils": "^9.1.2",
     "@blockshake/defly-connect": "^1.0.0",
     "@hookform/resolvers": "^3.9.1",
@@ -52,6 +53,9 @@
     "@txnlab/use-wallet": "^4.3.1",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
+    "@walletconnect/modal": "2.7.0",
+    "@walletconnect/sign-client": "2.21.8",
+    "@walletconnect/types": "2.21.8",
     "algosdk": "^3.4.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -60,6 +64,7 @@
     "framer-motion": "^12.6.3",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
+    "lute-connect": "^1.6.2",
     "next": "^15.5.3",
     "next-themes": "latest",
     "pino-pretty": "^13.1.1",

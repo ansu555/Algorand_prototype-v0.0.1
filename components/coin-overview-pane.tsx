@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import RuleBuilderModal, { type CoinOption } from "@/components/rule-builder-modal"
-import { useAccount } from "wagmi"
+import { useWalletConnection } from '@/components/wallet'
 import { toast } from "@/hooks/use-toast"
 import { describeRule } from "@/lib/shared/rules"
 import { createRule } from "@/features/agent/api/client"
@@ -32,7 +32,8 @@ export default function CoinOverviewPane({ coinId }: { coinId?: string }) {
   const [timeRange, setTimeRange] = useState<keyof typeof TIME_RANGES>("3M")
   const [autoOpen, setAutoOpen] = useState(false)
   const [inWatchlist, setInWatchlist] = useState(false)
-  const { address } = useAccount()
+  const { activeAccount } = useWalletConnection()
+  const address = activeAccount?.address
 
   const enabled = !!coinId
   const { data: coin, isLoading: loadingDetails } = useGetCryptoDetailsQuery(coinId as string, {

@@ -26,7 +26,6 @@ export const walletManagerConfig = {
     WalletId.PERA,
     WalletId.DEFLY,
     WalletId.EXODUS,
-    WalletId.LUTE,
     ...(process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ? [WalletId.WALLETCONNECT] : [])
   ],
   networks: {
@@ -86,12 +85,7 @@ export const getSupportedWallets = () => [
     desktop: true
   },
   {
-    id: WalletId.LUTE,
-    name: 'Lute Wallet',
-    description: 'Browser extension wallet',
-    icon: '🎵',
-    mobile: false,
-    desktop: true
+    // Lute requires '@agoralabs-sh/avm-web-provider'. Add back if installed.
   },
   ...(process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ? [{
     id: WalletId.WALLETCONNECT,

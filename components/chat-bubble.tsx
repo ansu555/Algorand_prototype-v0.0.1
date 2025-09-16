@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { MessageCircle, Send, Bot, X } from "lucide-react"
-import { useAccount, useChainId } from "wagmi"
+import { useWalletConnection } from '@/components/wallet'
 
 type Msg = { role: "user" | "assistant"; content: string }
 
@@ -19,8 +19,9 @@ export default function ChatBubble({ variant = "floating", align = "right" }: Ch
   const [threadId, setThreadId] = useState<string | undefined>(undefined)
   const [showRules, setShowRules] = useState(true)
   const endRef = useRef<HTMLDivElement | null>(null)
-  const { address } = useAccount()
-  const chainId = useChainId() || 43113
+  const { activeAccount } = useWalletConnection()
+  const address = activeAccount?.address
+  const chainId = 43113
 
   const scrollToEnd = useCallback(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), [])
   useEffect(() => { scrollToEnd() }, [messages, scrollToEnd])
@@ -144,7 +145,7 @@ export default function ChatBubble({ variant = "floating", align = "right" }: Ch
               </div>
               <div className="flex items-center gap-2">
                 <span className="hidden rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-medium text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 sm:inline">{chainLabel}</span>
-                <button onClick={() => setOpen(false)} className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white">
+                <button aria-label="Close chat" onClick={() => setOpen(false)} className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/5 dark:hover:text-white">
                   <X className="h-4 w-4" />
                 </button>
               </div>

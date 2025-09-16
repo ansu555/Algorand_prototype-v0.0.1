@@ -27,6 +27,13 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
+  webpack: (config) => {
+    // Avoid bundling optional providers we don't use
+    config.externals = config.externals || []
+    config.externals.push('lute-connect')
+    config.externals.push('@agoralabs-sh/avm-web-provider')
+    return config
+  },
 }
 
 if (userConfig) {
