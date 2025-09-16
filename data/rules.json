@@ -1,0 +1,124 @@
+[
+  {
+    "id": "rule_1756454137894_d3sxos",
+    "ownerAddress": "0x0000000000000000000000000000000000000000",
+    "type": "rebalance",
+    "targets": [
+      "a91GCGd_u96cF",
+      "zNZHO_Sjf",
+      "-l8Mn2pVlRs-p",
+      "razxDUgYGNAdQ"
+    ],
+    "rotateTopN": 3,
+    "maxSpendUSD": 100,
+    "maxSlippage": 0.5,
+    "trigger": {
+      "type": "trend_pct",
+      "value": 3,
+      "window": "7d"
+    },
+    "cooldownMinutes": 60,
+    "status": "active",
+    "createdAt": "2025-08-29T07:55:37.894Z"
+  },
+  {
+    "id": "rule_1756456956502_lxf4c2",
+    "ownerAddress": "0x0000000000000000000000000000000000000000",
+    "type": "rebalance",
+    "targets": [
+      "razxDUgYGNAdQ",
+      "HIVsRcGKkPFtW",
+      "WcwrkfNI4FUAe",
+      "zNZHO_Sjf"
+    ],
+    "rotateTopN": 3,
+    "maxSpendUSD": 100,
+    "maxSlippage": 0.5,
+    "trigger": {
+      "type": "price_drop_pct",
+      "value": 5
+    },
+    "cooldownMinutes": 60,
+    "status": "active",
+    "createdAt": "2025-08-29T08:42:36.498Z"
+  },
+  {
+    "id": "rule_1756456988187_aaqv2j",
+    "ownerAddress": "0x0000000000000000000000000000000000000000",
+    "type": "rebalance",
+    "targets": [
+      "razxDUgYGNAdQ",
+      "HIVsRcGKkPFtW",
+      "WcwrkfNI4FUAe",
+      "zNZHO_Sjf"
+    ],
+    "rotateTopN": 3,
+    "maxSpendUSD": 100,
+    "maxSlippage": 0.5,
+    "trigger": {
+      "type": "price_drop_pct",
+      "value": 5
+    },
+    "cooldownMinutes": 60,
+    "status": "active",
+    "createdAt": "2025-08-29T08:43:08.187Z"
+  },
+  {
+    "id": "rule_1756460076544_6uyq0y",
+    "ownerAddress": "0x0000000000000000000000000000000000000000",
+    "type": "rebalance",
+    "targets": [
+      "aKzUVe4Hh_CON",
+      "VINVMYf0u",
+      "a91GCGd_u96cF"
+    ],
+    "rotateTopN": 3,
+    "maxSpendUSD": 100,
+    "maxSlippage": 0.5,
+    "trigger": {
+      "type": "price_drop_pct",
+      "value": 5
+    },
+    "cooldownMinutes": 60,
+    "status": "active",
+    "createdAt": "2025-08-29T09:34:36.544Z"
+  },
+  {
+    "id": "rule_1756462569397_7jnarn",
+    "ownerAddress": "0x6A79C5CbfB1832cBcA2470a132BEc858f4ff9DF5",
+    "type": "rebalance",
+    "targets": [],
+    "rotateTopN": 3,
+    "maxSpendUSD": 100,
+    "maxSlippage": 0.5,
+    "trigger": {
+      "type": "price_drop_pct",
+      "value": 5
+    },
+    "cooldownMinutes": 60,
+    "status": "active",
+    "createdAt": "2025-08-29T10:16:09.397Z"
+  },
+  {
+    "id": "rule_1756466068465_ifciaa",
+    "ownerAddress": "0x6A79C5CbfB1832cBcA2470a132BEc858f4ff9DF5",
+    "type": "rebalance",
+    "targets": [
+      "razxDUgYGNAdQ",
+      "-l8Mn2pVlRs-p",
+      "WcwrkfNI4FUAe",
+      "aKzUVe4Hh_CON",
+      "VINVMYf0u"
+    ],
+    "rotateTopN": 3,
+    "maxSpendUSD": 100,
+    "maxSlippage": 0.5,
+    "trigger": {
+      "type": "price_drop_pct",
+      "value": 5
+    },
+    "cooldownMinutes": 60,
+    "status": "active",
+    "createdAt": "2025-08-29T11:14:28.465Z"
+  }
+]

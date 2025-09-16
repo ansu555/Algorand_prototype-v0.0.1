@@ -1,0 +1,6 @@
+ <header className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 dark:bg-[#171717]/95 dark:shadow-[0_4px_20px_-4px_rgba(243,198,35,0.15)]">
+
+
+f78b8bd837de82e8969c54f22d14a797   // client id
+
+wXKJ33kxSQenC0xKF8gjey1ltkn16M2LpCGg1Pfa6TF5q5X9J9m4ov6Z33BWrwzaZf89r5OJzMRNZ0-0_-IvcQ   // secret key

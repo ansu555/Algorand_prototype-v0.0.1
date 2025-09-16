@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+  "path": "/api/poller/run?token=cron_5d8f1b8b7f2a4c3e9e2d1c0a7b8d6f4a",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

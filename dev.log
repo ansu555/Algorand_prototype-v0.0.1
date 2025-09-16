@@ -1,0 +1,213 @@
+
+> my-v0-project@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.2.4
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.29.143:3000
+   - Environments: .env.local
+   - Experiments (use with caution):
+     ✓ webpackBuildWorker
+     ✓ parallelServerCompiles
+     ✓ parallelServerBuildTraces
+
+ ✓ Starting...
+ ✓ Ready in 1829ms
+ ○ Compiling /api/agent/execute ...
+ ✓ Compiled /api/agent/execute in 6.6s (2891 modules)
+SQLite3 module and Database constructor loaded successfully.
+ ○ Compiling /api/price ...
+ ✓ Compiled /api/price in 2.3s (2894 modules)
+ GET /api/price?coin=WcwrkfNI4FUAe 200 in 7013ms
+ GET /api/price?coin=razxDUgYGNAdQ 200 in 7019ms
+ GET /api/price?coin=aKzUVe4Hh_CON 200 in 7018ms
+ GET /api/price?coin=VINVMYf0u 200 in 7031ms
+ GET /api/price?coin=-l8Mn2pVlRs-p 200 in 7032ms
+ POST /api/agent/execute 200 in 14251ms
+ GET /api/price?coin=-l8Mn2pVlRs-p 200 in 953ms
+ GET /api/price?coin=razxDUgYGNAdQ 200 in 953ms
+ GET /api/price?coin=VINVMYf0u 200 in 970ms
+ GET /api/price?coin=WcwrkfNI4FUAe 200 in 982ms
+ GET /api/price?coin=aKzUVe4Hh_CON 200 in 1013ms
+ GET /api/price?coin=razxDUgYGNAdQ&window=24h 200 in 851ms
+ GET /api/price?coin=VINVMYf0u&window=24h 200 in 851ms
+ GET /api/price?coin=WcwrkfNI4FUAe&window=24h 200 in 852ms
+ GET /api/price?coin=-l8Mn2pVlRs-p&window=24h 200 in 853ms
+ GET /api/price?coin=aKzUVe4Hh_CON&window=24h 200 in 853ms
+ GET /api/price?coin=aKzUVe4Hh_CON 200 in 814ms
+ GET /api/price?coin=VINVMYf0u 200 in 881ms
+ GET /api/price?coin=a91GCGd_u96cF 200 in 2784ms
+ GET /api/price?coin=a91GCGd_u96cF&window=24h 200 in 789ms
+ GET /api/price?coin=aKzUVe4Hh_CON&window=24h 200 in 836ms
+ GET /api/price?coin=VINVMYf0u&window=24h 200 in 862ms
+ GET /api/price?coin=WcwrkfNI4FUAe 200 in 851ms
+ GET /api/price?coin=razxDUgYGNAdQ 200 in 853ms
+ GET /api/price?coin=zNZHO_Sjf 200 in 852ms
+ GET /api/price?coin=HIVsRcGKkPFtW 200 in 2898ms
+ GET /api/price?coin=razxDUgYGNAdQ&window=24h 200 in 744ms
+ GET /api/price?coin=WcwrkfNI4FUAe&window=24h 200 in 765ms
+ GET /api/price?coin=zNZHO_Sjf&window=24h 200 in 782ms
+ GET /api/price?coin=HIVsRcGKkPFtW&window=24h 200 in 809ms
+ GET /api/price?coin=WcwrkfNI4FUAe 200 in 827ms
+ GET /api/price?coin=zNZHO_Sjf 200 in 827ms
+ GET /api/price?coin=razxDUgYGNAdQ 200 in 837ms
+ GET /api/price?coin=HIVsRcGKkPFtW 200 in 964ms
+ GET /api/price?coin=zNZHO_Sjf&window=24h 200 in 887ms
+ GET /api/price?coin=razxDUgYGNAdQ&window=24h 200 in 888ms
+ GET /api/price?coin=HIVsRcGKkPFtW&window=24h 200 in 888ms
+ GET /api/price?coin=WcwrkfNI4FUAe&window=24h 200 in 889ms
+ GET /api/price?coin=a91GCGd_u96cF 200 in 816ms
+ GET /api/price?coin=razxDUgYGNAdQ 200 in 817ms
+ GET /api/price?coin=zNZHO_Sjf 200 in 817ms
+ GET /api/price?coin=-l8Mn2pVlRs-p 200 in 871ms
+ GET /api/price?coin=a91GCGd_u96cF&window=7d 200 in 788ms
+ GET /api/price?coin=razxDUgYGNAdQ&window=7d 200 in 799ms
+ GET /api/price?coin=zNZHO_Sjf&window=7d 200 in 839ms
+ GET /api/price?coin=-l8Mn2pVlRs-p&window=7d 200 in 852ms
+ ✓ Compiled in 660ms
+ ⚠ Duplicate page detected. pages/api/agent/execute.ts and app/api/agent/execute/route.ts resolve to /api/agent/execute
+ ✓ Compiled in 1612ms (276 modules)
+ ○ Compiling /api/poller/run ...
+ ✓ Compiled /api/poller/run in 846ms (365 modules)
+ ✓ Compiled /api/price in 36ms (92 modules)
+ GET /api/price?coin=VINVMYf0u 200 in 1067ms
+ GET /api/price?coin=WcwrkfNI4FUAe 200 in 1134ms
+ GET /api/price?coin=razxDUgYGNAdQ 200 in 1167ms
+ GET /api/price?coin=aKzUVe4Hh_CON 200 in 1185ms
+ GET /api/price?coin=-l8Mn2pVlRs-p 200 in 1302ms
+ GET /api/price?coin=WcwrkfNI4FUAe&window=24h 200 in 744ms
+ GET /api/price?coin=-l8Mn2pVlRs-p&window=24h 200 in 798ms
+ GET /api/price?coin=razxDUgYGNAdQ&window=24h 200 in 817ms
+ GET /api/price?coin=aKzUVe4Hh_CON&window=24h 200 in 844ms
+ GET /api/price?coin=VINVMYf0u&window=24h 200 in 845ms
+ GET /api/price?coin=aKzUVe4Hh_CON 200 in 744ms
+ GET /api/price?coin=VINVMYf0u 200 in 745ms
+ GET /api/price?coin=a91GCGd_u96cF 200 in 785ms
+ GET /api/price?coin=VINVMYf0u&window=24h 200 in 879ms
+ GET /api/price?coin=a91GCGd_u96cF&window=24h 200 in 879ms
+ GET /api/price?coin=aKzUVe4Hh_CON&window=24h 200 in 880ms
+ GET /api/price?coin=razxDUgYGNAdQ 200 in 819ms
+ GET /api/price?coin=zNZHO_Sjf 200 in 819ms
+ GET /api/price?coin=HIVsRcGKkPFtW 200 in 820ms
+ GET /api/price?coin=WcwrkfNI4FUAe 200 in 821ms
+ GET /api/price?coin=razxDUgYGNAdQ&window=24h 200 in 813ms
+ GET /api/price?coin=zNZHO_Sjf&window=24h 200 in 813ms
+ GET /api/price?coin=WcwrkfNI4FUAe&window=24h 200 in 814ms
+ GET /api/price?coin=HIVsRcGKkPFtW&window=24h 200 in 820ms
+ GET /api/price?coin=HIVsRcGKkPFtW 200 in 759ms
+ GET /api/price?coin=razxDUgYGNAdQ 200 in 782ms
+ GET /api/price?coin=WcwrkfNI4FUAe 200 in 804ms
+ GET /api/price?coin=zNZHO_Sjf 200 in 810ms
+ GET /api/price?coin=razxDUgYGNAdQ&window=24h 200 in 745ms
+ GET /api/price?coin=WcwrkfNI4FUAe&window=24h 200 in 793ms
+ GET /api/price?coin=zNZHO_Sjf&window=24h 200 in 809ms
+ GET /api/price?coin=HIVsRcGKkPFtW&window=24h 200 in 847ms
+ GET /api/price?coin=a91GCGd_u96cF 200 in 794ms
+ GET /api/price?coin=-l8Mn2pVlRs-p 200 in 796ms
+ GET /api/price?coin=razxDUgYGNAdQ 200 in 822ms
+ GET /api/price?coin=zNZHO_Sjf 200 in 822ms
+ GET /api/price?coin=-l8Mn2pVlRs-p&window=7d 200 in 752ms
+ GET /api/price?coin=zNZHO_Sjf&window=7d 200 in 778ms
+ GET /api/price?coin=razxDUgYGNAdQ&window=7d 200 in 781ms
+ GET /api/price?coin=a91GCGd_u96cF&window=7d 200 in 800ms
+ GET /api/poller/run 200 in 9715ms
+ ✓ Compiled in 1848ms
+ ○ Compiling /api/rules ...
+ ✓ Compiled /api/rules in 2.5s (368 modules)
+ GET /api/rules 200 in 2736ms
+ POST /api/rules 201 in 16ms
+ ✓ Compiled /api/poller/run in 178ms (95 modules)
+ ✓ Compiled /api/price in 54ms (98 modules)
+ GET /api/price?coin=bitcoin 200 in 1103ms
+ GET /api/price?coin=bitcoin&window=24h 200 in 911ms
+ ○ Compiling /api/agent/execute ...
+ ✓ Compiled /api/agent/execute in 3.1s (2627 modules)
+SQLite3 module and Database constructor loaded successfully.
+ GET /api/price?coin=bitcoin 200 in 2062ms
+ POST /api/agent/execute 200 in 6913ms
+ GET /api/price?coin=razxDUgYGNAdQ 200 in 856ms
+ GET /api/price?coin=VINVMYf0u 200 in 1049ms
+ GET /api/price?coin=WcwrkfNI4FUAe 200 in 1068ms
+ GET /api/price?coin=-l8Mn2pVlRs-p 200 in 1074ms
+ GET /api/price?coin=aKzUVe4Hh_CON 200 in 1078ms
+ GET /api/price?coin=razxDUgYGNAdQ&window=24h 200 in 897ms
+ GET /api/price?coin=WcwrkfNI4FUAe&window=24h 200 in 898ms
+ GET /api/price?coin=-l8Mn2pVlRs-p&window=24h 200 in 899ms
+ GET /api/price?coin=aKzUVe4Hh_CON&window=24h 200 in 899ms
+ GET /api/price?coin=VINVMYf0u&window=24h 200 in 899ms
+ GET /api/price?coin=aKzUVe4Hh_CON 200 in 816ms
+ GET /api/price?coin=VINVMYf0u 200 in 855ms
+ GET /api/price?coin=a91GCGd_u96cF 200 in 1015ms
+ GET /api/price?coin=VINVMYf0u&window=24h 200 in 803ms
+ GET /api/price?coin=aKzUVe4Hh_CON&window=24h 200 in 837ms
+ GET /api/price?coin=a91GCGd_u96cF&window=24h 200 in 845ms
+ GET /api/price?coin=WcwrkfNI4FUAe 200 in 793ms
+ GET /api/price?coin=HIVsRcGKkPFtW 200 in 804ms
+ GET /api/price?coin=razxDUgYGNAdQ 200 in 824ms
+ GET /api/price?coin=zNZHO_Sjf 200 in 856ms
+ GET /api/price?coin=zNZHO_Sjf&window=24h 200 in 860ms
+ GET /api/price?coin=razxDUgYGNAdQ&window=24h 200 in 861ms
+ GET /api/price?coin=HIVsRcGKkPFtW&window=24h 200 in 861ms
+ GET /api/price?coin=WcwrkfNI4FUAe&window=24h 200 in 862ms
+ GET /api/price?coin=HIVsRcGKkPFtW 200 in 918ms
+ GET /api/price?coin=WcwrkfNI4FUAe 200 in 919ms
+ GET /api/price?coin=razxDUgYGNAdQ 200 in 919ms
+ GET /api/price?coin=zNZHO_Sjf 200 in 920ms
+ GET /api/price?coin=HIVsRcGKkPFtW&window=24h 200 in 815ms
+ GET /api/price?coin=WcwrkfNI4FUAe&window=24h 200 in 816ms
+ GET /api/price?coin=zNZHO_Sjf&window=24h 200 in 834ms
+ GET /api/price?coin=razxDUgYGNAdQ&window=24h 200 in 836ms
+ GET /api/price?coin=a91GCGd_u96cF 200 in 897ms
+ GET /api/price?coin=razxDUgYGNAdQ 200 in 897ms
+ GET /api/price?coin=zNZHO_Sjf 200 in 898ms
+ GET /api/price?coin=-l8Mn2pVlRs-p 200 in 898ms
+ GET /api/price?coin=razxDUgYGNAdQ&window=7d 200 in 815ms
+ GET /api/price?coin=zNZHO_Sjf&window=7d 200 in 816ms
+ GET /api/price?coin=a91GCGd_u96cF&window=7d 200 in 816ms
+ GET /api/price?coin=-l8Mn2pVlRs-p&window=7d 200 in 836ms
+ GET /api/poller/run 200 in 18307ms
+   Reload env: .env.local
+ ✓ Compiled in 2.3s (276 modules)
+   Reload env: .env.local
+ ✓ Compiled in 165ms (276 modules)
+   Reload env: .env.local
+ ✓ Compiled in 599ms (276 modules)
+   Reload env: .env.local
+   Reload env: .env.local
+ ✓ Compiled in 1132ms (276 modules)
+   Reload env: .env.local
+ ✓ Compiled in 274ms (276 modules)
+   Reload env: .env.local
+ ✓ Compiled in 499ms (276 modules)
+   Reload env: .env.local
+ ✓ Compiled in 166ms (276 modules)
+   Reload env: .env.local
+ ✓ Compiled in 124ms (276 modules)
+   Reload env: .env.local
+ ✓ Compiled in 358ms (276 modules)
+   Reload env: .env.local
+ ✓ Compiled in 292ms (276 modules)
+   Reload env: .env.local
+ ✓ Compiled in 879ms (276 modules)
+   Reload env: .env.local
+ ✓ Compiled in 849ms (276 modules)
+   Reload env: .env.local
+ ✓ Compiled in 787ms (276 modules)
+   Reload env: .env.local
+ ✓ Compiled in 1631ms (276 modules)
+   Reload env: .env.local
+ ✓ Compiled in 470ms (276 modules)
+   Reload env: .env.local
+ ✓ Compiled in 204ms (276 modules)
+   Reload env: .env.local
+ ✓ Compiled in 476ms (276 modules)
+ ✓ Compiled in 2.4s (276 modules)
+ ○ Compiling /api/db/migrate ...
+ ✓ Compiled /api/db/migrate in 4.7s (361 modules)
+ POST /api/db/migrate 200 in 5595ms
+ ○ Compiling /api/rules ...
+ ✓ Compiled /api/rules in 985ms (94 modules)
+ GET /api/rules 200 in 1464ms
+ POST /api/rules 201 in 454ms
+ GET /api/rules 200 in 185ms
+[?25h
