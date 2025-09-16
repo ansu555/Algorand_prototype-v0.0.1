@@ -25,3 +25,6 @@ export function resolveTokenBySymbol(symbol?: string): TokenInfo | null {
 export function resolveAlgorandAsset(symbol: string): TokenInfo | null {
   return ALGORAND_TESTNET_TOKENS[symbol.toUpperCase()] ?? null
 }
+
+// Export for compatibility with existing components
+export const FUJI_SYMBOL_TO_TOKEN = ALGORAND_TESTNET_TOKENS

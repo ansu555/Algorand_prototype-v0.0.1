@@ -1,5 +1,5 @@
 import { AlgorandInfo } from '@/components/algorand-info'
-import { AlgorandWalletConnect } from '@/components/algorand-wallet-connect'
+import { EnhancedAlgorandWalletConnect } from '@/components/enhanced-algorand-wallet-connect'
 
 export default function AlgorandPage() {
   return (
@@ -13,7 +13,7 @@ export default function AlgorandPage() {
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <AlgorandWalletConnect />
+          <EnhancedAlgorandWalletConnect />
           <AlgorandInfo />
         </div>
         
