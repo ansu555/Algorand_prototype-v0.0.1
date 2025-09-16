@@ -1,6 +1,6 @@
 # 10xSwap: AI-Powered Multi-Chain Gasless Crypto Explorer
 
-10xSwap is a modern web application that allows users to explore cryptocurrency markets, manage assets, and execute gasless transactions across multiple networks (Base and Avalanche). It features an AI-powered chat agent that can understand natural language commands to perform actions like checking balances, getting token prices, and executing swaps and transfers.
+10xSwap is a modern web application that allows users to explore cryptocurrency markets, manage assets, and execute gasless transactions across multiple networks (Base, Avalanche, and Algorand). It features an AI-powered chat agent that can understand natural language commands to perform actions like checking balances, getting token prices, and executing swaps and transfers.
 
 ## Table of Contents
 
@@ -29,7 +29,7 @@ For detailed technical implementation details, agent factory patterns, transacti
 
 ## 🚀 How It Works: Project Architecture
 
-The project is built on **Next.js** using the App Router, providing a fast, server-rendered frontend with serverless API endpoints for backend logic. It supports multiple blockchain networks including **Base** and **Avalanche** mainnet with gasless transaction capabilities.
+The project is built on **Next.js** using the App Router, providing a fast, server-rendered frontend with serverless API endpoints for backend logic. It supports multiple blockchain networks including **Base**, **Avalanche** mainnet, and **Algorand** with gasless transaction capabilities and instant finality.
 
 -   **`app/`**: Contains the main pages (`/`, `/cryptocurrencies`, etc.) and the primary UI layout.
 -   **`components/`**: Houses all reusable React components, including the chat interface, data tables, and UI primitives from `shadcn/ui`.
@@ -92,7 +92,8 @@ The application requires several API keys for full functionality. Here's where t
 | **OpenRouter** | `OPENROUTER_API_KEY` | [OpenRouter Platform](https://openrouter.ai/keys) | AI/LLM services (recommended) |
 | **OpenAI** | `OPENAI_API_KEY` | [OpenAI Platform](https://platform.openai.com/api-keys) | Alternative AI provider |
 | **CoinRanking** | `COINRANKING_API_KEY` | [CoinRanking API](https://developers.coinranking.com/api) | Cryptocurrency market data |
-| **0x Protocol** | `OX_API_KEY` | [0x API Dashboard](https://0x.org/api) | Token swap price quotes |
+| **Algorand** | `ALGORAND_MNEMONIC` | [Algorand Wallet](https://wallet.myalgo.com/) | 25-word mnemonic phrase |
+| **Algorand Network** | `ALGORAND_NETWORK` | `testnet` or `mainnet` | Network selection |
 
 ### 🔗 RPC Endpoints
 
@@ -261,9 +262,9 @@ Here is a detailed map of triggers and actions:
 
 ## 📦 Supported tokens
 
-This project maintains a small registry of supported tokens per chain in `lib/tokens.ts`. The UI and backend expect these symbols when requesting balances or swaps.
+This project maintains a registry of supported tokens per chain in `lib/tokens.ts`. The UI and backend expect these symbols when requesting balances or swaps.
 
-Base mainnet (8453)
+**Base mainnet (8453)**
 
 | Symbol | Address |
 |--------|---------|
@@ -271,7 +272,7 @@ Base mainnet (8453)
 | WETH   | 0x4200000000000000000000000000000000000006 |
 | USDC   | 0x833589fCD6EDb6E08f4c7C10d6D3e96cF6a47b8f |
 
-Avalanche mainnet (43114)
+**Avalanche mainnet (43114)**
 
 | Symbol | Address |
 |--------|---------|
@@ -279,7 +280,7 @@ Avalanche mainnet (43114)
 | WAVAX  | 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7 |
 | USDC   | 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E |
 
-Fuji testnet (43113)
+**Fuji testnet (43113)**
 
 | Symbol | Address |
 |--------|---------|
@@ -287,12 +288,40 @@ Fuji testnet (43113)
 | WAVAX  | 0xd00ae08403B9bbb9124bb305C09058E32C39A48c |
 | USDC   | 0x5425890298aed601595a70AB815c96711a31Bc65 |
 
+**Algorand mainnet**
+
+| Symbol | ASA ID | Decimals |
+|--------|--------|----------|
+| ALGO   | 0      | 6        |
+| USDC   | 31566704 | 6      |
+| USDT   | 312769 | 6        |
+| WBTC   | 1058926737 | 8    |
+| WETH   | 887406851 | 18     |
+
+**Algorand testnet**
+
+| Symbol | ASA ID | Decimals |
+|--------|--------|----------|
+| ALGO   | 0      | 6        |
+| USDC   | 10458941 | 6      |
+
 If you need additional tokens supported, add them to `lib/tokens.ts` and the UI will pick them up automatically.
 - **Scheduled**: `schedule transfer 2 USDC to 0x... for tomorrow at 2pm`
 
-#### 🔁 Swap (gasless, from Smart Account)
-- **Format**: `swap <amount> <FROM> to <TO>`
-- **Example**: `swap 5 USDC to ETH`
+#### 🔁 Swap (Tinyman DEX Integration)
+- **Format**: `swap <amount> <FROM> for <TO>`
+- **Example**: `swap 5 ALGO for USDC`
+- **Supported Pairs**: ALGO ↔ USDC (testnet)
+- **Features**: Real-time pricing, minimal slippage, instant settlement
+
+#### 🔷 Algorand Commands
+- **Address**: `algorand address`, `algo wallet`
+- **Balance**: `algo balance`, `usdc balance algorand`
+- **Portfolio**: `algorand portfolio`, `algo overview`
+- **Transfer**: `transfer 10 ALGO to ALGORAND_ADDRESS`
+- **Price**: `algo price`, `price of algorand`
+- **Atomic Swaps**: `atomic swap info` (coming soon)
+- **History**: `algorand transactions`, `algo history`
 
 #### 🎯 Address Targeting Keywords
 Use these keywords in your balance or portfolio queries to specify the address.

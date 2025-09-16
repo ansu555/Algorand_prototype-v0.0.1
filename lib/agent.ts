@@ -4,8 +4,9 @@ import { avalanche, avalancheFuji, base } from 'viem/chains'
 import type { Address, Chain } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { Agentkit } from '@0xgasless/agentkit'
-import { resolveTokenBySymbol } from './tokens'
+import { resolveTokenBySymbol, resolveAlgorandAsset } from './tokens'
 import { customSwapFlow } from './customSwap'
+import { buildAlgorandAgent, type AlgorandAgent } from './algorand'
 
 
 // Minimal helper to read required envs and ensure they are present
@@ -15,16 +16,23 @@ function getEnv(name: string, required = true): string | undefined {
   return v
 }
 
-// Chain selection: default to Avalanche Fuji unless CHAIN_ID selects Base or Avalanche mainnet
-function getChain(): Chain {
-  const id = Number(process.env.CHAIN_ID || 43113)
-  if (id === 8453) return base
-  if (id === 43114) return avalanche
+// Chain selection: support Algorand networks
+function getChain(): Chain | 'algorand' {
+  const id = process.env.CHAIN_ID || '43113'
+  
+  // Handle Algorand networks
+  if (id === 'algorand-mainnet' || id === 'algorand-testnet') {
+    return 'algorand'
+  }
+  
+  const numericId = Number(id)
+  if (numericId === 8453) return base
+  if (numericId === 43114) return avalanche
   return avalancheFuji
 }
 
-// Cache per-chain agent instances
-const agentInstances = new Map<number, ReturnType<typeof buildAgent>>()
+// Cache per-chain agent instances (including Algorand)
+const agentInstances = new Map<number | string, ReturnType<typeof buildAgent> | ReturnType<typeof buildAlgorandAgent>>()
 
 async function buildAgent(chainIdOverride?: number) {
   try {
@@ -1018,10 +1026,24 @@ async function buildAgent(chainIdOverride?: number) {
   }
 }
 
-export async function getAgent(chainIdOverride?: number) {
-  const id = Number((chainIdOverride ?? process.env.CHAIN_ID) || 43113)
-  if (!agentInstances.has(id)) agentInstances.set(id, buildAgent(id))
-  return agentInstances.get(id)!
+export async function getAgent(chainIdOverride?: number | string) {
+  const id = chainIdOverride ?? process.env.CHAIN_ID ?? '43113'
+  
+  // Handle Algorand networks
+  if (id === 'algorand-mainnet' || id === 'algorand-testnet' || process.env.ALGORAND_NETWORK) {
+    const algorandId = 'algorand'
+    if (!agentInstances.has(algorandId)) {
+      agentInstances.set(algorandId, buildAlgorandAgent())
+    }
+    return agentInstances.get(algorandId)! as Promise<AlgorandAgent>
+  }
+  
+  // Handle EVM chains
+  const numericId = typeof id === 'string' ? parseInt(id) : id
+  if (!agentInstances.has(numericId)) {
+    agentInstances.set(numericId, buildAgent(numericId))
+  }
+  return agentInstances.get(numericId)! as Promise<Agent>
 }
 
 export type Agent = Awaited<ReturnType<typeof buildAgent>>
@@ -1029,7 +1051,7 @@ export type Agent = Awaited<ReturnType<typeof buildAgent>>
 // Public list of available high-level actions we currently support via this wrapper
 export const AVAILABLE_AGENT_ACTIONS = [
   'getAddress',
-  'getEOAAddress',
+  'getEOAAddress', 
   'getAddresses',
   'getBalance',
   'checkTransaction',
@@ -1044,4 +1066,9 @@ export const AVAILABLE_AGENT_ACTIONS = [
   'getGasEstimate',
   'getTransactionHistory',
   'getPortfolioOverview',
+  // Algorand-specific actions
+  'transfer', // Algorand native transfer
+  'atomicSwap', // Algorand atomic swaps
+  'getAssetPrice', // Algorand asset prices
+  'getPortfolio', // Algorand portfolio
 ] as const

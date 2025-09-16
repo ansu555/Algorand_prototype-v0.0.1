@@ -1,5 +1,7 @@
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
+// Update the import path below if the generated client is in a different location
 import { HelloWorldFactory } from '../artifacts/hello_world/HelloWorldClient'
+// If the file does not exist, ensure code generation has been run (e.g., `algokit generate`)
 
 // Below is a showcase of various deployment options you can use in TypeScript Client
 export async function deploy() {
@@ -19,11 +21,11 @@ export async function deploy() {
     await algorand.send.payment({
       amount: (1).algo(),
       sender: deployer.addr,
-      receiver: appClient.appAddress,
+     eceiver: appClient.appAddress,
     })
   }
 
-  const method = 'hello'  
+  const method = 'hello'
   const response = await appClient.send.hello({
     args: { name: 'world' },
   })

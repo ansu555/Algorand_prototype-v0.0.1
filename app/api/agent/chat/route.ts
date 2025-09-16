@@ -7,6 +7,7 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt"
 import { getAgent } from "@/lib/agent"
 import { resolveTokenBySymbol } from "@/lib/tokens"
 import { parseEther } from "viem"
+import { buildAlgorandAgent } from "@/lib/algorand"
 
 export const runtime = "nodejs"
 
@@ -48,10 +49,22 @@ function getLLM() {
 
 export async function POST(req: Request) {
   try {
-  const body = await req.json().catch(() => ({})) as { prompt?: string; messages?: ClientMessage[]; threadId?: string; walletAddress?: string; chainId?: number }
+  const body = await req.json().catch(() => ({})) as { prompt?: string; messages?: ClientMessage[]; threadId?: string; walletAddress?: string; chainId?: number | string }
     const prompt = (body.prompt && typeof body.prompt === "string") ? body.prompt : undefined
     const incoming = Array.isArray(body.messages) ? body.messages : (prompt ? [{ role: "user", content: prompt }] as ClientMessage[] : [])
     if (!incoming.length) return NextResponse.json({ ok: false, error: "No prompt or messages provided" }, { status: 400 })
+
+    // Check if this is an Algorand query
+    const lastUserMsg = [...incoming].reverse().find(m => m.role === 'user')?.content || ''
+    const text = lastUserMsg.toLowerCase().trim()
+    const isAlgorandQuery = /\b(algorand|algo|asa|atomic)\b/i.test(text) || 
+                           body.chainId === 'algorand-mainnet' || 
+                           body.chainId === 'algorand-testnet' ||
+                           process.env.ALGORAND_NETWORK
+
+    if (isAlgorandQuery) {
+      return await handleAlgorandQuery(text, incoming, body.threadId)
+    }
 
   const chainOverride = typeof body.chainId === 'number' ? body.chainId : undefined
   const { agentkit, getAddress, getBalance, smartTransfer, smartSwap, customSwap, publicClient, eoaClient, getEOAAddress, getSmartAddressOrNull } = await getAgent(chainOverride)
@@ -867,5 +880,191 @@ export async function POST(req: Request) {
   } catch (e: any) {
     const msg = e?.message || "Agent error"
     return NextResponse.json({ ok: false, error: msg }, { status: 500 })
+  }
+}
+
+async function handleAlgorandQuery(query: string, messages: ClientMessage[], threadId?: string) {
+  try {
+    const agent = await buildAlgorandAgent()
+    
+    if (/\b(address|wallet|account)\b/i.test(query)) {
+      const address = await agent.getAddress()
+      return NextResponse.json({
+        ok: true,
+        content: `🔷 **Algorand Address**\n\n${address}\n\nNetwork: ${agent.getNetworkInfo().network}\nBlock Time: ${agent.getNetworkInfo().blockTime}s`,
+        threadId: threadId || 'algorand-session'
+      })
+    }
+    
+    if (/\b(balance|balances)\b/i.test(query)) {
+      const assetMatch = query.match(/\b(algo|usdc|usdt|wbtc|weth)\b/i)
+      const symbol = assetMatch?.[1]?.toUpperCase() || 'ALGO'
+      
+      const asset = agent.assets[symbol as keyof typeof agent.assets]
+      if (!asset) {
+        return NextResponse.json({
+          ok: true,
+          content: `❌ Unknown asset: ${symbol}\n\n**Supported Assets:**\n${Object.keys(agent.assets).join(', ')}`,
+          threadId: threadId || 'algorand-session'
+        })
+      }
+      
+      const balance = await agent.getBalance(asset.id)
+      const price = await agent.getAssetPrice(symbol).catch(() => ({ price: 0, change24h: 0 }))
+      const value = parseFloat(balance) * price.price
+      const change = price.change24h ? ` (${price.change24h > 0 ? '+' : ''}${price.change24h.toFixed(2)}%)` : ''
+      
+      return NextResponse.json({
+        ok: true,
+        content: `💰 **${symbol} Balance**\n\n${balance} ${symbol}\n💵 $${value.toFixed(2)} USD\n📊 $${price.price.toFixed(4)}${change}`,
+        threadId: threadId || 'algorand-session'
+      })
+    }
+    
+    if (/\b(portfolio|overview|total)\b/i.test(query)) {
+      const portfolio = await agent.getPortfolio()
+      const summary = portfolio.assets
+        .filter(asset => parseFloat(asset.balance) > 0)
+        .map(asset => `${asset.symbol}: ${parseFloat(asset.balance).toFixed(4)} ($${asset.valueUSD.toFixed(2)})`)
+        .join('\n')
+      
+      return NextResponse.json({
+        ok: true,
+        content: `🔷 **Algorand Portfolio**\n\n💎 **Total Value:** $${portfolio.totalValueUSD.toFixed(2)}\n\n**Assets:**\n${summary}\n\n*Instant finality • Zero gas fees*`,
+        threadId: threadId || 'algorand-session'
+      })
+    }
+    
+    if (/\b(price|prices)\b/i.test(query)) {
+      const assetMatch = query.match(/\b(algo|usdc|usdt|wbtc|weth)\b/i)
+      const symbol = assetMatch?.[1]?.toUpperCase() || 'ALGO'
+      
+      const price = await agent.getAssetPrice(symbol)
+      const change = price.change24h ? ` (${price.change24h > 0 ? '🟢 +' : '🔴 '}${price.change24h.toFixed(2)}%)` : ''
+      
+      return NextResponse.json({
+        ok: true,
+        content: `📊 **${symbol} Price**\n\n💵 $${price.price.toFixed(6)}\n📈 24h Change${change}`,
+        threadId: threadId || 'algorand-session'
+      })
+    }
+    
+    if (/\btransfer\b/i.test(query)) {
+      const transferMatch = query.match(/transfer\s+(\d+(?:\.\d+)?)\s+(\w+)\s+to\s+([A-Z0-9]{58})/i)
+      
+      if (!transferMatch) {
+        return NextResponse.json({
+          ok: true,
+          content: `🔄 **Algorand Transfer**\n\n**Format:** transfer <amount> <asset> to <address>\n**Example:** transfer 10 ALGO to ALGORAND_ADDRESS\n\n**Features:**\n• Instant finality (4.5s)\n• Minimal fees (~0.001 ALGO)\n• Atomic transactions`,
+          threadId: threadId || 'algorand-session'
+        })
+      }
+      
+      const [, amount, symbol, toAddress] = transferMatch
+      const asset = agent.assets[symbol.toUpperCase() as keyof typeof agent.assets]
+      
+      if (!asset) {
+        return NextResponse.json({
+          ok: true,
+          content: `❌ Unknown asset: ${symbol}\n\nSupported: ${Object.keys(agent.assets).join(', ')}`,
+          threadId: threadId || 'algorand-session'
+        })
+      }
+      
+      const result = await agent.transfer({
+        to: toAddress,
+        amount,
+        assetId: asset.id,
+        note: 'Transfer via 10xSwap AI'
+      })
+      
+      return NextResponse.json({
+        ok: true,
+        content: `✅ **Transfer Successful**\n\n🔗 **Tx ID:** ${result.txId}\n💰 **Amount:** ${amount} ${symbol}\n📍 **To:** ${toAddress}\n\n*Confirmed in ~4.5 seconds*`,
+        threadId: threadId || 'algorand-session'
+      })
+    }
+    
+    if (/\b(swap)\b/i.test(query)) {
+      // Parse swap command: "swap 10 ALGO for USDC" or "swap 5 USDC to ALGO"
+      const swapMatch = query.match(/swap\s+(\d+(?:\.\d+)?)\s+(\w+)\s+(?:for|to)\s+(\w+)/i)
+      
+      if (!swapMatch) {
+        return NextResponse.json({
+          ok: true,
+          content: `🔄 **Algorand Swap**\n\n**Format:** swap <amount> <from> for <to>\n**Example:** swap 10 ALGO for USDC\n\n**Supported Pairs:**\n• ALGO ↔ USDC\n\n**Features:**\n• Tinyman DEX integration\n• Real-time pricing\n• Minimal slippage\n• Instant settlement`,
+          threadId: threadId || 'algorand-session'
+        })
+      }
+      
+      const [, amount, fromSymbol, toSymbol] = swapMatch
+      const from = fromSymbol.toUpperCase()
+      const to = toSymbol.toUpperCase()
+      
+      // Validate supported pairs
+      if (!((from === 'ALGO' && to === 'USDC') || (from === 'USDC' && to === 'ALGO'))) {
+        return NextResponse.json({
+          ok: true,
+          content: `❌ **Unsupported Pair:** ${from}/${to}\n\n**Available:**\n• ALGO → USDC\n• USDC → ALGO\n\nMore pairs coming soon!`,
+          threadId: threadId || 'algorand-session'
+        })
+      }
+      
+      try {
+        const result = await agent.atomicSwap({
+          assetInSymbol: from,
+          assetOutSymbol: to,
+          amountIn: amount
+        })
+        
+        return NextResponse.json({
+          ok: true,
+          content: `✅ **Swap Successful**\n\n🔗 **Tx ID:** ${result.txId}\n🔄 **Swap:** ${result.details.amountIn} ${from} → ${result.details.amountOut} ${to}\n📊 **Price Impact:** ${(result.details.priceImpact * 100).toFixed(2)}%\n💰 **Fee:** ${result.details.fee} units\n\n*Powered by Tinyman DEX*`,
+          threadId: threadId || 'algorand-session'
+        })
+      } catch (error: any) {
+        return NextResponse.json({
+          ok: true,
+          content: `❌ **Swap Failed**\n\n${error.message}\n\n**Common Issues:**\n• Insufficient balance\n• Pool liquidity low\n• Network congestion\n\nTry again or check your balance.`,
+          threadId: threadId || 'algorand-session'
+        })
+      }
+    }
+    
+    if (/\b(atomic)\b/i.test(query)) {
+      return NextResponse.json({
+        ok: true,
+        content: `⚛️ **Algorand Atomic Swaps**\n\n**Features:**\n• Trustless exchanges\n• Zero slippage\n• Instant settlement\n• No intermediaries\n\n**Try:** "swap 10 ALGO for USDC"\n\n*Powered by Tinyman DEX*`,
+        threadId: threadId || 'algorand-session'
+      })
+    }
+    
+    if (/\b(transaction|history|recent)\b/i.test(query)) {
+      const history = await agent.getTransactionHistory(5)
+      const summary = history.map((tx, i) => 
+        `${i + 1}. ${tx.type.toUpperCase()}: ${tx.amount ? `${tx.amount} units` : 'N/A'} (Round: ${tx.confirmedRound})`
+      ).join('\n')
+      
+      return NextResponse.json({
+        ok: true,
+        content: `📜 **Recent Transactions**\n\n${summary || 'No recent transactions'}\n\n*Data from Algorand Indexer*`,
+        threadId: threadId || 'algorand-session'
+      })
+    }
+    
+    // Default Algorand info
+    const networkInfo = agent.getNetworkInfo()
+    return NextResponse.json({
+      ok: true,
+      content: `🔷 **Algorand Network**\n\n**Network:** ${networkInfo.network}\n**Block Time:** ${networkInfo.blockTime}s\n**Finality:** ${networkInfo.finality}\n**Native Token:** ${networkInfo.nativeSymbol}\n\n**Available Commands:**\n• balance, portfolio, transfer\n• price, transactions\n• "atomic swap" info\n\n**Advantages:**\n• Pure Proof of Stake\n• Carbon negative\n• 46,000+ TPS capability\n• Instant finality`,
+      threadId: threadId || 'algorand-session'
+    })
+    
+  } catch (error: any) {
+    return NextResponse.json({
+      ok: false,
+      content: `🔷 Algorand Error: ${error.message}`,
+      threadId: threadId || 'algorand-error'
+    })
   }
 }
