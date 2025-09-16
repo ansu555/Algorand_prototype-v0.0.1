@@ -1,7 +1,6 @@
 'use client'
 
-import { AlgorandWalletConnect } from '@/components/algorand-wallet-connect'
-import { WalletInfo } from '@/components/wallet-info'
+import { WalletConnect, WalletInfo } from '@/components/wallet'
 
 export default function WalletPage() {
   return (
@@ -14,7 +13,7 @@ export default function WalletPage() {
         <div className="grid md:grid-cols-2 gap-6">
           <div>
             <h2 className="text-xl font-semibold mb-4">Connect Wallet</h2>
-            <AlgorandWalletConnect />
+            <WalletConnect />
           </div>
           
           <div>
