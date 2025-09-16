@@ -1,0 +1,396 @@
+
+> 10xswap@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.5.3
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.1.125:3000
+   - Environments: .env.local
+   - Experiments (use with caution):
+     ✓ webpackBuildWorker
+     ✓ parallelServerCompiles
+     ✓ parallelServerBuildTraces
+
+ ✓ Starting...
+ ✓ Ready in 2s
+ ○ Compiling / ...
+ ✓ Compiled / in 6s (3944 modules)
+ ⨯ Error: Missing required option: projectId
+    at eval (lib/txnlab-wallet-config.ts:52:30)
+    at (ssr)/./lib/txnlab-wallet-config.ts (.next/server/app/page.js:602:1)
+    at eval (webpack-internal:///(ssr)/./components/providers/txnlab-wallet-provider.tsx:12:83)
+    at (ssr)/./components/providers/txnlab-wallet-provider.tsx (.next/server/app/page.js:338:1)
+  50 |
+  51 | // Initialize wallet manager
+> 52 | export const walletManager = new WalletManager(walletManagerConfig)
+     |                              ^
+  53 |
+  54 | // Helper function to get supported wallets info
+  55 | export const getSupportedWallets = () => [ {
+  digest: '1650551602'
+}
+ GET / 500 in 6846ms
+ ⨯ Error: Missing required option: projectId
+    at eval (lib/txnlab-wallet-config.ts:52:30)
+    at (ssr)/./lib/txnlab-wallet-config.ts (.next/server/app/page.js:602:1)
+    at eval (webpack-internal:///(ssr)/./components/providers/txnlab-wallet-provider.tsx:12:83)
+    at (ssr)/./components/providers/txnlab-wallet-provider.tsx (.next/server/app/page.js:338:1)
+  50 |
+  51 | // Initialize wallet manager
+> 52 | export const walletManager = new WalletManager(walletManagerConfig)
+     |                              ^
+  53 |
+  54 | // Helper function to get supported wallets info
+  55 | export const getSupportedWallets = () => [ {
+  digest: '1650551602'
+}
+ GET / 500 in 382ms
+ ✓ Compiled in 621ms (1808 modules)
+ ○ Compiling /favicon.ico ...
+ ✓ Compiled /favicon.ico in 5s (2152 modules)
+ GET /favicon.ico 200 in 5188ms
+ ⨯ Error: Missing required option: projectId
+    at eval (lib/txnlab-wallet-config.ts:52:30)
+    at (ssr)/./lib/txnlab-wallet-config.ts (.next/server/app/page.js:602:1)
+    at eval (webpack-internal:///(ssr)/./components/providers/txnlab-wallet-provider.tsx:12:83)
+    at (ssr)/./components/providers/txnlab-wallet-provider.tsx (.next/server/app/page.js:338:1)
+  50 |
+  51 | // Initialize wallet manager
+> 52 | export const walletManager = new WalletManager(walletManagerConfig)
+     |                              ^
+  53 |
+  54 | // Helper function to get supported wallets info
+  55 | export const getSupportedWallets = () => [ {
+  digest: '1650551602'
+}
+ GET / 500 in 671ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 3.4s (3946 modules)
+ GET / 200 in 1763ms
+ GET / 200 in 2657ms
+ GET /favicon.ico 200 in 134ms
+ ○ Compiling /wallet-demo ...
+ ⚠ ./app/wallet-demo/page.tsx
+Attempted import error: 'algosdk' is not exported from 'algosdk' (imported as 'algosdk').
+
+Import trace for requested module:
+./app/wallet-demo/page.tsx
+
+./app/wallet-demo/page.tsx
+Attempted import error: 'algosdk' is not exported from 'algosdk' (imported as 'algosdk').
+
+Import trace for requested module:
+./app/wallet-demo/page.tsx
+ GET /wallet-demo 200 in 1598ms
+ ⚠ ./app/wallet-demo/page.tsx
+Attempted import error: 'algosdk' is not exported from 'algosdk' (imported as 'algosdk').
+
+Import trace for requested module:
+./app/wallet-demo/page.tsx
+
+./app/wallet-demo/page.tsx
+Attempted import error: 'algosdk' is not exported from 'algosdk' (imported as 'algosdk').
+
+Import trace for requested module:
+./app/wallet-demo/page.tsx
+ GET / 200 in 124ms
+ ⚠ ./app/wallet-demo/page.tsx
+Attempted import error: 'algosdk' is not exported from 'algosdk' (imported as 'algosdk').
+
+Import trace for requested module:
+./app/wallet-demo/page.tsx
+ ⚠ ./app/wallet-demo/page.tsx
+Attempted import error: 'algosdk' is not exported from 'algosdk' (imported as 'algosdk').
+
+Import trace for requested module:
+./app/wallet-demo/page.tsx
+ ⚠ ./app/wallet-demo/page.tsx
+Attempted import error: 'algosdk' is not exported from 'algosdk' (imported as 'algosdk').
+
+Import trace for requested module:
+./app/wallet-demo/page.tsx
+ GET / 404 in 15280ms
+ ⚠ ./app/wallet-demo/page.tsx
+Attempted import error: 'algosdk' is not exported from 'algosdk' (imported as 'algosdk').
+
+Import trace for requested module:
+./app/wallet-demo/page.tsx
+ ⚠ ./app/wallet-demo/page.tsx
+Attempted import error: 'algosdk' is not exported from 'algosdk' (imported as 'algosdk').
+
+Import trace for requested module:
+./app/wallet-demo/page.tsx
+ GET /favicon.ico 200 in 995ms
+ GET / 200 in 787ms
+ GET /favicon.ico 200 in 56ms
+ ⚠ ./app/wallet-demo/page.tsx
+Attempted import error: 'algosdk' is not exported from 'algosdk' (imported as 'algosdk').
+
+Import trace for requested module:
+./app/wallet-demo/page.tsx
+ ⨯ ./node_modules/recharts/es6/util/ReactUtils.js:3:1
+Module not found: Can't resolve 'react-is'
+  1 | import get from 'es-toolkit/compat/get';
+  2 | import { Children, isValidElement } from 'react';
+> 3 | import { isFragment } from 'react-is';
+    | ^
+  4 | import { isNullish } from './DataUtils';
+  5 | import { FilteredElementKeyMap } from './types';
+  6 | import { isEventKey } from './excludeEventProps';
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./node_modules/recharts/es6/cartesian/Area.js
+__barrel_optimize__?names=Area,AreaChart,CartesianGrid,XAxis,YAxis!=!./node_modules/recharts/es6/index.js
+./components/coin-overview-pane.tsx
+./app/cryptocurrencies/page.tsx
+ ⨯ ./node_modules/recharts/es6/util/ReactUtils.js:3:1
+Module not found: Can't resolve 'react-is'
+  1 | import get from 'es-toolkit/compat/get';
+  2 | import { Children, isValidElement } from 'react';
+> 3 | import { isFragment } from 'react-is';
+    | ^
+  4 | import { isNullish } from './DataUtils';
+  5 | import { FilteredElementKeyMap } from './types';
+  6 | import { isEventKey } from './excludeEventProps';
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./node_modules/recharts/es6/cartesian/Area.js
+__barrel_optimize__?names=Area,AreaChart,CartesianGrid,XAxis,YAxis!=!./node_modules/recharts/es6/index.js
+./components/coin-overview-pane.tsx
+./app/cryptocurrencies/page.tsx
+ ⨯ ./node_modules/recharts/es6/util/ReactUtils.js:3:1
+Module not found: Can't resolve 'react-is'
+  1 | import get from 'es-toolkit/compat/get';
+  2 | import { Children, isValidElement } from 'react';
+> 3 | import { isFragment } from 'react-is';
+    | ^
+  4 | import { isNullish } from './DataUtils';
+  5 | import { FilteredElementKeyMap } from './types';
+  6 | import { isEventKey } from './excludeEventProps';
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./node_modules/recharts/es6/cartesian/Area.js
+__barrel_optimize__?names=Area,AreaChart,CartesianGrid,XAxis,YAxis!=!./node_modules/recharts/es6/index.js
+./components/coin-overview-pane.tsx
+./app/cryptocurrencies/page.tsx
+ GET /cryptocurrencies 500 in 14396ms
+ GET /cryptocurrencies 500 in 21ms
+ GET /cryptocurrencies 500 in 14ms
+ GET /cryptocurrencies 500 in 16ms
+ GET /cryptocurrencies 500 in 12ms
+ GET /cryptocurrencies 500 in 19ms
+ GET /cryptocurrencies 500 in 15ms
+ GET /cryptocurrencies 500 in 56ms
+ ⨯ ./node_modules/recharts/es6/util/ReactUtils.js:3:1
+Module not found: Can't resolve 'react-is'
+  1 | import get from 'es-toolkit/compat/get';
+  2 | import { Children, isValidElement } from 'react';
+> 3 | import { isFragment } from 'react-is';
+    | ^
+  4 | import { isNullish } from './DataUtils';
+  5 | import { FilteredElementKeyMap } from './types';
+  6 | import { isEventKey } from './excludeEventProps';
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./node_modules/recharts/es6/cartesian/Area.js
+__barrel_optimize__?names=Area,AreaChart,CartesianGrid,XAxis,YAxis!=!./node_modules/recharts/es6/index.js
+./components/coin-overview-pane.tsx
+./app/cryptocurrencies/page.tsx
+ ⨯ ./node_modules/recharts/es6/util/ReactUtils.js:3:1
+Module not found: Can't resolve 'react-is'
+  1 | import get from 'es-toolkit/compat/get';
+  2 | import { Children, isValidElement } from 'react';
+> 3 | import { isFragment } from 'react-is';
+    | ^
+  4 | import { isNullish } from './DataUtils';
+  5 | import { FilteredElementKeyMap } from './types';
+  6 | import { isEventKey } from './excludeEventProps';
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./node_modules/recharts/es6/cartesian/Area.js
+__barrel_optimize__?names=Area,AreaChart,CartesianGrid,XAxis,YAxis!=!./node_modules/recharts/es6/index.js
+./components/coin-overview-pane.tsx
+./app/cryptocurrencies/page.tsx
+ ⨯ ./node_modules/recharts/es6/util/ReactUtils.js:3:1
+Module not found: Can't resolve 'react-is'
+  1 | import get from 'es-toolkit/compat/get';
+  2 | import { Children, isValidElement } from 'react';
+> 3 | import { isFragment } from 'react-is';
+    | ^
+  4 | import { isNullish } from './DataUtils';
+  5 | import { FilteredElementKeyMap } from './types';
+  6 | import { isEventKey } from './excludeEventProps';
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./node_modules/recharts/es6/cartesian/Area.js
+__barrel_optimize__?names=Area,AreaChart,CartesianGrid,XAxis,YAxis!=!./node_modules/recharts/es6/index.js
+./components/coin-overview-pane.tsx
+./app/cryptocurrencies/page.tsx
+ ⨯ ./node_modules/recharts/es6/util/ReactUtils.js:3:1
+Module not found: Can't resolve 'react-is'
+  1 | import get from 'es-toolkit/compat/get';
+  2 | import { Children, isValidElement } from 'react';
+> 3 | import { isFragment } from 'react-is';
+    | ^
+  4 | import { isNullish } from './DataUtils';
+  5 | import { FilteredElementKeyMap } from './types';
+  6 | import { isEventKey } from './excludeEventProps';
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./node_modules/recharts/es6/cartesian/Area.js
+__barrel_optimize__?names=Area,AreaChart,CartesianGrid,XAxis,YAxis!=!./node_modules/recharts/es6/index.js
+./components/coin-overview-pane.tsx
+./app/cryptocurrencies/page.tsx
+ GET /cryptocurrencies 500 in 68ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ ./app/wallet-demo/page.tsx
+Attempted import error: 'algosdk' is not exported from 'algosdk' (imported as 'algosdk').
+
+Import trace for requested module:
+./app/wallet-demo/page.tsx
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /cryptocurrencies 200 in 36982ms
+ ⚠ ./app/wallet-demo/page.tsx
+Attempted import error: 'algosdk' is not exported from 'algosdk' (imported as 'algosdk').
+
+Import trace for requested module:
+./app/wallet-demo/page.tsx
+ ⚠ ./app/wallet-demo/page.tsx
+Attempted import error: 'algosdk' is not exported from 'algosdk' (imported as 'algosdk').
+
+Import trace for requested module:
+./app/wallet-demo/page.tsx
+ GET /favicon.ico 200 in 2656ms
+ ⨯ TypeError: Cannot read properties of undefined (reading 'call')
+    at eval (webpack-internal:///(rsc)/./components/footer.tsx:9:122)
+    at <unknown> (rsc)/./components/footer.tsx (/Users/engineering_faliure/Desktop/10x_Swap/.next/server/app/page.js:66:1)
+    at eval (webpack-internal:///(rsc)/./app/page.tsx:7:76)
+    at <unknown> (rsc)/./app/page.tsx (/Users/engineering_faliure/Desktop/10x_Swap/.next/server/app/page.js:44:1)
+ ⨯ TypeError: Cannot read properties of undefined (reading 'call')
+    at eval (webpack-internal:///(rsc)/./components/footer.tsx:9:122)
+    at <unknown> (rsc)/./components/footer.tsx (/Users/engineering_faliure/Desktop/10x_Swap/.next/server/app/page.js:66:1)
+    at eval (webpack-internal:///(rsc)/./app/page.tsx:7:76)
+    at <unknown> (rsc)/./app/page.tsx (/Users/engineering_faliure/Desktop/10x_Swap/.next/server/app/page.js:44:1) {
+  page: '/'
+}
+ GET / 500 in 1047ms
+ ⨯ TypeError: Cannot read properties of undefined (reading 'call')
+    at eval (webpack-internal:///(rsc)/./components/footer.tsx:9:122)
+    at <unknown> (rsc)/./components/footer.tsx (/Users/engineering_faliure/Desktop/10x_Swap/.next/server/app/page.js:66:1)
+    at eval (webpack-internal:///(rsc)/./app/page.tsx:7:76)
+    at <unknown> (rsc)/./app/page.tsx (/Users/engineering_faliure/Desktop/10x_Swap/.next/server/app/page.js:44:1)
+ ⨯ TypeError: Cannot read properties of undefined (reading 'call')
+    at eval (webpack-internal:///(rsc)/./components/footer.tsx:9:122)
+    at <unknown> (rsc)/./components/footer.tsx (/Users/engineering_faliure/Desktop/10x_Swap/.next/server/app/page.js:66:1)
+    at eval (webpack-internal:///(rsc)/./app/page.tsx:7:76)
+    at <unknown> (rsc)/./app/page.tsx (/Users/engineering_faliure/Desktop/10x_Swap/.next/server/app/page.js:44:1) {
+  page: '/'
+}
+ GET / 500 in 717ms
+ ⚠ ./app/wallet-demo/page.tsx
+Attempted import error: 'algosdk' is not exported from 'algosdk' (imported as 'algosdk').
+
+Import trace for requested module:
+./app/wallet-demo/page.tsx
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ ./app/wallet-demo/page.tsx
+Attempted import error: 'algosdk' is not exported from 'algosdk' (imported as 'algosdk').
+
+Import trace for requested module:
+./app/wallet-demo/page.tsx
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ ./app/wallet-demo/page.tsx
+Attempted import error: 'algosdk' is not exported from 'algosdk' (imported as 'algosdk').
+
+Import trace for requested module:
+./app/wallet-demo/page.tsx
+ ⚠ ./app/wallet-demo/page.tsx
+Attempted import error: 'algosdk' is not exported from 'algosdk' (imported as 'algosdk').
+
+Import trace for requested module:
+./app/wallet-demo/page.tsx
+ ⚠ ./app/wallet-demo/page.tsx
+Attempted import error: 'algosdk' is not exported from 'algosdk' (imported as 'algosdk').
+
+Import trace for requested module:
+./app/wallet-demo/page.tsx
+ ⨯ TypeError: Cannot read properties of undefined (reading 'call')
+    at __webpack_exec__ (.next/server/app/_not-found/page.js:897:39)
+    at <unknown> (.next/server/app/_not-found/page.js:898:1277)
+    at <unknown> (.next/server/app/_not-found/page.js:898:47)
+    at Object.<anonymous> (.next/server/app/_not-found/page.js:901:3)
+ ⨯ TypeError: Cannot read properties of undefined (reading 'call')
+    at __webpack_exec__ (.next/server/app/page.js:994:39)
+    at <unknown> (.next/server/app/page.js:995:1277)
+    at <unknown> (.next/server/app/page.js:995:47)
+    at Object.<anonymous> (.next/server/app/page.js:998:3) {
+  page: '/'
+}
+ GET / 500 in 1184ms
+ ✓ Compiled /_not-found in 10.6s (5716 modules)
+ ⨯ TypeError: Cannot read properties of undefined (reading 'call')
+    at __webpack_exec__ (.next/server/app/page.js:994:39)
+    at <unknown> (.next/server/app/page.js:995:1277)
+    at <unknown> (.next/server/app/page.js:995:47)
+    at Object.<anonymous> (.next/server/app/page.js:998:3) {
+  page: '/'
+}
+ GET / 500 in 458ms
+ ⨯ TypeError: Cannot read properties of undefined (reading 'call')
+    at __webpack_exec__ (.next/server/app/page.js:994:39)
+    at <unknown> (.next/server/app/page.js:995:1277)
+    at <unknown> (.next/server/app/page.js:995:47)
+    at Object.<anonymous> (.next/server/app/page.js:998:3) {
+  page: '/'
+}
+ GET / 500 in 301ms
+ ⨯ TypeError: Cannot read properties of undefined (reading 'call')
+    at __webpack_exec__ (.next/server/app/page.js:994:39)
+    at <unknown> (.next/server/app/page.js:995:1277)
+    at <unknown> (.next/server/app/page.js:995:47)
+    at Object.<anonymous> (.next/server/app/page.js:998:3) {
+  page: '/'
+}
+ GET / 500 in 383ms
+ GET /HOME 404 in 292ms
+ GET /Home 404 in 219ms
+ ✓ Compiled in 3.5s (5716 modules)
+ ⨯ TypeError: Cannot read properties of undefined (reading 'call')
+    at __webpack_exec__ (.next/server/app/page.js:994:39)
+    at <unknown> (.next/server/app/page.js:995:1277)
+    at <unknown> (.next/server/app/page.js:995:47)
+    at Object.<anonymous> (.next/server/app/page.js:998:3) {
+  page: '/'
+}
+ GET / 500 in 2266ms
+ ⨯ TypeError: Cannot read properties of undefined (reading 'call')
+    at __webpack_exec__ (.next/server/app/cryptocurrencies/page.js:1060:39)
+    at <unknown> (.next/server/app/cryptocurrencies/page.js:1061:1680)
+    at <unknown> (.next/server/app/cryptocurrencies/page.js:1061:47)
+    at Object.<anonymous> (.next/server/app/cryptocurrencies/page.js:1064:3) {
+  page: '/cryptocurrencies'
+}
+ GET /cryptocurrencies 500 in 400ms
+ ⨯ TypeError: Cannot read properties of undefined (reading 'call')
+    at __webpack_exec__ (.next/server/app/page.js:994:39)
+    at <unknown> (.next/server/app/page.js:995:1277)
+    at <unknown> (.next/server/app/page.js:995:47)
+    at Object.<anonymous> (.next/server/app/page.js:998:3) {
+  page: '/'
+}
+ GET / 500 in 297ms
+[?25h

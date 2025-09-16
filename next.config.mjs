@@ -27,6 +27,27 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
+  webpack: (config, { isServer }) => {
+    // Add fallbacks for optional dependencies in @txnlab/use-wallet
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      '@walletconnect/sign-client': false,
+      '@walletconnect/modal': false,
+      '@agoralabs-sh/avm-web-provider': false,
+    }
+
+    // Handle optional imports in @txnlab/use-wallet
+    config.externals = config.externals || []
+    if (isServer) {
+      config.externals.push({
+        '@walletconnect/sign-client': 'commonjs @walletconnect/sign-client',
+        '@walletconnect/modal': 'commonjs @walletconnect/modal',
+        '@agoralabs-sh/avm-web-provider': 'commonjs @agoralabs-sh/avm-web-provider',
+      })
+    }
+
+    return config
+  },
 }
 
 if (userConfig) {

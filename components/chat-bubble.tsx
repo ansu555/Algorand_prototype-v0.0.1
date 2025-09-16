@@ -2,7 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { MessageCircle, Send, Bot, X } from "lucide-react"
-import { useAccount, useChainId } from "wagmi"
+import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
 
 type Msg = { role: "user" | "assistant"; content: string }
 
@@ -19,8 +19,9 @@ export default function ChatBubble({ variant = "floating", align = "right" }: Ch
   const [threadId, setThreadId] = useState<string | undefined>(undefined)
   const [showRules, setShowRules] = useState(true)
   const endRef = useRef<HTMLDivElement | null>(null)
-  const { address } = useAccount()
-  const chainId = useChainId() || 43113
+  const { activeAccount } = useWalletConnection()
+  const address = activeAccount?.address
+  const chainId = 1 // Algorand mainnet/testnet identifier
 
   const scrollToEnd = useCallback(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), [])
   useEffect(() => { scrollToEnd() }, [messages, scrollToEnd])
@@ -53,31 +54,24 @@ export default function ChatBubble({ variant = "floating", align = "right" }: Ch
 
   const typing = loading
 
-  const chainLabel = chainId === 8453 ? 'Base' : chainId === 43114 ? 'Avalanche' : 'Avalanche Fuji'
-  const explorerBase = chainId === 8453 ? 'https://basescan.org' : (chainId === 43114 ? 'https://snowtrace.io' : 'https://testnet.snowtrace.io')
-  const nativeSymbol = (chainId === 43113 || chainId === 43114) ? 'AVAX' : 'ETH'
+  const chainLabel = 'Algorand Testnet'
+  const explorerBase = 'https://testnet.algoexplorer.io'
+  const nativeSymbol = 'ALGO'
 
   const renderContent = (text: string) => {
-    const re = /(0x[a-fA-F0-9]{64})|(0x[a-fA-F0-9]{40})/g
+    // Algorand addresses are 58 characters long and start with letters
+    const re = /([A-Z2-7]{58})/g
     const out: React.ReactNode[] = []
     let lastIndex = 0
     let m: RegExpExecArray | null
     while ((m = re.exec(text)) !== null) {
-      const [match, tx, addr] = m
+      const [match] = m
       if (m.index > lastIndex) out.push(text.slice(lastIndex, m.index))
-      if (tx) {
-        out.push(
-          <a key={`${m.index}-tx`} href={`${explorerBase}/tx/${tx}`} target="_blank" rel="noreferrer" className="text-red-600 underline underline-offset-2 dark:text-[#F3C623]">
-            {tx}
-          </a>
-        )
-      } else if (addr) {
-        out.push(
-          <a key={`${m.index}-addr`} href={`${explorerBase}/address/${addr}`} target="_blank" rel="noreferrer" className="text-red-500 underline underline-offset-2 dark:text-[#F3C623]">
-            {addr}
-          </a>
-        )
-      }
+      out.push(
+        <a key={`${m.index}-addr`} href={`${explorerBase}/address/${match}`} target="_blank" rel="noreferrer" className="text-red-500 underline underline-offset-2 dark:text-[#F3C623]">
+          {match}
+        </a>
+      )
       lastIndex = m.index + match.length
     }
     if (lastIndex < text.length) out.push(text.slice(lastIndex))
@@ -86,10 +80,10 @@ export default function ChatBubble({ variant = "floating", align = "right" }: Ch
 
   const presets: { label: string; prompt: string }[] = [
     { label: "My address", prompt: "what's my address?" },
-  { label: `${nativeSymbol} balance`, prompt: "get my balances" },
+    { label: `${nativeSymbol} balance`, prompt: "get my balances" },
     { label: "USDC balance", prompt: "get my USDC balance" },
     { label: "Swap", prompt: `swap 5 USDC to ${nativeSymbol}` },
-    { label: "Transfer", prompt: `transfer 0.01 ${nativeSymbol} to 0x0000000000000000000000000000000000000000` },
+    { label: "Transfer", prompt: `transfer 0.01 ${nativeSymbol} to AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ` },
   ]
 
   const usePreset = (p: string, autoSend = true) => {
@@ -184,32 +178,29 @@ export default function ChatBubble({ variant = "floating", align = "right" }: Ch
                       <div>
                         <div className="mb-1 font-medium text-slate-900 dark:text-slate-200">Supported actions</div>
                         <ul className="list-disc space-y-1 pl-5">
-                          <li>address — your smart account address</li>
-                          <li>balance — e.g. get my balances | get my USDC balance | balance 0x... (ERC-20)</li>
-                          <li>price — e.g. ETH/BTC/SOL or names like “solana”</li>
-                          <li>gas price — current gas on the active network</li>
-                          <li>
-                            swap — e.g. swap 5 USDC to {nativeSymbol}
-                            {chainId === 43113 ? ' (not available on Fuji in this app)' : ''}
-                          </li>
-                          <li>transfer — e.g. transfer 0.01 ETH to 0x... (valid 0x address required)</li>
+                          <li>address — your Algorand account address</li>
+                          <li>balance — e.g. get my balances | get my USDC balance | balance ASA_ID</li>
+                          <li>price — e.g. ALGO/BTC/SOL or names like "solana"</li>
+                          <li>gas price — current transaction fees on Algorand</li>
+                          <li>swap — e.g. swap 5 USDC to {nativeSymbol}</li>
+                          <li>transfer — e.g. transfer 0.01 ALGO to AAAAA... (valid Algorand address required)</li>
                         </ul>
                       </div>
                       <div>
                         <div className="mb-1 font-medium text-slate-900 dark:text-slate-200">Tips</div>
                         <ul className="list-disc space-y-1 pl-5">
-                          <li>Prefer token symbols (ETH, USDC, WETH, DAI).</li>
+                          <li>Prefer token symbols (ALGO, USDC, USDT, DAI).</li>
                           <li>Keep queries short and specific.</li>
-                          <li>For unknown tokens, paste the ERC-20 contract address.</li>
+                          <li>For unknown tokens, use the ASA ID number.</li>
                         </ul>
                       </div>
                       <div>
                         <div className="mb-1 font-medium text-slate-900 dark:text-slate-200">Important</div>
                         <ul className="list-disc space-y-1 pl-5">
-                          <li>Transfers require a valid 0x address; symbols are 2–6 letters.</li>
+                          <li>Transfers require a valid Algorand address (58 characters).</li>
                           <li>Runs on {chainLabel}.</li>
                           <li>Balances are shown to 4 decimals; small USD values may round to $0.01.</li>
-                          <li>Powered by 0xGasless actions (GetAddress, GetBalance, SendTransaction, SmartSwap, GetTokenDetails).</li>
+                          <li>Powered by Algorand blockchain integration.</li>
                           <li>Never share secrets or private keys.</li>
                         </ul>
                       </div>
@@ -223,7 +214,7 @@ export default function ChatBubble({ variant = "floating", align = "right" }: Ch
             <div className="flex-1 space-y-2 overflow-y-auto px-3 py-3">
               {messages.length === 0 && (
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                  Ask things like: "what's my address?", "check my USDC balance", "price of solana", "gas price", "swap 5 USDC to ETH".
+                  Ask things like: "what's my address?", "check my USDC balance", "price of solana", "gas price", "swap 5 USDC to ALGO".
                 </div>
               )}
               {messages.map((m, i) => (

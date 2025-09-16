@@ -1,22 +1,24 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import React, { createContext, useContext, ReactNode } from 'react'
 import { 
-  WalletManager, 
   WalletId, 
   type WalletAccount, 
   type WalletState 
 } from '@txnlab/use-wallet'
-import { walletManager } from '@/lib/txnlab-wallet-config'
+import { 
+  useWallet, 
+  useWalletManager,
+  WalletProvider 
+} from '@txnlab/use-wallet-react'
+import { WalletManager } from '@txnlab/use-wallet'
+import { walletManagerConfig } from '@/lib/txnlab-wallet-config'
 
 interface TxnLabWalletContextType {
-  // Wallet Manager instance
-  manager: WalletManager
-  
   // Connection state
   isConnected: boolean
   activeAccount: WalletAccount | null
-  activeWallet: WalletId | null
+  activeWallet: any // Wallet object from useWallet hook
   accounts: WalletAccount[]
   
   // Connection methods
@@ -27,8 +29,13 @@ interface TxnLabWalletContextType {
   // Transaction signing
   signTransactions: (txns: any[], indexesToSign?: number[]) => Promise<(Uint8Array | null)[]>
   
-  // State
-  walletState: WalletState
+  // Additional properties from useWallet
+  wallets: any[]
+  isReady: boolean
+  algodClient: any
+  activeWalletAccounts: WalletAccount[] | null
+  activeWalletAddresses: string[] | null
+  activeAddress: string | null
 }
 
 const TxnLabWalletContext = createContext<TxnLabWalletContextType | undefined>(undefined)
@@ -37,95 +44,76 @@ interface TxnLabWalletProviderProps {
   children: ReactNode
 }
 
-export function TxnLabWalletProvider({ children }: TxnLabWalletProviderProps) {
-  const [isConnected, setIsConnected] = useState(false)
-  const [activeAccount, setActiveAccount] = useState<WalletAccount | null>(null)
-  const [activeWallet, setActiveWallet] = useState<WalletId | null>(null)
-  const [accounts, setAccounts] = useState<WalletAccount[]>([])
-  const [walletState, setWalletState] = useState<WalletState>({} as WalletState)
+// Internal provider that uses the React hooks
+function TxnLabWalletProviderInternal({ children }: TxnLabWalletProviderProps) {
+  const { 
+    wallets,
+    isReady,
+    algodClient,
+    activeWallet,
+    activeWalletAccounts,
+    activeWalletAddresses,
+    activeAccount,
+    activeAddress,
+    signTransactions
+  } = useWallet()
 
-  useEffect(() => {
-    // Subscribe to wallet manager state changes
-    const unsubscribe = walletManager.subscribe((state: WalletState) => {
-      setWalletState(state)
-      setIsConnected(!!state.activeWallet)
-      setActiveAccount(state.activeAccount || null)
-      setActiveWallet(state.activeWallet || null)
-      setAccounts(state.accounts || [])
-    })
-
-    // Initialize with current state
-    const currentState = walletManager.store.state
-    setWalletState(currentState)
-    setIsConnected(!!currentState.activeWallet)
-    setActiveAccount(currentState.activeAccount || null)
-    setActiveWallet(currentState.activeWallet || null)
-    setAccounts(currentState.accounts || [])
-
-    return unsubscribe
-  }, [])
-
+  // Helper functions to maintain compatibility
   const connect = async (walletId: WalletId): Promise<WalletAccount[]> => {
-    try {
-      const accounts = await walletManager.connect(walletId)
-      return accounts
-    } catch (error) {
-      console.error('Failed to connect wallet:', error)
-      throw error
+    const wallet = wallets.find(w => w.id === walletId)
+    if (!wallet) {
+      throw new Error(`Wallet ${walletId} not found`)
     }
+    return await wallet.connect()
   }
 
   const disconnect = async (): Promise<void> => {
-    try {
-      await walletManager.disconnect()
-    } catch (error) {
-      console.error('Failed to disconnect wallet:', error)
-      throw error
+    if (activeWallet) {
+      await activeWallet.disconnect()
     }
   }
 
   const setActiveAccountHandler = (account: WalletAccount) => {
-    walletManager.setActiveAccount(account)
-  }
-
-  const signTransactions = async (
-    txns: any[], 
-    indexesToSign?: number[]
-  ): Promise<(Uint8Array | null)[]> => {
-    try {
-      if (!activeWallet) {
-        throw new Error('No wallet connected')
-      }
-      
-      const wallet = walletManager.getWallet(activeWallet)
-      if (!wallet) {
-        throw new Error('Active wallet not found')
-      }
-
-      return await wallet.signTransactions(txns, indexesToSign)
-    } catch (error) {
-      console.error('Failed to sign transactions:', error)
-      throw error
+    if (activeWallet) {
+      activeWallet.setActiveAccount(account.address)
     }
   }
 
   const contextValue: TxnLabWalletContextType = {
-    manager: walletManager,
-    isConnected,
+    isConnected: !!activeWallet?.isConnected,
     activeAccount,
     activeWallet,
-    accounts,
+    accounts: activeWalletAccounts || [],
     connect,
     disconnect,
     setActiveAccount: setActiveAccountHandler,
     signTransactions,
-    walletState
+    wallets,
+    isReady,
+    algodClient,
+    activeWalletAccounts,
+    activeWalletAddresses,
+    activeAddress
   }
 
   return (
     <TxnLabWalletContext.Provider value={contextValue}>
       {children}
     </TxnLabWalletContext.Provider>
+  )
+}
+
+// Main provider that wraps with TxnLab's WalletProvider
+export function TxnLabWalletProvider({ children }: TxnLabWalletProviderProps) {
+  // Create wallet manager instance
+  const walletManager = new WalletManager(walletManagerConfig)
+  
+  return (
+    <WalletProvider manager={walletManager}>
+      <TxnLabWalletProviderInternal>
+        {children}
+      </TxnLabWalletProviderInternal>
+    </WalletProvider>
   )
 }
 

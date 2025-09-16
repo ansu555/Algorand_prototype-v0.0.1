@@ -1,5 +1,3 @@
-import type { Address } from 'viem'
-
 // Token registry for Algorand testnet only
 
 export type TokenInfo = {

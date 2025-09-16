@@ -15,7 +15,9 @@ export const walletManagerConfig: WalletManagerConfig = {
     WalletId.DEFLY,
     WalletId.EXODUS,
     WalletId.LUTE,
-    ...(process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ? [WalletId.WALLETCONNECT] : [])
+    // WalletId.DAFFI,
+    // Temporarily disable WalletConnect to avoid dependency issues
+    // ...(process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ? [WalletId.WALLETCONNECT] : [])
   ],
   networks: {
     [NetworkId.TESTNET]: {
@@ -47,8 +49,8 @@ export const walletConnectConfig = {
   }
 }
 
-// Initialize wallet manager
-export const walletManager = new WalletManager(walletManagerConfig)
+// Export wallet manager config for React provider
+// Note: We don't initialize the WalletManager here anymore since we're using the React provider
 
 // Helper function to get supported wallets info
 export const getSupportedWallets = () => [
@@ -84,6 +86,14 @@ export const getSupportedWallets = () => [
     mobile: false,
     desktop: true
   },
+  // {
+  //   id: WalletId.DAFFI,
+  //   name: 'Daffi Wallet',
+  //   description: 'Mobile-first Algorand wallet',
+  //   icon: '🌊',
+  //   mobile: true,
+  //   desktop: false
+  // },
   ...(process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ? [{
     id: WalletId.WALLETCONNECT,
     name: 'WalletConnect',

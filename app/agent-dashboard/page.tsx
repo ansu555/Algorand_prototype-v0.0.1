@@ -12,9 +12,11 @@ import { forceRunPoller, useAgentData } from "@/features/agent/hooks/useAgentDat
 import { deleteRule as apiDeleteRule } from "@/features/agent/api/client"
 // resolveTokenByCoinrankingId removed (returns null); using symbol mapping only
 import { ChevronDown, ChevronUp } from "lucide-react"
+import { useWalletConnection } from '@/components/providers/txnlab-wallet-provider'
 
 export default function AgentDashboardPage() {
-  const { address } = useAccount()
+  const { activeAccount } = useWalletConnection()
+  const address = activeAccount?.address
   const { toast } = useToast()
   const { rules, logs, loading, refresh, setRuleStatus, lastRunByRule, seenLogIds, setSeenLogIds } = useAgentData(address)
   // Cache resolved coin symbols for target IDs

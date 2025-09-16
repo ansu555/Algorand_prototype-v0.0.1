@@ -35,7 +35,7 @@ import RuleBuilderModal, { type CoinOption } from "@/components/rule-builder-mod
 import { toast } from "@/hooks/use-toast"
 import { describeRule } from "@/lib/shared/rules"
 import { createRule } from "@/features/agent/api/client"
-import { useAccount } from "wagmi"
+import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
 
 // Define time ranges for chart
 const TIME_RANGES = {
@@ -105,7 +105,8 @@ export function CryptoDetail({ id }: { id: string }) {
   const [timeRange, setTimeRange] = useState<"1D" | "7D" | "1M" | "3M" | "1Y" | "ALL">("7D")
   const [inWatchlist, setInWatchlist] = useState(false)
   const [rbOpen, setRbOpen] = useState(false)
-  const { address } = useAccount()
+  const { activeAccount } = useWalletConnection()
+  const address = activeAccount?.address
 
   // Fetch crypto details
   const { 

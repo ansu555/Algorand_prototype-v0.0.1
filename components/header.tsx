@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import RuleBuilderModal from "@/components/rule-builder-modal";
 import { toast } from "@/hooks/use-toast";
 import { ModeToggle } from "@/components/mode-toggle";
-// Removed ConnectKit and wagmi imports - using Algorand wallets instead
+import AlgorandWalletConnect from "@/components/algorand-wallet-connect";
+import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider";
 import { cn } from "@/lib/utils";
 import { Menu, X } from "lucide-react";
 import { useViewport } from "@/hooks/use-viewport";
@@ -19,10 +20,11 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [rules, setRules] = useState<any[]>([]);
   const { isMobile } = useViewport();
+  const { activeAccount } = useWalletConnection();
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const modeToggleRef = useRef<HTMLDivElement>(null);
-  // Using placeholder address for now - will be replaced with Algorand wallet
-  const address = "0x0000000000000000000000000000000000000000";
+  // Use Algorand wallet address or fallback to placeholder
+  const address = activeAccount?.address || "0x0000000000000000000000000000000000000000";
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -168,9 +170,7 @@ export function Header() {
               toast({ title: "Rule saved", description: describeRule(rule) })
             }}
           />
-          <Button variant="outline" size="default">
-            Connect Wallet
-          </Button>
+          <AlgorandWalletConnect variant="dropdown" />
           <ModeToggle />
         </div>
 
@@ -229,9 +229,9 @@ export function Header() {
                   toast({ title: "Rule saved", description: describeRule(rule) })
                 }}
               />
-              <Button variant="outline" size="default" className="w-full">
-                Connect Wallet
-              </Button>
+              <div className="w-full">
+                <AlgorandWalletConnect variant="button" className="w-full" />
+              </div>
               <div className="flex justify-center">
                 <div ref={modeToggleRef} data-theme-toggle>
                   <ModeToggle />
