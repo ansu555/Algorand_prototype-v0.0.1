@@ -43,8 +43,36 @@ interface TxnLabWalletProviderProps {
   children: ReactNode
 }
 
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined'
+
 // Internal provider that uses the React hooks
 function TxnLabWalletProviderInternal({ children }: TxnLabWalletProviderProps) {
+  // Return a minimal provider if not in browser
+  if (!isBrowser) {
+    const emptyContext: TxnLabWalletContextType = {
+      isConnected: false,
+      activeAccount: null,
+      activeWallet: null,
+      accounts: [],
+      connect: async () => [],
+      disconnect: async () => {},
+      setActiveAccount: () => {},
+      signTransactions: async () => [],
+      wallets: [],
+      isReady: false,
+      algodClient: null,
+      activeWalletAccounts: null,
+      activeWalletAddresses: null,
+      activeAddress: null
+    }
+    return (
+      <TxnLabWalletContext.Provider value={emptyContext}>
+        {children}
+      </TxnLabWalletContext.Provider>
+    )
+  }
+
   const { 
     wallets,
     isReady,

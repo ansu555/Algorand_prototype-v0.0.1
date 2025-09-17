@@ -1,7 +1,17 @@
 'use client'
 
-import { AlgorandWalletConnect } from '@/components/algorand-wallet-connect'
-import { WalletInfo } from '@/components/wallet-info'
+import dynamic from 'next/dynamic'
+
+// Dynamically import wallet components with ssr disabled
+const AlgorandWalletConnect = dynamic(
+  () => import('@/components/algorand-wallet-connect').then(mod => mod.AlgorandWalletConnect),
+  { ssr: false }
+)
+
+const WalletInfo = dynamic(
+  () => import('@/components/wallet-info').then(mod => mod.WalletInfo),
+  { ssr: false }
+)
 
 export default function WalletPage() {
   return (
