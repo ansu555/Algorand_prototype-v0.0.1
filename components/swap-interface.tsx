@@ -5,21 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { RouteDisplay, type QuoteResponse, type RouteQuote } from './route-display'
-import { resolveTokenBySymbol } from '@/lib/tokens'
-import { getAmountsOut } from '@/lib/amm/routerClient'
-import { getAmmAddresses } from '@/lib/amm/config'
 
-import { FUJI_SYMBOL_TO_TOKEN } from '@/lib/tokens'
+// Algorand-focused token list (testnet): ALGO and USDC
 
-// Build supported tokens list dynamically from registry
-const SUPPORTED_TOKENS = React.useMemo(() => {
-  const base = ['WAVAX', 'USDC', 'WETH.e', 'USDT.e']
-  const custom = Object.keys(FUJI_SYMBOL_TO_TOKEN).filter(s => ['TKA','TKB','TKC'].includes(s))
-  return [...base, ...custom]
-}, [])
+const SUPPORTED_TOKENS = ['ALGO', 'USDC']
 
 export const SwapInterface: React.FC = () => {
-  const [tokenIn, setTokenIn] = useState('WAVAX')
+  const [tokenIn, setTokenIn] = useState('ALGO')
   const [tokenOut, setTokenOut] = useState('USDC')
   const [amount, setAmount] = useState('1')
   const [slippage, setSlippage] = useState(100) // 1%
@@ -35,43 +27,7 @@ export const SwapInterface: React.FC = () => {
     setIsLoading(true)
     setError(null)
     try {
-      // Try client-side on-chain direct quote first for faster feedback
-      const tIn = resolveTokenBySymbol(tokenIn)
-      const tOut = resolveTokenBySymbol(tokenOut)
-      const routerAddr = getAmmAddresses().router
-      if (tIn && tOut && tIn.address !== 'AVAX' && tOut.address !== 'AVAX' && routerAddr) {
-        try {
-          const onchain = await getAmountsOut(amount, [tIn.address as string, tOut.address as string])
-          const route = {
-            routeId: 'ONCHAIN:direct',
-            tokenSymbols: [tIn.symbol, tOut.symbol],
-            poolIds: [],
-            amountOut: onchain.amounts[onchain.amounts.length - 1].toString(),
-            minOut: onchain.amounts[onchain.amounts.length - 1].toString(),
-            priceImpactBps: null,
-            estimatedGas: 100000,
-            kind: 'DIRECT' as const
-          }
-          const payload = {
-            tokenIn,
-            tokenOut,
-            amountIn: amount,
-            slippageBps: slippage,
-            routes: [route],
-            bestRoute: route,
-            timestamp: Date.now()
-          }
-          setQuote(payload as unknown as QuoteResponse)
-          setSelectedRouteId(undefined)
-          setIsLoading(false)
-          return
-        } catch (e) {
-          // fallthrough to server quote
-          console.debug('On-chain quote failed, falling back to API', e)
-        }
-      }
-
-      // Fallback: server-side quote (may combine local & on-chain logic)
+      // Server-side quote (Algorand)
       const response = await fetch('/api/swap/quote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -164,14 +120,15 @@ export const SwapInterface: React.FC = () => {
     <div className="max-w-2xl mx-auto space-y-6 p-6">
       <Card>
         <CardHeader>
-          <CardTitle>Custom Swap - Avalanche Fuji</CardTitle>
+          <CardTitle>Custom Swap - Algorand Testnet</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Token Selection */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">From</label>
+              <label htmlFor="token-from" className="block text-sm font-medium mb-2">From</label>
               <select 
+                id="token-from"
                 value={tokenIn} 
                 onChange={(e) => {
                   setTokenIn(e.target.value)
@@ -188,8 +145,9 @@ export const SwapInterface: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">To</label>
+              <label htmlFor="token-to" className="block text-sm font-medium mb-2">To</label>
               <select 
+                id="token-to"
                 value={tokenOut} 
                 onChange={(e) => {
                   setTokenOut(e.target.value)

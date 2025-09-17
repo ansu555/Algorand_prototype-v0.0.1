@@ -17,7 +17,7 @@ interface ChatRequest {
 
 // Enhanced NLP Intent Recognition
 interface Intent {
-  type: 'address' | 'balance' | 'portfolio' | 'price' | 'swap' | 'transfer' | 'help' | 'unknown'
+  type: 'address' | 'balance' | 'portfolio' | 'price' | 'swap' | 'transfer' | 'help' | 'top' | 'unknown'
   confidence: number
   entities: {
     amount?: number
@@ -25,6 +25,7 @@ interface Intent {
     toAsset?: string
     targetAsset?: string
     recipient?: string
+    count?: number
   }
 }
 
@@ -61,6 +62,13 @@ function extractIntent(userQuery: string): Intent {
     /(?:price|value|cost).*(?:of|for).*(?:algo|usdc|bitcoin|ethereum)/,
     /(?:how much).*(?:is|does).*(?:algo|usdc|bitcoin|ethereum).*(?:cost|worth)/
   ]
+
+  // Top coins patterns
+  const topPatterns = [
+    /top\s+(\d+)\s+coins/,
+    /top\s+coins/,
+    /best\s+(\d+)?\s*coins/,
+  ]
   
   // Swap-related patterns
   const swapPatterns = [
@@ -70,11 +78,11 @@ function extractIntent(userQuery: string): Intent {
     /(?:convert|exchange).*(?:\d+(?:\.\d+)?).*(?:algo|usdc)/
   ]
   
-  // Transfer-related patterns
+  // Transfer-related patterns (include past tense and swap phrasing)
   const transferPatterns = [
-    /(?:send|transfer|give).*(?:\d+(?:\.\d+)?).*(?:algo|usdc).*(?:to|to the address)\s+([A-Z0-9]{58})/,
-    /(?:i|i want|i need).*(?:to|to).*(?:send|transfer|give).*(?:\d+(?:\.\d+)?).*(?:algo|usdc).*(?:to|to the address)\s+([A-Z0-9]{58})/,
-    /(?:can you|please).*(?:send|transfer|give).*(?:\d+(?:\.\d+)?).*(?:algo|usdc).*(?:to|to the address)\s+([A-Z0-9]{58})/
+    /(?:send|sent|transfer|give|gave|swap).*?(?:\d+(?:\.\d+)?).*?(?:algo|usdc).*?(?:to|to the address)\s+([A-Z0-9]{58})/,
+    /(?:i|i want|i need|i'd like).*(?:to|to).*(?:send|transfer|give|swap).*?(?:\d+(?:\.\d+)?).*?(?:algo|usdc).*?(?:to|to the address)\s+([A-Z0-9]{58})/,
+    /(?:can you|please).*(?:send|transfer|give|swap).*?(?:\d+(?:\.\d+)?).*?(?:algo|usdc).*?(?:to|to the address)\s+([A-Z0-9]{58})/
   ]
   
   // Help-related patterns
@@ -89,9 +97,9 @@ function extractIntent(userQuery: string): Intent {
   if (transferPatterns.some(pattern => pattern.test(query))) {
     // Extract transfer details with improved regex for all patterns
     const patterns = [
-      /(?:send|transfer|give)\s+(\d+(?:\.\d+)?)\s+(\w+)\s+(?:to|to the address)\s+([A-Z0-9]{58})/,
-      /(?:i|i want|i need).*(?:to|to).*(?:send|transfer|give)\s+(\d+(?:\.\d+)?)\s+(\w+)\s+(?:to|to the address)\s+([A-Z0-9]{58})/,
-      /(?:can you|please).*(?:send|transfer|give)\s+(\d+(?:\.\d+)?)\s+(\w+)\s+(?:to|to the address)\s+([A-Z0-9]{58})/
+      /(?:send|sent|transfer|give|gave|swap)\s+(\d+(?:\.\d+)?)\s+(\w+)\s+(?:to|to the address)\s+([A-Z0-9]{58})/,
+      /(?:i|i want|i need|i'd like).*(?:to|to).*(?:send|transfer|give|swap)\s+(\d+(?:\.\d+)?)\s+(\w+)\s+(?:to|to the address)\s+([A-Z0-9]{58})/,
+      /(?:can you|please).*(?:send|transfer|give|swap)\s+(\d+(?:\.\d+)?)\s+(\w+)\s+(?:to|to the address)\s+([A-Z0-9]{58})/
     ]
     
     for (const pattern of patterns) {
@@ -109,7 +117,7 @@ function extractIntent(userQuery: string): Intent {
     }
     
     // Fallback for partial matches
-    const partialMatch = query.match(/(?:send|transfer|give)\s+(\d+(?:\.\d+)?)\s+(\w+)/)
+    const partialMatch = query.match(/(?:send|sent|transfer|give|gave|swap)\s+(\d+(?:\.\d+)?)\s+(\w+)/)
     if (partialMatch) {
       const amount = parseFloat(partialMatch[1])
       const asset = partialMatch[2].toUpperCase()
@@ -123,6 +131,15 @@ function extractIntent(userQuery: string): Intent {
     return { type: 'transfer', confidence: 0.7, entities: {} }
   }
   
+  // Top coins
+  for (const p of topPatterns) {
+    const m = query.match(p)
+    if (m) {
+      const count = m[1] ? Math.max(1, Math.min(50, parseInt(m[1], 10))) : 5
+      return { type: 'top', confidence: 0.9, entities: { count } }
+    }
+  }
+
   // Swap patterns
   if (swapPatterns.some(pattern => pattern.test(query))) {
     // Extract swap details
@@ -221,6 +238,18 @@ export async function POST(req: Request) {
       console.log('Intent detected:', intent)
 
       switch (intent.type) {
+        case 'top': {
+          const count = intent.entities.count || 5
+          const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${count}&page=1&sparkline=false&price_change_percentage=24h`
+          const res = await fetch(url)
+          if (!res.ok) {
+            throw new Error(`Failed to fetch top coins: ${res.status}`)
+          }
+          const data = await res.json() as Array<{ name: string; symbol: string; current_price: number; price_change_percentage_24h?: number }>
+          const lines = data.map((c, i) => `${i + 1}. ${c.name} (${c.symbol.toUpperCase()}): $${c.current_price.toLocaleString(undefined, { maximumFractionDigits: 4 })}${typeof c.price_change_percentage_24h === 'number' ? ` (${c.price_change_percentage_24h.toFixed(2)}% 24h)` : ''}`)
+          response = `Top ${count} coins by market cap:\n` + lines.join('\n')
+          break
+        }
         case 'address': {
           const address = await agent.getAddress()
           response = `Your Algorand address is: \`${address}\``

@@ -28,7 +28,7 @@ export const ALGORAND_ASSETS = {
   },
   testnet: {
     ALGO: { id: 0, symbol: 'ALGO', decimals: 6, name: 'Algorand' },
-    USDC: { id: 10458941, symbol: 'USDC', decimals: 6, name: 'USD Coin (Test)' }
+    USDC: { id: 10458941, symbol: 'USDC', decimals: 6, name: 'USDC (Testnet)' }
   }
 }
 
@@ -112,13 +112,20 @@ export async function buildAlgorandAgent() {
     }): Promise<{ txId: string; details: any }> {
       try {
         const { to, amount, assetId, note } = opts
+        if (!algosdk.isValidAddress(to)) {
+          throw new Error('Invalid recipient address')
+        }
+        const numericAmount = parseFloat(amount)
+        if (!(numericAmount > 0)) {
+          throw new Error('Amount must be greater than 0')
+        }
         const suggestedParams = await algodClient.getTransactionParams().do()
         
         let txn: algosdk.Transaction
         
         if (!assetId || assetId === 0) {
           // ALGO transfer
-          const amountMicroAlgos = Math.round(parseFloat(amount) * 1000000)
+          const amountMicroAlgos = Math.round(numericAmount * 1000000)
           txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
             sender: account.addr,
             receiver: to,
@@ -130,8 +137,23 @@ export async function buildAlgorandAgent() {
           // ASA transfer
           const assetInfo = Object.values(ALGORAND_ASSETS[network]).find(a => a.id === assetId)
           if (!assetInfo) throw new Error(`Unknown asset ID: ${assetId}`)
-          
-          const amountUnits = Math.round(parseFloat(amount) * Math.pow(10, assetInfo.decimals))
+          // Ensure sender is opted-in to ASA
+          const acctInfo = await algodClient.accountInformation(account.addr).do()
+          const hasOptIn = (acctInfo.assets || []).some((a: any) => a['asset-id'] === assetId)
+          if (!hasOptIn) {
+            const optInTxn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
+              sender: account.addr,
+              receiver: account.addr,
+              amount: 0,
+              assetIndex: assetId,
+              suggestedParams
+            })
+            const signedOptIn = optInTxn.signTxn(account.sk)
+            await algodClient.sendRawTransaction(signedOptIn).do()
+            await algosdk.waitForConfirmation(algodClient, optInTxn.txID().toString(), 4)
+          }
+
+          const amountUnits = Math.round(numericAmount * Math.pow(10, assetInfo.decimals))
           txn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
             sender: account.addr,
             receiver: to,
@@ -146,7 +168,10 @@ export async function buildAlgorandAgent() {
         const signedTxn = txn.signTxn(account.sk)
         const response = await algodClient.sendRawTransaction(signedTxn).do()
         const txId = response.txid
-        
+        // Wait for confirmation
+        const confirmed = await algosdk.waitForConfirmation(algodClient, txId, 6)
+        const confirmedRound = (confirmed as any)['confirmed-round'] || (confirmed as any).confirmedRound
+
         return {
           txId,
           details: {
@@ -155,7 +180,11 @@ export async function buildAlgorandAgent() {
             amount,
             assetId,
             note,
-            network
+            network,
+            confirmedRound,
+            explorerUrl: network === 'mainnet'
+              ? `https://algoexplorer.io/tx/${txId}`
+              : `https://testnet.algoexplorer.io/tx/${txId}`
           }
         }
       } catch (e: any) {

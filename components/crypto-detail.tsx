@@ -74,7 +74,7 @@ interface ChartContainerProps {
 // Chart container with theme styling
 function ChartContainer({ children, config }: ChartContainerProps) {
   return (
-    <div className="w-full h-full" style={{ '--chart-1': '221 83% 53%' } as React.CSSProperties}>
+    <div className="w-full h-full chart-container">
       {children}
     </div>
   );

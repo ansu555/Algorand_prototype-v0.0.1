@@ -218,9 +218,32 @@ export function RuleBuilderModal(props: RuleBuilderModalProps) {
   }, [apiCoinsData])
 
   const coinOptions: CoinOption[] = useMemo(() => {
-    if (availableCoinsProp && availableCoinsProp.length) return availableCoinsProp
-    if (apiCoinOptions.length) return apiCoinOptions
-    return defaultCoinOptions
+    // Ensure Algorand testnet coins (ALGO, USDC) are always available
+    const algorandDefaults: CoinOption[] = [
+      { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
+      { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
+    ]
+
+    const base = (availableCoinsProp && availableCoinsProp.length)
+      ? availableCoinsProp
+      : (apiCoinOptions.length ? apiCoinOptions : defaultCoinOptions)
+
+    // Merge with de-duplication by id
+    const map = new Map<string, CoinOption>()
+    ;[...algorandDefaults, ...base].forEach((c) => {
+      if (!map.has(c.id)) map.set(c.id, c)
+    })
+    const merged = Array.from(map.values())
+    // Sort to pin Algorand coins at the top of the list
+    const priority = new Set(['ALGO', 'USDC'])
+    merged.sort((a, b) => {
+      const aP = priority.has(a.id) ? 0 : 1
+      const bP = priority.has(b.id) ? 0 : 1
+      if (aP !== bP) return aP - bP
+      // then by symbol
+      return (a.symbol || '').localeCompare(b.symbol || '')
+    })
+    return merged
   }, [availableCoinsProp, apiCoinOptions])
 
   const commitDropPercent = () => {

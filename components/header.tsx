@@ -162,6 +162,10 @@ export function Header() {
                 <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary/80 dark:from-[#F3C623] dark:to-[#F3C623]/80 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
               </Button>
             }
+            availableCoins={[
+              { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
+              { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
+            ]}
             onPreview={(rule) => {
               toast({ title: "Preview", description: describeRule(rule) })
             }}
@@ -221,6 +225,10 @@ export function Header() {
                     <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary/80 dark:from-[#F3C623] dark:to-[#F3C623]/80 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
                   </Button>
                 }
+                availableCoins={[
+                  { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
+                  { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
+                ]}
                 onPreview={(rule) => {
                   toast({ title: "Preview", description: describeRule(rule) })
                 }}
