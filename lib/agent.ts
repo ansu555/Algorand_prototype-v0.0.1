@@ -1,10 +1,10 @@
 import { buildAlgorandAgent } from './algorand'
 
-export type Agent = Awaited<ReturnType<typeof buildAlgorandAgent>>
+export type AlgorandAgent = Awaited<ReturnType<typeof buildAlgorandAgent>>
 
-let agentInstance: Agent | null = null
+let agentInstance: AlgorandAgent | null = null
 
-export async function getAgent(): Promise<Agent> {
+export async function getAgent(): Promise<AlgorandAgent> {
   if (!agentInstance) {
     try {
       agentInstance = await buildAlgorandAgent()
@@ -18,6 +18,3 @@ export async function getAgent(): Promise<Agent> {
 export async function resetAgent(): Promise<void> {
   agentInstance = null
 }
-
-// Export the agent type for use in other files
-export type { Agent }
