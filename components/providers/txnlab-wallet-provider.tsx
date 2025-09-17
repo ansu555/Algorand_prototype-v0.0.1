@@ -8,7 +8,6 @@ import {
 } from '@txnlab/use-wallet'
 import { 
   useWallet, 
-  useWalletManager,
   WalletProvider 
 } from '@txnlab/use-wallet-react'
 import { WalletManager } from '@txnlab/use-wallet'
