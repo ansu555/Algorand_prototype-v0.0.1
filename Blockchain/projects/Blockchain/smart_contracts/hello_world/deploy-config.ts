@@ -8,7 +8,7 @@ export async function deploy() {
   const algorand = AlgorandClient.fromEnvironment()
   const deployer = await algorand.account.fromEnvironment('DEPLOYER')
 
-  const factory = algorand.client.getTypedAppFactory(HelloWorldFactory, {
+  const factory: any = await algorand.client.getTypedAppFactory(HelloWorldFactory, {
     defaultSender: deployer.addr,
   })
 
@@ -23,7 +23,7 @@ export async function deploy() {
     })
   }
 
-  const method = 'hello'  
+  const method = 'hello'
   const response = await appClient.send.hello({
     args: { name: 'world' },
   })

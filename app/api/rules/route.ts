@@ -64,7 +64,9 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const ownerRaw = searchParams.get('owner')
     const owner = ownerRaw ? ownerRaw.toLowerCase() : undefined
+    console.debug('[GET /api/rules] Fetching rules for owner:', owner)
     const rules = await dbGetRules(owner || undefined)
+    console.debug('[GET /api/rules] Found rules:', { count: rules.length })
     return NextResponse.json({ rules })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Server error'

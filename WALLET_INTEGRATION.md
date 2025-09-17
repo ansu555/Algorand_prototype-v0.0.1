@@ -260,3 +260,5 @@ When adding new wallet providers:
 ## 📄 License
 
 This wallet integration is part of the 10xSwap project and follows the same license terms.
+
+

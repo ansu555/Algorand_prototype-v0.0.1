@@ -1,16 +1,23 @@
-import 'server-only'
-import { buildAlgorandAgent, type AlgorandAgent } from './algorand'
+import { buildAlgorandAgent } from './algorand'
 
-// Cache for Algorand agent instance
-let algorandAgentInstance: AlgorandAgent | null = null
+export type Agent = Awaited<ReturnType<typeof buildAlgorandAgent>>
 
-// Only support Algorand testnet
-export async function getAgent(): Promise<AlgorandAgent> {
-  if (!algorandAgentInstance) {
-    algorandAgentInstance = await buildAlgorandAgent()
+let agentInstance: Agent | null = null
+
+export async function getAgent(): Promise<Agent> {
+  if (!agentInstance) {
+    try {
+      agentInstance = await buildAlgorandAgent()
+    } catch (error: any) {
+      throw new Error(`Failed to initialize Algorand agent: ${error.message}`)
+    }
   }
-  return algorandAgentInstance
+  return agentInstance
 }
 
-// Export for backward compatibility
-export const Agent = getAgent
+export async function resetAgent(): Promise<void> {
+  agentInstance = null
+}
+
+// Export the agent type for use in other files
+export type { Agent }

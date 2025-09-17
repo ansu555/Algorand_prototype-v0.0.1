@@ -360,3 +360,5 @@ export function AlgorandWalletConnect({ variant = 'button', className = '' }: Wa
 }
 
 export default AlgorandWalletConnect
+
+

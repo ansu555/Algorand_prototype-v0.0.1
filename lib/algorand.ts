@@ -74,7 +74,7 @@ export async function buildAlgorandAgent() {
     
     // Helper functions
     async function getAddress(): Promise<string> {
-      return account.addr
+      return account.addr.toString()
     }
     
     async function getBalance(assetId?: number): Promise<string> {
@@ -90,11 +90,15 @@ export async function buildAlgorandAgent() {
         const asset = accountInfo.assets?.find((a: any) => a['asset-id'] === assetId)
         if (!asset) return '0'
         
-        const assetInfo = ALGORAND_ASSETS[network][Object.keys(ALGORAND_ASSETS[network]).find(key => 
-          ALGORAND_ASSETS[network][key as keyof typeof ALGORAND_ASSETS[network]].id === assetId
-        ) as keyof typeof ALGORAND_ASSETS[network]]
+        const networkAssets = ALGORAND_ASSETS[network]
+        const assetKey = Object.keys(networkAssets).find(key => 
+          networkAssets[key as keyof typeof networkAssets].id === assetId
+        )
         
-        return (asset.amount / Math.pow(10, assetInfo?.decimals || 6)).toString()
+        if (!assetKey) return '0'
+        const assetInfo = networkAssets[assetKey as keyof typeof networkAssets]
+        
+        return (Number(asset.amount) / Math.pow(10, assetInfo?.decimals || 6)).toString()
       } catch (e: any) {
         throw new Error(`getBalance failed: ${e?.message || e}`)
       }
@@ -116,8 +120,8 @@ export async function buildAlgorandAgent() {
           // ALGO transfer
           const amountMicroAlgos = Math.round(parseFloat(amount) * 1000000)
           txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
-            from: account.addr,
-            to,
+            sender: account.addr,
+            receiver: to,
             amount: amountMicroAlgos,
             suggestedParams,
             note: note ? new Uint8Array(Buffer.from(note)) : undefined
@@ -129,8 +133,8 @@ export async function buildAlgorandAgent() {
           
           const amountUnits = Math.round(parseFloat(amount) * Math.pow(10, assetInfo.decimals))
           txn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
-            from: account.addr,
-            to,
+            sender: account.addr,
+            receiver: to,
             amount: amountUnits,
             assetIndex: assetId,
             suggestedParams,
@@ -140,7 +144,8 @@ export async function buildAlgorandAgent() {
         
         // Sign and send transaction
         const signedTxn = txn.signTxn(account.sk)
-        const { txId } = await algodClient.sendRawTransaction(signedTxn).do()
+        const response = await algodClient.sendRawTransaction(signedTxn).do()
+        const txId = response.txid
         
         return {
           txId,
@@ -166,16 +171,16 @@ export async function buildAlgorandAgent() {
       try {
         const { assetInSymbol, assetOutSymbol, amountIn } = opts
         
-        // Import swap functions
-        const { swapAlgoToUsdc, swapUsdcToAlgo } = await import('./tinyman-swap')
+        // Import simple swap functions
+        const { swapAlgoToUsdc, swapUsdcToAlgo } = await import('./simple-swap')
         
         let result
         
         // Handle supported swap pairs
         if (assetInSymbol.toLowerCase() === 'algo' && assetOutSymbol.toLowerCase() === 'usdc') {
-          result = await swapAlgoToUsdc(account, amountIn)
+          result = await swapAlgoToUsdc(account, amountIn, algodClient, network)
         } else if (assetInSymbol.toLowerCase() === 'usdc' && assetOutSymbol.toLowerCase() === 'algo') {
-          result = await swapUsdcToAlgo(account, amountIn)
+          result = await swapUsdcToAlgo(account, amountIn, algodClient, network)
         } else {
           throw new Error(`Swap pair ${assetInSymbol}/${assetOutSymbol} not supported yet. Only ALGO/USDC available.`)
         }
@@ -261,14 +266,14 @@ export async function buildAlgorandAgent() {
         // ASA balances
         if (accountInfo.assets) {
           for (const asset of accountInfo.assets) {
-            const assetId = asset['asset-id']
+            const assetId = Number(asset.assetId)
             const assetEntry = Object.entries(ALGORAND_ASSETS[network]).find(
               ([_, info]) => info.id === assetId
             )
             
             if (assetEntry) {
               const [symbol, info] = assetEntry
-              const balance = asset.amount / Math.pow(10, info.decimals)
+              const balance = Number(asset.amount) / Math.pow(10, info.decimals)
               
               if (balance > 0) {
                 try {
@@ -291,7 +296,7 @@ export async function buildAlgorandAgent() {
         }
         
         return {
-          address: account.addr,
+          address: account.addr.toString(),
           totalValueUSD: totalValue,
           assets
         }
