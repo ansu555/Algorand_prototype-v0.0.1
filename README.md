@@ -1,6 +1,6 @@
 # 10xSwap: AI-Powered Multi-Chain Gasless Crypto Explorer
 
-10xSwap is a modern web application that allows users to explore cryptocurrency markets, manage assets, and execute gasless transactions across multiple networks (Base, Avalanche, and Algorand). It features an AI-powered chat agent that can understand natural language commands to perform actions like checking balances, getting token prices, and executing swaps and transfers.
+10xSwap is a modern web application that allows users to explore cryptocurrency markets, manage assets, and execute  transactions across multiple network Algorand. It features an AI-powered chat agent that can understand natural language commands to perform actions like checking balances, getting token prices, and executing swaps and transfers.
 
 ## Table of Contents
 
