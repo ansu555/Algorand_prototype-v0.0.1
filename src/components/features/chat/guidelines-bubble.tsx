@@ -2,17 +2,13 @@
 import React, { useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { BookOpen, X } from "lucide-react"
-import { FUJI_SYMBOL_TO_TOKEN } from "@/lib/tokens"
-// Removed wagmi import - using static chain configuration
 
 export default function GuidelinesBubble() {
   const [open, setOpen] = useState(false)
-  const chainId = 43113 // Static Fuji testnet chain ID
-  const chainLabel = 'Avalanche Fuji'
-  const nativeSymbol = 'AVAX'
-  const TOKENS = FUJI_SYMBOL_TO_TOKEN
-  // Dynamically list all known tokens for the selected chain
-  const SUPPORTED: string[] = Object.keys(TOKENS || {})
+  const chainLabel = 'Algorand Testnet'
+  const nativeSymbol = 'ALGO'
+  // Algorand supported tokens
+  const SUPPORTED_TOKENS = ['ALGO', 'USDC', 'USDT', 'goBTC', 'goETH']
 
   return (
     <div className="relative mx-auto">
@@ -54,13 +50,11 @@ export default function GuidelinesBubble() {
               <section>
                 <div className="font-semibold mb-1">Supported tokens ({chainLabel})</div>
                 <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-300">
-                  {SUPPORTED.map((sym) => {
-                    const t = TOKENS[sym]
-                    const addr = t?.address === "AVAX" ? "native" : t?.address
+                  {SUPPORTED_TOKENS.map((sym) => {
                     return (
                       <li key={sym} className="flex justify-between">
                         <span className="font-medium">{sym}</span>
-                        <span className="truncate">{addr || '—'}</span>
+                        <span className="truncate text-xs">{sym === 'ALGO' ? 'native' : 'ASA'}</span>
                       </li>
                     )
                   })}
@@ -81,14 +75,14 @@ export default function GuidelinesBubble() {
                 </p>
               </section>
 
-              {/* Smart account */}
+              {/* Algorand account */}
               <section>
                 <div className="font-semibold mb-1">Why Execute may not run</div>
                 <p className="text-xs text-slate-600 dark:text-slate-300">
-                  The smart account function is shared across all users for now (may change in future).  
-                  You see the same smart account because it is created with the server/agent key, not the connected wallet.  
-                  Ensure the smart account has enough {nativeSymbol} for approvals when gasless isn’t available.  
-                  {chainId === 43113 ? '0xGasless support on Fuji may be limited.' : ''}
+                  The agent account is shared across all users for now (may change in future).  
+                  You see the same account because it is created with the server/agent key, not the connected wallet.  
+                  Ensure the agent account has enough {nativeSymbol} for transaction fees.  
+                  Algorand has low transaction fees (0.001 ALGO minimum).
                 </p>
               </section>
 

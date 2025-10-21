@@ -135,12 +135,14 @@ export function TransactionSigner({
             <span className="text-sm font-medium">Transactions:</span>
             <Badge variant="outline">{transactions.length}</Badge>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Account:</span>
-            <code className="text-sm bg-muted px-2 py-1 rounded">
-              {activeAccount.address.slice(0, 6)}...{activeAccount.address.slice(-4)}
-            </code>
-          </div>
+          {activeAccount && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Account:</span>
+              <code className="text-sm bg-muted px-2 py-1 rounded">
+                {activeAccount.address.slice(0, 6)}...{activeAccount.address.slice(-4)}
+              </code>
+            </div>
+          )}
         </div>
 
         {/* Error Display */}
