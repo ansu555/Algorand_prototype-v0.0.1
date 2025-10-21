@@ -25,10 +25,24 @@ export function AlgorandWalletConnect({ variant = 'button', className = '' }: Wa
 
   const supportedWallets = getSupportedWallets()
   
+  // Log wallets info for debugging
+  React.useEffect(() => {
+    if (wallets && wallets.length > 0) {
+      console.log('Available wallets:', wallets.map((w: any) => ({
+        id: w.id,
+        isActive: w.isActive,
+        metadata: w.metadata?.name
+      })))
+    }
+  }, [wallets])
+  
   // Check which wallets are actually available
   const getWalletAvailability = (walletId: WalletId) => {
     const wallet = wallets?.find((w: any) => w.id === walletId)
-    return wallet?.isActive || false
+    // If wallet exists and isActive is not explicitly false, consider it available
+    // This handles cases where isActive might be undefined for some wallets
+    if (!wallet) return false
+    return wallet.isActive !== false
   }
 
   const handleConnect = async (walletId: WalletId) => {
