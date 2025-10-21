@@ -1,5 +1,5 @@
-import { Footer } from "@/components/footer"
-import { CryptoDetail } from "@/components/crypto-detail"
+import { Footer } from "@/components/layout/footer"
+import { CryptoDetail } from "@/components/features/crypto/crypto-detail"
 
 export default function CryptoDetailPage({ params }: { params: { id: string } }) {
   return (

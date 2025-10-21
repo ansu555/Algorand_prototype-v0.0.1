@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useState, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { Button } from './ui/button'
-import { Input } from './ui/input'
-import { RouteDisplay, type QuoteResponse, type RouteQuote } from './route-display'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { RouteDisplay, type QuoteResponse, type RouteQuote } from '@/components/shared/route-display'
 
 // Algorand-focused token list (testnet): ALGO and USDC
 

@@ -11,7 +11,7 @@ import { useGetCryptoDetailsQuery, useGetCryptoHistoryQuery } from "@/app/servic
 import { Skeleton } from "@/components/ui/skeleton"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
-import RuleBuilderModal, { type CoinOption } from "@/components/rule-builder-modal"
+import RuleBuilderModal, { type CoinOption } from "@/components/features/rules/rule-builder-modal"
 import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
 import { toast } from "@/hooks/use-toast"
 import { describeRule } from "@/lib/shared/rules"

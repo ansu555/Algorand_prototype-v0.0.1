@@ -3,8 +3,8 @@
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 import { FileText, Sparkles } from "lucide-react"
-import { FloatingPaper } from "@/components/background2/floating-paper"
-import { RoboAnimation } from "@/components/background2/robo-animation"
+import { FloatingPaper } from "@/components/shared/background2/floating-paper"
+import { RoboAnimation } from "@/components/shared/background2/robo-animation"
 
 export default function Hero() {
   return (

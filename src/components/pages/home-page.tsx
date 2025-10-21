@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 // Lazy load heavier components if they exist
-const MiniCryptoTable = dynamic(() => import("@/components/mini-crypto-table"), { ssr: false, loading: () => <div className="text-sm text-muted-foreground">Loading assets...</div> });
+const MiniCryptoTable = dynamic(() => import("@/components/features/crypto/mini-crypto-table"), { ssr: false, loading: () => <div className="text-sm text-muted-foreground">Loading assets...</div> });
 
 export default function HomePage() {
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);

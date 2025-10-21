@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Github, Twitter, Linkedin, Mail } from "lucide-react"
-import GuidelinesBubble from "@/components/guidelines-bubble"
+import GuidelinesBubble from "@/components/features/chat/guidelines-bubble"
 
 export function Footer() {
   return (

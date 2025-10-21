@@ -1,5 +1,5 @@
 import React from 'react'
-import SwapInterface from '@/components/swap-interface'
+import SwapInterface from '@/components/features/wallet/swap-interface'
 
 export default function RouteDisplayDemo() {
   return (

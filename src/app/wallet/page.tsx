@@ -4,12 +4,12 @@ import dynamic from 'next/dynamic'
 
 // Dynamically import wallet components with ssr disabled
 const AlgorandWalletConnect = dynamic(
-  () => import('@/components/algorand-wallet-connect').then(mod => mod.AlgorandWalletConnect),
+  () => import('@/components/features/algorand/algorand-wallet-connect').then(mod => mod.AlgorandWalletConnect),
   { ssr: false }
 )
 
 const WalletInfo = dynamic(
-  () => import('@/components/wallet-info').then(mod => mod.WalletInfo),
+  () => import('@/components/features/wallet/wallet-info').then(mod => mod.WalletInfo),
   { ssr: false }
 )
 
