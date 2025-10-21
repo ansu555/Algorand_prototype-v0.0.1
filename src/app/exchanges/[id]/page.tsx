@@ -1,5 +1,5 @@
-import { Footer } from "@/components/footer"
-import { ExchangeDetail } from "@/components/exchange-detail"
+import { Footer } from "@/components/layout/footer"
+import { ExchangeDetail } from "@/components/features/exchange/exchange-detail"
 
 export default function ExchangeDetailPage({ params }: { params: { id: string } }) {
   return (

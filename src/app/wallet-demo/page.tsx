@@ -5,9 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import AlgorandWalletConnect from '@/components/algorand-wallet-connect'
-import WalletStatus from '@/components/wallet-status'
-import TransactionSigner from '@/components/transaction-signer'
+import AlgorandWalletConnect from '@/components/features/algorand/algorand-wallet-connect'
+import WalletStatus from '@/components/features/wallet/wallet-status'
+import TransactionSigner from '@/components/features/algorand/transaction-signer'
 import { useWalletConnection, useWalletActions } from '@/components/providers/txnlab-wallet-provider'
 import { getSupportedWallets } from '@/lib/txnlab-wallet-config'
 import algosdk from 'algosdk'
@@ -28,18 +28,19 @@ export default function WalletDemoPage() {
 
     try {
       // Create a simple payment transaction
-      const suggestedParams = {
+      const suggestedParams: algosdk.SuggestedParams = {
         fee: 1000,
-        firstRound: 1,
-        lastRound: 1000,
+        flatFee: true,
+        firstValid: 1,
+        lastValid: 1000,
         genesisID: 'testnet-v1.0',
-        genesisHash: 'SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=',
-        flatFee: true
+        genesisHash: new Uint8Array(Buffer.from('SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=', 'base64')),
+        minFee: 1000
       }
 
       const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
-        from: activeAccount.address,
-        to: activeAccount.address, // Send to self for demo
+        sender: activeAccount.address,
+        receiver: activeAccount.address, // Send to self for demo
         amount: 1000000, // 1 ALGO in microAlgos
         suggestedParams
       })

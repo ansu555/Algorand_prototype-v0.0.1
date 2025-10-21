@@ -3,12 +3,12 @@ import { Inter as FontSans } from 'next/font/google'
 import { Fira_Code as FontMono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
-import { Providers as ExistingProviders } from '@/components/providers'
-import { ReduxProvider } from '../components/redux-provider'
+import { Providers as ExistingProviders } from '@/components/layout/providers'
+import { ReduxProvider } from '@/components/shared/redux-provider'
 import { TxnLabWalletProvider } from '@/components/providers/txnlab-wallet-provider'
-import { Header } from '@/components/header'
+import { Header } from '@/components/layout/header'
 import { Toaster } from '@/components/ui/toaster'
-import ChatBubble from '@/components/chat-bubble'
+import ChatBubble from '@/components/features/chat/chat-bubble'
 
 const fontSans = FontSans({ subsets: ['latin'], variable: '--font-sans' })
 const fontMono = FontMono({ subsets: ['latin'], weight: ['400'], variable: '--font-mono' })

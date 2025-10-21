@@ -1,6 +1,6 @@
-import { Footer } from "@/components/footer"
-import { ExchangesList } from "@/components/exchanges-list"
-import BackgroundPaths from "@/components/animated-background"
+import { Footer } from "@/components/layout/footer"
+import { ExchangesList } from "@/components/features/exchange/exchanges-list"
+import BackgroundPaths from "@/components/shared/animated-background"
 
 export default function ExchangesPage() {
   return (

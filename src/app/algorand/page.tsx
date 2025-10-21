@@ -1,5 +1,5 @@
-import { AlgorandInfo } from '@/components/algorand-info'
-import { TxnLabAlgorandWalletConnect } from '@/components/txnlab-algorand-wallet-connect'
+import { AlgorandInfo } from '@/components/features/algorand/algorand-info'
+import { TxnLabAlgorandWalletConnect } from '@/components/features/algorand/txnlab-algorand-wallet-connect'
 
 export default function AlgorandPage() {
   return (

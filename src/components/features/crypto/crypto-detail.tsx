@@ -31,7 +31,7 @@ import {
   Tooltip as ChartTooltip,
   CartesianGrid,
 } from "recharts"
-import RuleBuilderModal, { type CoinOption } from "@/components/rule-builder-modal"
+import RuleBuilderModal, { type CoinOption } from "@/components/features/rules/rule-builder-modal"
 import { toast } from "@/hooks/use-toast"
 import { describeRule } from "@/lib/shared/rules"
 import { createRule } from "@/features/agent/api/client"

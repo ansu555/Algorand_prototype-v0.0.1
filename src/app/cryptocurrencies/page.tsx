@@ -1,11 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Footer } from "@/components/footer"
-import BackgroundPaths from "@/components/animated-background"
-import CoinOverviewPane from "@/components/coin-overview-pane"
-import MiniCryptoTable from "@/components/mini-crypto-table"
-import SideAnalytics from "@/components/side-analytics"
+import { Footer } from "@/components/layout/footer"
+import BackgroundPaths from "@/components/shared/animated-background"
+import CoinOverviewPane from "@/components/features/crypto/coin-overview-pane"
+import MiniCryptoTable from "@/components/features/crypto/mini-crypto-table"
+import SideAnalytics from "@/components/features/analytics/side-analytics"
 
 export default function CryptocurrenciesPage() {
   const [selectedCoinId, setSelectedCoinId] = useState<string | undefined>(undefined)
