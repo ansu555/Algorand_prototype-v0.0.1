@@ -91,7 +91,23 @@ function TxnLabWalletProviderInternal({ children }: TxnLabWalletProviderProps) {
     if (!wallet) {
       throw new Error(`Wallet ${walletId} not found`)
     }
-    return await wallet.connect()
+    
+    // Check if wallet is available before attempting to connect
+    if (!wallet.isActive) {
+      const walletName = walletId.charAt(0).toUpperCase() + walletId.slice(1)
+      throw new Error(`${walletName} wallet is not installed or not available. Please install the wallet extension and try again.`)
+    }
+    
+    try {
+      return await wallet.connect()
+    } catch (error: any) {
+      // Provide more user-friendly error messages
+      if (error.message?.includes('not available')) {
+        const walletName = walletId.charAt(0).toUpperCase() + walletId.slice(1)
+        throw new Error(`${walletName} wallet is not available. Please make sure the wallet extension is installed and enabled.`)
+      }
+      throw error
+    }
   }
 
   const disconnect = async (): Promise<void> => {
@@ -154,13 +170,14 @@ export function useTxnLabWallet(): TxnLabWalletContextType {
 
 // Convenience hooks
 export function useWalletConnection() {
-  const { isConnected, activeAccount, activeWallet, accounts } = useTxnLabWallet()
+  const { isConnected, activeAccount, activeWallet, accounts, wallets } = useTxnLabWallet()
   
   return {
     isConnected,
     activeAccount,
     activeWallet,
     accounts,
+    wallets,
     hasMultipleAccounts: accounts.length > 1
   }
 }

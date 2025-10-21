@@ -18,12 +18,18 @@ interface WalletConnectProps {
 }
 
 export function AlgorandWalletConnect({ variant = 'button', className = '' }: WalletConnectProps) {
-  const { isConnected, activeAccount, activeWallet, accounts, hasMultipleAccounts } = useWalletConnection()
+  const { isConnected, activeAccount, activeWallet, accounts, hasMultipleAccounts, wallets } = useWalletConnection()
   const { connect, disconnect, setActiveAccount } = useWalletActions()
   const [isConnecting, setIsConnecting] = useState(false)
   const [selectedWallet, setSelectedWallet] = useState<WalletId | null>(null)
 
   const supportedWallets = getSupportedWallets()
+  
+  // Check which wallets are actually available
+  const getWalletAvailability = (walletId: WalletId) => {
+    const wallet = wallets?.find((w: any) => w.id === walletId)
+    return wallet?.isActive || false
+  }
 
   const handleConnect = async (walletId: WalletId) => {
     try {
@@ -84,23 +90,31 @@ export function AlgorandWalletConnect({ variant = 'button', className = '' }: Wa
           <DropdownMenuContent align="end" className="w-64">
             <DropdownMenuLabel>Choose Wallet</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {supportedWallets.map((wallet) => (
-              <DropdownMenuItem
-                key={wallet.id}
-                onClick={() => handleConnect(wallet.id)}
-                disabled={isConnecting}
-                className="flex items-center space-x-3"
-              >
-                <span className="text-lg">{wallet.icon}</span>
-                <div className="flex-1">
-                  <div className="font-medium">{wallet.name}</div>
-                  <div className="text-xs text-muted-foreground">{wallet.description}</div>
-                </div>
-                {isConnecting && selectedWallet === wallet.id && (
-                  <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />
-                )}
-              </DropdownMenuItem>
-            ))}
+            {supportedWallets.map((wallet) => {
+              const isAvailable = getWalletAvailability(wallet.id)
+              return (
+                <DropdownMenuItem
+                  key={wallet.id}
+                  onClick={() => isAvailable && handleConnect(wallet.id)}
+                  disabled={isConnecting || !isAvailable}
+                  className="flex items-center space-x-3"
+                >
+                  <span className="text-lg">{wallet.icon}</span>
+                  <div className="flex-1">
+                    <div className="font-medium flex items-center gap-2">
+                      {wallet.name}
+                      {!isAvailable && (
+                        <Badge variant="outline" className="text-xs">Not Installed</Badge>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground">{wallet.description}</div>
+                  </div>
+                  {isConnecting && selectedWallet === wallet.id && (
+                    <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />
+                  )}
+                </DropdownMenuItem>
+              )
+            })}
           </DropdownMenuContent>
         </DropdownMenu>
       )
@@ -190,24 +204,32 @@ export function AlgorandWalletConnect({ variant = 'button', className = '' }: Wa
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {supportedWallets.map((wallet) => (
-                <Button
-                  key={wallet.id}
-                  variant="outline"
-                  onClick={() => handleConnect(wallet.id)}
-                  disabled={isConnecting}
-                  className="h-auto p-4 flex flex-col items-center space-y-2"
-                >
-                  <span className="text-2xl">{wallet.icon}</span>
-                  <div className="text-center">
-                    <div className="font-medium">{wallet.name}</div>
-                    <div className="text-xs text-muted-foreground">{wallet.description}</div>
-                  </div>
-                  {isConnecting && selectedWallet === wallet.id && (
-                    <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />
-                  )}
-                </Button>
-              ))}
+              {supportedWallets.map((wallet) => {
+                const isAvailable = getWalletAvailability(wallet.id)
+                return (
+                  <Button
+                    key={wallet.id}
+                    variant="outline"
+                    onClick={() => isAvailable && handleConnect(wallet.id)}
+                    disabled={isConnecting || !isAvailable}
+                    className="h-auto p-4 flex flex-col items-center space-y-2"
+                  >
+                    <span className="text-2xl">{wallet.icon}</span>
+                    <div className="text-center">
+                      <div className="font-medium flex items-center justify-center gap-2">
+                        {wallet.name}
+                        {!isAvailable && (
+                          <Badge variant="outline" className="text-xs">Not Installed</Badge>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{wallet.description}</div>
+                    </div>
+                    {isConnecting && selectedWallet === wallet.id && (
+                      <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />
+                    )}
+                  </Button>
+                )
+              })}
             </div>
           </CardContent>
         </Card>
@@ -318,24 +340,32 @@ export function AlgorandWalletConnect({ variant = 'button', className = '' }: Wa
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 gap-3 mt-4">
-            {supportedWallets.map((wallet) => (
-              <Button
-                key={wallet.id}
-                variant="outline"
-                onClick={() => handleConnect(wallet.id)}
-                disabled={isConnecting}
-                className="h-auto p-4 flex items-center space-x-3"
-              >
-                <span className="text-2xl">{wallet.icon}</span>
-                <div className="flex-1 text-left">
-                  <div className="font-medium">{wallet.name}</div>
-                  <div className="text-xs text-muted-foreground">{wallet.description}</div>
-                </div>
-                {isConnecting && selectedWallet === wallet.id && (
-                  <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />
-                )}
-              </Button>
-            ))}
+            {supportedWallets.map((wallet) => {
+              const isAvailable = getWalletAvailability(wallet.id)
+              return (
+                <Button
+                  key={wallet.id}
+                  variant="outline"
+                  onClick={() => isAvailable && handleConnect(wallet.id)}
+                  disabled={isConnecting || !isAvailable}
+                  className="h-auto p-4 flex items-center space-x-3"
+                >
+                  <span className="text-2xl">{wallet.icon}</span>
+                  <div className="flex-1 text-left">
+                    <div className="font-medium flex items-center gap-2">
+                      {wallet.name}
+                      {!isAvailable && (
+                        <Badge variant="outline" className="text-xs">Not Installed</Badge>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground">{wallet.description}</div>
+                  </div>
+                  {isConnecting && selectedWallet === wallet.id && (
+                    <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />
+                  )}
+                </Button>
+              )
+            })}
           </div>
         </DialogContent>
       </Dialog>
