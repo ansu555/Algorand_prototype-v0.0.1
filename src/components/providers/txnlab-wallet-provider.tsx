@@ -92,20 +92,18 @@ function TxnLabWalletProviderInternal({ children }: TxnLabWalletProviderProps) {
       throw new Error(`Wallet ${walletId} not found`)
     }
     
-    // Check if wallet is available before attempting to connect
-    if (!wallet.isActive) {
-      const walletName = walletId.charAt(0).toUpperCase() + walletId.slice(1)
-      throw new Error(`${walletName} wallet is not installed or not available. Please install the wallet extension and try again.`)
-    }
+    // Log wallet info for debugging
+    console.log(`Attempting to connect to ${walletId}:`, {
+      id: wallet.id,
+      isActive: wallet.isActive,
+      isConnected: wallet.isConnected,
+      metadata: wallet.metadata
+    })
     
     try {
       return await wallet.connect()
     } catch (error: any) {
-      // Provide more user-friendly error messages
-      if (error.message?.includes('not available')) {
-        const walletName = walletId.charAt(0).toUpperCase() + walletId.slice(1)
-        throw new Error(`${walletName} wallet is not available. Please make sure the wallet extension is installed and enabled.`)
-      }
+      console.error(`Connection error for ${walletId}:`, error)
       throw error
     }
   }
