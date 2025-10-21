@@ -1,4 +1,3 @@
-import { Footer } from "@/components/layout/footer"
 import { ExchangesList } from "@/components/features/exchange/exchanges-list"
 import BackgroundPaths from "@/components/shared/animated-background"
 
@@ -10,7 +9,6 @@ export default function ExchangesPage() {
         <h1 className="text-3xl sm:text-4xl font-bold mb-6 sm:mb-8">Cryptocurrency Exchanges</h1>
         <ExchangesList />
       </main>
-      <Footer />
     </div>
   )
 }

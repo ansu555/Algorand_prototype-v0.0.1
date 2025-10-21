@@ -1,4 +1,3 @@
-import { Footer } from "@/components/layout/footer"
 import { ExchangeDetail } from "@/components/features/exchange/exchange-detail"
 
 export default function ExchangeDetailPage({ params }: { params: { id: string } }) {
@@ -7,7 +6,6 @@ export default function ExchangeDetailPage({ params }: { params: { id: string } 
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <ExchangeDetail id={params.id} />
       </main>
-      <Footer />
     </div>
   )
 }
