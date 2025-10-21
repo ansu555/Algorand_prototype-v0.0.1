@@ -30,14 +30,12 @@ export default function WalletDemoPage() {
       // Create a simple payment transaction
       const suggestedParams: algosdk.SuggestedParams = {
         fee: 1000,
-        firstRound: 1,
-        lastRound: 1000,
+        flatFee: true,
+        firstValid: 1,
+        lastValid: 1000,
         genesisID: 'testnet-v1.0',
         genesisHash: new Uint8Array(Buffer.from('SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=', 'base64')),
-        flatFee: true,
-        minFee: 1000,
-        firstValid: 1,
-        lastValid: 1000
+        minFee: 1000
       }
 
       const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
