@@ -52,16 +52,16 @@ export class PactRealSwap {
       const suggestedParams = await this.algodClient.getTransactionParams().do()
       
       const optInTxn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
-        from: this.account.addr,
-        to: this.account.addr,
+        sender: this.account.addr,
+        receiver: this.account.addr,
         amount: 0,
         assetIndex: this.USDC_ASSET_ID,
         suggestedParams,
-        note: new Uint8Array(Buffer.from('USDC Opt-in'))
       })
 
       const signedTxn = optInTxn.signTxn(this.account.sk)
-      const { txId } = await this.algodClient.sendRawTransaction(signedTxn).do()
+      const response = await this.algodClient.sendRawTransaction(signedTxn).do()
+      const txId = response.txid
       
       // Wait for confirmation
       await this.waitForConfirmation(txId)
@@ -124,25 +124,22 @@ export class PactRealSwap {
 
       // Create atomic transfer group for the swap
       const suggestedParams = await this.algodClient.getTransactionParams().do()
-      suggestedParams.group = undefined // Will be set when grouping
 
       // Transaction 1: Send ALGO to pool
       const algoTransferTxn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
-        from: this.account.addr,
-        to: this.account.addr, // Pool address would go here
+        sender: this.account.addr,
+        receiver: this.account.addr, // Pool address would go here
         amount: amountInMicroAlgos,
         suggestedParams,
-        note: new Uint8Array(Buffer.from('Pact Swap: ALGO to USDC'))
       })
 
       // Transaction 2: Receive USDC from pool
       const usdcTransferTxn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
-        from: this.account.addr, // Pool address would go here
-        to: this.account.addr,
+        sender: this.account.addr, // Pool address would go here
+        receiver: this.account.addr,
         amount: amountOutMicroUsdc,
         assetIndex: this.USDC_ASSET_ID,
         suggestedParams,
-        note: new Uint8Array(Buffer.from('Pact Swap: Receive USDC'))
       })
 
       // Group transactions
@@ -156,7 +153,8 @@ export class PactRealSwap {
 
       // Submit grouped transaction
       const signedGroup = [signedAlgoTxn, signedUsdcTxn]
-      const { txId } = await this.algodClient.sendRawTransaction(signedGroup).do()
+      const response = await this.algodClient.sendRawTransaction(signedGroup).do()
+      const txId = response.txid
 
       // Wait for confirmation
       await this.waitForConfirmation(txId)
@@ -207,25 +205,22 @@ export class PactRealSwap {
 
       // Create atomic transfer group for the swap
       const suggestedParams = await this.algodClient.getTransactionParams().do()
-      suggestedParams.group = undefined
 
       // Transaction 1: Send USDC to pool
       const usdcTransferTxn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
-        from: this.account.addr,
-        to: this.account.addr, // Pool address would go here
+        sender: this.account.addr,
+        receiver: this.account.addr, // Pool address would go here
         amount: amountInMicroUsdc,
         assetIndex: this.USDC_ASSET_ID,
         suggestedParams,
-        note: new Uint8Array(Buffer.from('Pact Swap: USDC to ALGO'))
       })
 
       // Transaction 2: Receive ALGO from pool
       const algoTransferTxn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
-        from: this.account.addr, // Pool address would go here
-        to: this.account.addr,
+        sender: this.account.addr, // Pool address would go here
+        receiver: this.account.addr,
         amount: amountOutMicroAlgos,
         suggestedParams,
-        note: new Uint8Array(Buffer.from('Pact Swap: Receive ALGO'))
       })
 
       // Group transactions
@@ -239,7 +234,8 @@ export class PactRealSwap {
 
       // Submit grouped transaction
       const signedGroup = [signedUsdcTxn, signedAlgoTxn]
-      const { txId } = await this.algodClient.sendRawTransaction(signedGroup).do()
+      const response = await this.algodClient.sendRawTransaction(signedGroup).do()
+      const txId = response.txid
 
       // Wait for confirmation
       await this.waitForConfirmation(txId)
@@ -271,10 +267,10 @@ export class PactRealSwap {
     while (rounds < maxWaitRounds) {
       try {
         const status = await this.algodClient.status().do()
-        const confirmedRound = status['last-round']
+        const confirmedRound = status.lastRound
         
         const txInfo = await this.algodClient.pendingTransactionInformation(txId).do()
-        if (txInfo['confirmed-round'] && txInfo['confirmed-round'] > 0) {
+        if (txInfo.confirmedRound && txInfo.confirmedRound > 0) {
           return
         }
         
