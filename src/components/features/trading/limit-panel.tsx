@@ -17,6 +17,8 @@ export function LimitPanel() {
   // Quick option state for percentage adjustment
   const [quickOption, setQuickOption] = useState<"market" | "1" | "2" | "5" | "custom">("market")
   const [customPercent, setCustomPercent] = useState<string>("")
+  // Expiry selection state
+  const [expiry, setExpiry] = useState<"1d" | "1w" | "1m" | "1y">("1d")
 
   const isActionDisabled = !fromAmount || parseFloat(fromAmount) <= 0 || !price || parseFloat(price) <= 0
 
@@ -109,6 +111,65 @@ export function LimitPanel() {
             <div className="h-5"></div>
             <div className="px-2 py-1 text-base font-medium rounded-md bg-secondary">USDC</div>
             <div className="h-5"></div>
+          </div>
+        </div>
+
+        {/* Expiry row */}
+        <div className="flex w-full items-center justify-between rounded-lg bg-muted/30 border border-border px-3 py-2">
+          <span className="text-sm text-muted-foreground">Expiry</span>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant={expiry === "1d" ? "default" : "secondary"}
+              className={cn(
+                "h-7 px-2 rounded-md text-xs font-medium",
+                expiry === "1d"
+                  ? "bg-primary text-primary-foreground dark:bg-[#F3C623] dark:text-black"
+                  : "bg-secondary/70 hover:bg-secondary"
+              )}
+              onClick={() => setExpiry("1d")}
+            >
+              1 day
+            </Button>
+            <Button
+              type="button"
+              variant={expiry === "1w" ? "default" : "secondary"}
+              className={cn(
+                "h-7 px-2 rounded-md text-xs font-medium",
+                expiry === "1w"
+                  ? "bg-primary text-primary-foreground dark:bg-[#F3C623] dark:text-black"
+                  : "bg-secondary/70 hover:bg-secondary"
+              )}
+              onClick={() => setExpiry("1w")}
+            >
+              1 week
+            </Button>
+            <Button
+              type="button"
+              variant={expiry === "1m" ? "default" : "secondary"}
+              className={cn(
+                "h-7 px-2 rounded-md text-xs font-medium",
+                expiry === "1m"
+                  ? "bg-primary text-primary-foreground dark:bg-[#F3C623] dark:text-black"
+                  : "bg-secondary/70 hover:bg-secondary"
+              )}
+              onClick={() => setExpiry("1m")}
+            >
+              1 month
+            </Button>
+            <Button
+              type="button"
+              variant={expiry === "1y" ? "default" : "secondary"}
+              className={cn(
+                "h-7 px-2 rounded-md text-xs font-medium",
+                expiry === "1y"
+                  ? "bg-primary text-primary-foreground dark:bg-[#F3C623] dark:text-black"
+                  : "bg-secondary/70 hover:bg-secondary"
+              )}
+              onClick={() => setExpiry("1y")}
+            >
+              1 year
+            </Button>
           </div>
         </div>
       </div>
