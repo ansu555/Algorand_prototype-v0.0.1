@@ -58,11 +58,11 @@ export function SwapCard() {
       <Card className="w-full rounded-xl border border-border shadow-lg bg-card">
         <CardContent className="p-3 space-y-3.5">
           {/* Tab Buttons */}
-          <div className="flex items-center p-1 bg-muted/30 rounded-mid h-[42px] relative">
+          <div className="flex items-center p-1 bg-muted/30 rounded-md h-[42px] relative">
             {/* Background slider */}
             <div 
               className={cn(
-                "absolute h-8 rounded-mid bg-background shadow-sm transition-all duration-300 ease-in-out",
+                "absolute h-8 rounded-md bg-background shadow-sm transition-all duration-300 ease-in-out",
                 activeTab === 'swap' && "w-[72px] left-1",
                 activeTab === 'limit' && "w-[72px] left-[76px]",
                 activeTab === 'buy' && "w-[72px] left-[148px]",
