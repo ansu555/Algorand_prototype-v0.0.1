@@ -3,8 +3,10 @@
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
 
 export function BuyPanel() {
+  const { isConnected } = useWalletConnection()
   // amount in fiat (USD)
   const [amount, setAmount] = useState<string>("")
   const [currency, setCurrency] = useState<string>("USD")
@@ -13,6 +15,7 @@ export function BuyPanel() {
   )
 
   const quickSet = (val: number) => setAmount(String(val))
+  const amountValid = !!amount && !isNaN(Number(amount)) && Number(amount) > 0
 
   return (
     <div className="flex flex-col space-y-2">
@@ -64,6 +67,23 @@ export function BuyPanel() {
           <span className="font-medium">{token.symbol}</span>
         </div>
       </div>
+
+      {/* Action button */}
+      <Button
+        className="w-full h-11 text-base font-semibold rounded-md px-4 py-2.5 active:scale-[0.99] transition-all duration-300 bg-primary hover:bg-primary/90 dark:bg-[#F3C623] dark:hover:bg-[#F3C623]/90 dark:text-black disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={isConnected && !amountValid}
+        onClick={() => {
+          if (!isConnected) {
+            console.log("Connect wallet clicked")
+            return
+          }
+          if (amountValid) {
+            console.log("Buy clicked", { amount, currency, token })
+          }
+        }}
+      >
+        {!isConnected ? "Connect Wallet" : !amountValid ? "Enter Amount" : "Buy"}
+      </Button>
     </div>
   )
 }
