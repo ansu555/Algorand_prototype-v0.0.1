@@ -15,14 +15,14 @@ export function LimitPanel() {
   const [price, setPrice] = useState("1.00")
   const [toAmount, setToAmount] = useState("")
   // Quick option state for percentage adjustment
-  const [quickOption, setQuickOption] = useState<"Market" | "1" | "2" | "5" | "custom">("Market")
+  const [quickOption, setQuickOption] = useState<"market" | "1" | "2" | "5" | "custom">("market")
   const [customPercent, setCustomPercent] = useState<string>("")
 
   const isActionDisabled = !fromAmount || parseFloat(fromAmount) <= 0 || !price || parseFloat(price) <= 0
 
   return (
     <div className="flex flex-col gap-y-2">
-      <div className="flex flex-col items-center -space-y-3">
+  <div className="flex flex-col items-center space-y-2">
         {/* Limit (first) */}
         <div className="flex w-full gap-2 px-3 py-3 min-h-24 items-center justify-between group transition-all duration-300 bg-muted/50 rounded-lg border border-border focus-within:border-primary focus-within:bg-background h-[8.5rem]">
           <div className="space-y-2 flex flex-col grow text-muted-foreground">
