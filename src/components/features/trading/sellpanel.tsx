@@ -4,89 +4,87 @@ import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
-import { cn } from "@/lib/utils"
 
 export function SellPanel() {
-  const { activeAccount } = useWalletConnection()
-  const isConnected = !!activeAccount
+  const { isConnected } = useWalletConnection()
 
-  const [sell, setSell] = useState("")
-  const [receive, setReceive] = useState("")
+  // amount in token units (e.g., ALGO)
+  const [amount, setAmount] = useState<string>("")
+  const [currency, setCurrency] = useState<string>("USD") // receiving currency
+  const [token] = useState<{ symbol: string; name: string; image: string }>(
+    { symbol: "ALGO", name: "Algorand", image: "https://cryptologos.cc/logos/algorand-algo-logo.png" }
+  )
 
-  const isActionDisabled = !sell || parseFloat(sell) <= 0
+  const quickSet = (val: number) => setAmount(String(val))
+  const amountValid = !!amount && !isNaN(Number(amount)) && Number(amount) > 0
 
   return (
-    <div className="flex flex-col gap-y-2">
-      <div className="flex flex-col items-center space-y-2">
-        {/* Sell */}
-        <div className="flex w-full gap-2 px-3 py-3 min-h-24 items-center justify-between group transition-all duration-300 bg-muted/50 rounded-lg border border-border focus-within:border-primary focus-within:bg-background h-[7.5rem]">
-          <div className="space-y-2 flex flex-col grow text-muted-foreground">
-            <span className="text-sm font-medium">Sell</span>
-            <Input
-              type="number"
-              placeholder="0"
-              value={sell}
-              onChange={(e) => setSell(e.target.value)}
-              className="h-9 w-full bg-transparent px-0 py-0 border-0 focus-visible:outline-none focus-visible:ring-0 text-3xl placeholder:text-muted-foreground/50"
-            />
-            <span className="h-5 inline-flex items-center whitespace-nowrap text-sm">
-              {sell ? parseFloat(sell).toFixed(2) : '0.00'} ALGO
-            </span>
-          </div>
-          <div className="space-y-2 flex flex-col items-end">
-            <div className="h-5"></div>
-            <div className="px-2 py-1 text-base font-medium rounded-md bg-secondary">ALGO</div>
-            <div className="h-5"></div>
-          </div>
+    <div className="flex flex-col space-y-2">
+      {/* Main amount card */}
+      <div className="rounded-md border border-border bg-muted/50 p-3">
+        {/* Header row */}
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-muted-foreground">selling</span>
+          {/* Small dropdown for receive currency */}
+          <select
+            aria-label="Currency"
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            className="h-8 rounded-md border border-border bg-background px-2 text-sm focus:outline-none"
+          >
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+          </select>
         </div>
 
-        {/* You Receive (USD) */}
-        <div className="flex w-full gap-2 px-3 py-3 min-h-24 items-center justify-between group transition-all duration-300 bg-muted/50 rounded-lg border border-border focus-within:border-primary focus-within:bg-background h-[7.5rem]">
-          <div className="space-y-2 flex flex-col grow text-muted-foreground">
-            <span className="text-sm font-medium">You Receive</span>
-            <Input
-              type="number"
-              placeholder="0"
-              value={receive}
-              readOnly
-              className="h-9 w-full bg-transparent px-0 py-0 border-0 focus-visible:outline-none focus-visible:ring-0 text-3xl placeholder:text-muted-foreground/50 cursor-not-allowed"
-            />
-            <span className="h-5 inline-flex items-center whitespace-nowrap text-sm">
-              ${receive ? parseFloat(receive).toFixed(2) : '0.00'} USD
-            </span>
-          </div>
-          <div className="space-y-2 flex flex-col items-end">
-            <div className="h-5"></div>
-            <div className="px-2 py-1 text-base font-medium rounded-md bg-secondary">USD</div>
-            <div className="h-5"></div>
-          </div>
+        {/* Amount input (big, centered) */}
+        <div className="py-4">
+          <Input
+            type="number"
+            inputMode="decimal"
+            placeholder="$0"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="h-auto w-full bg-transparent border-0 text-center text-4xl font-semibold focus-visible:outline-none focus-visible:ring-0 placeholder:text-muted-foreground/60"
+            aria-label="Token amount"
+          />
+        </div>
+
+        {/* Quick select (token amounts) */}
+        <div className="flex items-center justify-center gap-2">
+          <Button variant="secondary" size="sm" onClick={() => quickSet(10)}>$10</Button>
+          <Button variant="secondary" size="sm" onClick={() => quickSet(50)}>$50</Button>
+          <Button variant="secondary" size="sm" onClick={() => quickSet(100)}>$100</Button>
         </div>
       </div>
 
-      {/* Action Button */}
-      {!isConnected ? (
-        <Button
-          className={cn(
-            "w-full h-11 text-base font-semibold rounded-md px-4 py-2.5 active:scale-[0.99] transition-all duration-300",
-            "bg-primary hover:bg-primary/90 dark:bg-[#F3C623] dark:hover:bg-[#F3C623]/90",
-            "dark:text-black"
-          )}
-        >
-          Connect Wallet
-        </Button>
-      ) : (
-        <Button
-          className={cn(
-            "w-full h-11 text-base font-semibold rounded-md px-4 py-2.5 active:scale-[0.99] transition-all duration-300",
-            "bg-primary hover:bg-primary/90 dark:bg-[#F3C623] dark:hover:bg-[#F3C623]/90",
-            "dark:text-black",
-            "disabled:opacity-50 disabled:cursor-not-allowed"
-          )}
-          disabled={isActionDisabled}
-        >
-          {isActionDisabled ? "Enter Amount" : "Sell"}
-        </Button>
-      )}
+      {/* Selected token row */}
+      <div className="rounded-md border border-border bg-muted/50 p-3 flex items-center justify-between">
+        <span className="text-sm text-muted-foreground">Token</span>
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-6 w-6 overflow-hidden rounded-full">
+            <img src={token.image} alt={token.symbol} className="h-full w-full object-cover" />
+          </span>
+          <span className="font-medium">{token.symbol}</span>
+        </div>
+      </div>
+
+      {/* Action button */}
+      <Button
+        className="w-full h-11 text-base font-semibold rounded-md px-4 py-2.5 active:scale-[0.99] transition-all duration-300 bg-primary hover:bg-primary/90 dark:bg-[#F3C623] dark:hover:bg-[#F3C623]/90 dark:text-black disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={isConnected && !amountValid}
+        onClick={() => {
+          if (!isConnected) {
+            console.log("Connect wallet clicked")
+            return
+          }
+          if (amountValid) {
+            console.log("Sell clicked", { amount, token, currency })
+          }
+        }}
+      >
+        {!isConnected ? "Connect Wallet" : !amountValid ? "Enter Amount" : "Sell"}
+      </Button>
     </div>
   )
 }
