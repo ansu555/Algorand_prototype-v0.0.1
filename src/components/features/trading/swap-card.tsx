@@ -35,6 +35,7 @@ export function SwapCard() {
   const [toAmount, setToAmount] = useState('')
   const [slippage, setSlippage] = useState('0.5')
   const [showSettings, setShowSettings] = useState(false)
+  const [activeTab, setActiveTab] = useState<'swap' | 'limit' | 'buy' | 'sell'>('swap')
 
   const isConnected = !!activeAccount
 
@@ -53,6 +54,59 @@ export function SwapCard() {
     <>
       <Card className="w-full rounded-xl border border-border shadow-lg bg-card">
         <CardContent className="p-3 space-y-3.5">
+          {/* Tab Buttons */}
+          <div className="flex items-center gap-3 p-1 bg-muted/30 rounded-3xl h-[42px] relative">
+            {/* Background slider */}
+            <div 
+              className={cn(
+                "absolute h-8 rounded-full bg-background transition-all duration-300 ease-in-out",
+                activeTab === 'swap' && "w-[60px] translate-x-0",
+                activeTab === 'limit' && "w-[60px] translate-x-[76px]",
+                activeTab === 'buy' && "w-[52px] translate-x-[152px]",
+                activeTab === 'sell' && "w-[52px] translate-x-[220px]"
+              )}
+              style={{ zIndex: 0 }}
+            />
+            
+            {/* Tab Buttons */}
+            <button
+              onClick={() => setActiveTab('swap')}
+              className={cn(
+                "relative z-10 px-3 py-2 text-sm font-medium rounded-full transition-colors duration-200",
+                activeTab === 'swap' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Swap
+            </button>
+            <button
+              onClick={() => setActiveTab('limit')}
+              className={cn(
+                "relative z-10 px-3 py-2 text-sm font-medium rounded-full transition-colors duration-200",
+                activeTab === 'limit' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Limit
+            </button>
+            <button
+              onClick={() => setActiveTab('buy')}
+              className={cn(
+                "relative z-10 px-3 py-2 text-sm font-medium rounded-full transition-colors duration-200",
+                activeTab === 'buy' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Buy
+            </button>
+            <button
+              onClick={() => setActiveTab('sell')}
+              className={cn(
+                "relative z-10 px-3 py-2 text-sm font-medium rounded-full transition-colors duration-200",
+                activeTab === 'sell' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Sell
+            </button>
+          </div>
+
           {/* Settings Button */}
           <div className="flex justify-end">
             <Button
