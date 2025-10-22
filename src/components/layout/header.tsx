@@ -80,12 +80,8 @@ export function Header() {
   const navItems = [
     { name: "Home", href: "/" },
     { name: "Explore", href: "/cryptocurrencies" },
-    { name: "Trade", href: "" },
-    { name: "Pool", href: "" },
-    { name: "Stack", href: "" },
+    { name: "Trade", href: "/trade" },
     { name: "Protfolio", href: "/agent-dashboard" },
- 
-    
   ];
 
   const saveRule = async (rule: any) => {
