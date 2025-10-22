@@ -49,9 +49,6 @@ export default function NotFound() {
             <Link href="/cryptocurrencies" className="text-sm hover:text-primary dark:hover:text-[#F3C623] transition-colors">
               Cryptocurrencies
             </Link>
-            <Link href="/exchanges" className="text-sm hover:text-primary dark:hover:text-[#F3C623] transition-colors">
-              Exchanges
-            </Link>
             <Link href="/algorand" className="text-sm hover:text-primary dark:hover:text-[#F3C623] transition-colors">
               Algorand
             </Link>

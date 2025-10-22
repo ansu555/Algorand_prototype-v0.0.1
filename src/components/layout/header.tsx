@@ -79,9 +79,12 @@ export function Header() {
 
   const navItems = [
     { name: "Home", href: "/" },
-    { name: "Cryptocurrencies", href: "/cryptocurrencies" },
-    { name: "Exchanges", href: "/exchanges" },
-    { name: "Agent", href: "/agent-dashboard" },
+    { name: "Explore", href: "/cryptocurrencies" },
+    { name: "Trade", href: "" },
+    { name: "Pool", href: "" },
+    { name: "Stack", href: "" },
+    { name: "Protfolio", href: "/agent-dashboard" },
+ 
     
   ];
 
