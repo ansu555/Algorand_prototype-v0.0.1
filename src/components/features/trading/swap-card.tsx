@@ -55,24 +55,23 @@ export function SwapCard() {
       <Card className="w-full rounded-xl border border-border shadow-lg bg-card">
         <CardContent className="p-3 space-y-3.5">
           {/* Tab Buttons */}
-          <div className="flex items-center gap-3 p-1 bg-muted/30 rounded-3xl h-[42px] relative">
+          <div className="flex items-center p-1 bg-muted/30 rounded-full h-[42px] relative">
             {/* Background slider */}
             <div 
               className={cn(
-                "absolute h-8 rounded-full bg-background transition-all duration-300 ease-in-out",
-                activeTab === 'swap' && "w-[60px] translate-x-0",
-                activeTab === 'limit' && "w-[60px] translate-x-[76px]",
-                activeTab === 'buy' && "w-[52px] translate-x-[152px]",
-                activeTab === 'sell' && "w-[52px] translate-x-[220px]"
+                "absolute h-8 rounded-full bg-background shadow-sm transition-all duration-300 ease-in-out",
+                activeTab === 'swap' && "w-[72px] left-1",
+                activeTab === 'limit' && "w-[72px] left-[76px]",
+                activeTab === 'buy' && "w-[72px] left-[148px]",
+                activeTab === 'sell' && "w-[72px] left-[220px]"
               )}
-              style={{ zIndex: 0 }}
             />
             
             {/* Tab Buttons */}
             <button
               onClick={() => setActiveTab('swap')}
               className={cn(
-                "relative z-10 px-3 py-2 text-sm font-medium rounded-full transition-colors duration-200",
+                "relative z-10 px-0 py-2 text-sm font-medium rounded-full transition-colors duration-200 min-w-[72px] justify-center",
                 activeTab === 'swap' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -81,7 +80,7 @@ export function SwapCard() {
             <button
               onClick={() => setActiveTab('limit')}
               className={cn(
-                "relative z-10 px-3 py-2 text-sm font-medium rounded-full transition-colors duration-200",
+                "relative z-10 px-0 py-2 text-sm font-medium rounded-full transition-colors duration-200 min-w-[72px] justify-center",
                 activeTab === 'limit' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -90,7 +89,7 @@ export function SwapCard() {
             <button
               onClick={() => setActiveTab('buy')}
               className={cn(
-                "relative z-10 px-3 py-2 text-sm font-medium rounded-full transition-colors duration-200",
+                "relative z-10 px-0 py-2 text-sm font-medium rounded-full transition-colors duration-200 min-w-[72px] justify-center",
                 activeTab === 'buy' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -99,7 +98,7 @@ export function SwapCard() {
             <button
               onClick={() => setActiveTab('sell')}
               className={cn(
-                "relative z-10 px-3 py-2 text-sm font-medium rounded-full transition-colors duration-200",
+                "relative z-10 px-0 py-2 text-sm font-medium rounded-full transition-colors duration-200 min-w-[72px] justify-center",
                 activeTab === 'sell' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
