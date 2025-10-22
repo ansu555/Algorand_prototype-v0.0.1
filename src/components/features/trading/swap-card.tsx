@@ -8,6 +8,9 @@ import { useWalletConnection } from "@/components/providers/txnlab-wallet-provid
 import { Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SettingsModal } from "./settings-modal"
+import { LimitPanel } from "./limit-panel"
+import { BuyPanel } from "./buy-panel"
+import { SellPanel } from "./sellpanel"
 
 const TOKENS = [
   { 
@@ -104,20 +107,20 @@ export function SwapCard() {
             >
               Sell
             </button>
-          </div>
 
-          {/* Settings Button */}
-          <div className="flex justify-end">
+            {/* Settings Button moved inside tab bar */}
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 ml-auto relative z-10"
               onClick={() => setShowSettings(true)}
+              aria-label="Open settings"
             >
               <Settings className="h-4 w-4" />
             </Button>
           </div>
 
+          {activeTab === 'swap' && (
           <div className="flex flex-col gap-y-2">
             <div className="flex flex-col items-center -space-y-3">
               {/* Pay Token Input */}
@@ -203,39 +206,51 @@ export function SwapCard() {
               </div>
             </div>
           </div>
+          )}
 
-          {/* Connect Wallet / Swap Button */}
-          <div className="flex flex-col items-center space-y-3.5">
-            {!isConnected ? (
-              <Button
-                className={cn(
-                  "w-full h-11 text-base font-semibold rounded-md px-4 py-2.5 active:scale-[0.99] transition-all duration-300",
-                  "bg-primary hover:bg-primary/90 dark:bg-[#F3C623] dark:hover:bg-[#F3C623]/90",
-                  "dark:text-black"
-                )}
-                onClick={() => {
-                  console.log("Connect wallet clicked")
-                }}
-              >
-                Connect Wallet
-              </Button>
-            ) : (
-              <Button
-                className={cn(
-                  "w-full h-11 text-base font-semibold rounded-md px-4 py-2.5 active:scale-[0.99] transition-all duration-300",
-                  "bg-primary hover:bg-primary/90 dark:bg-[#F3C623] dark:hover:bg-[#F3C623]/90",
-                  "dark:text-black",
-                  "disabled:opacity-50 disabled:cursor-not-allowed"
-                )}
-                disabled={isSwapDisabled}
-                onClick={() => {
-                  console.log("Swap clicked", { fromToken, toToken, fromAmount })
-                }}
-              >
-                {isSwapDisabled ? "Enter Amount" : "Swap"}
-              </Button>
-            )}
-          </div>
+          {activeTab === 'limit' && (
+            <LimitPanel />
+          )}
+          {activeTab === 'buy' && (
+            <BuyPanel />
+          )}
+          {activeTab === 'sell' && (
+            <SellPanel />
+          )}
+
+          {activeTab === 'swap' && (
+            <div className="flex flex-col items-center space-y-3.5">
+              {!isConnected ? (
+                <Button
+                  className={cn(
+                    "w-full h-11 text-base font-semibold rounded-md px-4 py-2.5 active:scale-[0.99] transition-all duration-300",
+                    "bg-primary hover:bg-primary/90 dark:bg-[#F3C623] dark:hover:bg-[#F3C623]/90",
+                    "dark:text-black"
+                  )}
+                  onClick={() => {
+                    console.log("Connect wallet clicked")
+                  }}
+                >
+                  Connect Wallet
+                </Button>
+              ) : (
+                <Button
+                  className={cn(
+                    "w-full h-11 text-base font-semibold rounded-md px-4 py-2.5 active:scale-[0.99] transition-all duration-300",
+                    "bg-primary hover:bg-primary/90 dark:bg-[#F3C623] dark:hover:bg-[#F3C623]/90",
+                    "dark:text-black",
+                    "disabled:opacity-50 disabled:cursor-not-allowed"
+                  )}
+                  disabled={isSwapDisabled}
+                  onClick={() => {
+                    console.log("Swap clicked", { fromToken, toToken, fromAmount })
+                  }}
+                >
+                  {isSwapDisabled ? "Enter Amount" : "Swap"}
+                </Button>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
