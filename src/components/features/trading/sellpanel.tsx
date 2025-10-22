@@ -17,7 +17,7 @@ export function SellPanel() {
 
   return (
     <div className="flex flex-col gap-y-2">
-      <div className="flex flex-col items-center -space-y-3">
+      <div className="flex flex-col items-center space-y-2">
         {/* Sell */}
         <div className="flex w-full gap-2 px-3 py-3 min-h-24 items-center justify-between group transition-all duration-300 bg-muted/50 rounded-lg border border-border focus-within:border-primary focus-within:bg-background h-[7.5rem]">
           <div className="space-y-2 flex flex-col grow text-muted-foreground">
