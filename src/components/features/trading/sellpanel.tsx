@@ -61,12 +61,12 @@ export function SellPanel() {
       {/* Selected token row */}
       <div className="rounded-md border border-border bg-muted/50 p-3 flex items-center justify-between">
         <span className="text-sm text-muted-foreground">Token</span>
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-6 w-6 overflow-hidden rounded-full">
-            <img src={token.image} alt={token.symbol} className="h-full w-full object-cover" />
-          </span>
-          <span className="font-medium">{token.symbol}</span>
-        </div>
+        {/* Placeholder dropdown for token selection (to be populated by backend) */}
+        <select
+          className="h-9 min-w-[90px] rounded-md border border-border bg-background px-2 text-sm focus:outline-none"
+          aria-label="Select token"
+          disabled
+        />
       </div>
 
       {/* Action button */}

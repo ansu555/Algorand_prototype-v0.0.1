@@ -141,19 +141,12 @@ export function SwapCard() {
                 
                 <div className="space-y-2 flex flex-col items-end">
                   <div className="h-5"></div>
-                  <Button
-                    variant="secondary"
-                    className="px-2 py-1 gap-x-1.5 text-base font-medium h-auto rounded-md hover:bg-accent active:scale-[0.99] transition-all duration-300"
-                  >
-                    <span className="relative flex min-h-4 min-w-4 shrink-0 rounded-full h-6 w-6">
-                      <img 
-                        className="aspect-square h-full w-full rounded-full" 
-                        src={fromToken.image}
-                        alt={fromToken.symbol}
-                      />
-                    </span>
-                    <span className="text-xl">{fromToken.symbol}</span>
-                  </Button>
+                  {/* Placeholder dropdown for token selection (populated by backend later) */}
+                  <select
+                    className="h-9 min-w-[90px] rounded-md border border-border bg-background px-2 text-sm focus:outline-none"
+                    aria-label="Select token"
+                    disabled
+                  />
                   <div className="h-5"></div>
                 </div>
               </div>
@@ -188,19 +181,12 @@ export function SwapCard() {
                 
                 <div className="space-y-2 flex flex-col items-end">
                   <div className="h-5"></div>
-                  <Button
-                    variant="secondary"
-                    className="px-2 py-1 gap-x-1.5 text-base font-medium h-auto rounded-md hover:bg-accent active:scale-[0.99] transition-all duration-300"
-                  >
-                    <span className="relative flex min-h-4 min-w-4 shrink-0 rounded-full h-6 w-6">
-                      <img 
-                        className="aspect-square h-full w-full rounded-full" 
-                        src={toToken.image}
-                        alt={toToken.symbol}
-                      />
-                    </span>
-                    <span className="text-xl">{toToken.symbol}</span>
-                  </Button>
+                  {/* Placeholder dropdown for token selection (populated by backend later) */}
+                  <select
+                    className="h-9 min-w-[90px] rounded-md border border-border bg-background px-2 text-sm focus:outline-none"
+                    aria-label="Select token"
+                    disabled
+                  />
                   <div className="h-5"></div>
                 </div>
               </div>

@@ -87,7 +87,12 @@ export function LimitPanel() {
           </div>
           <div className="space-y-2 flex flex-col items-end">
             <div className="h-5"></div>
-            <div className="px-2 py-1 text-base font-medium rounded-md bg-secondary">ALGO</div>
+            {/* Placeholder dropdown for token selection */}
+            <select
+              className="h-9 min-w-[90px] rounded-md border border-border bg-background px-2 text-sm focus:outline-none"
+              aria-label="Select token"
+              disabled
+            />
             <div className="h-5"></div>
           </div>
         </div>
@@ -109,7 +114,12 @@ export function LimitPanel() {
           </div>
           <div className="space-y-2 flex flex-col items-end">
             <div className="h-5"></div>
-            <div className="px-2 py-1 text-base font-medium rounded-md bg-secondary">USDC</div>
+            {/* Placeholder dropdown for token selection */}
+            <select
+              className="h-9 min-w-[90px] rounded-md border border-border bg-background px-2 text-sm focus:outline-none"
+              aria-label="Select token"
+              disabled
+            />
             <div className="h-5"></div>
           </div>
         </div>
