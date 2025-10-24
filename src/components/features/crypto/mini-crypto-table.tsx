@@ -16,7 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { ArrowDown, ArrowUp, Search, Shield } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useGetCryptosQuery } from "@/app/services/cryptoApi"
+import { useGetAlgorandCryptosQuery } from "@/app/services/cryptoApi"
 import { Skeleton } from "@/components/ui/skeleton"
 
 type RiskLevel = "Low" | "Medium" | "High"
@@ -85,7 +85,8 @@ export function MiniCryptoTable({
   const [page, setPage] = useState(1)
   const perPage = 7
 
-  const { data, isFetching, error, refetch } = useGetCryptosQuery(100)
+  // Fetch ONLY Algorand ecosystem coins from CoinGecko
+  const { data, isFetching, error, refetch } = useGetAlgorandCryptosQuery(100)
 
   const coins: Cryptocurrency[] = useMemo(() => {
     const list = (data?.coins || []).map((coin: any) => {

@@ -59,6 +59,54 @@ export const cryptoApi = createApi({
                 }
             },
         }),
+        // Algorand ecosystem only: filter coins whose platform is Algorand
+        getAlgorandCryptos: builder.query({
+            // Use queryFn to orchestrate multiple requests against CoinGecko
+            async queryFn(count = 100, _queryApi, _extraOptions, baseQuery) {
+                const cgBase = 'https://api.coingecko.com/api/v3';
+                // 1) Fetch all coins with platforms (force CoinGecko public API)
+                const listRes = await baseQuery(`${cgBase}/coins/list?include_platform=true`);
+                if (listRes.error) return { error: listRes.error };
+
+                const data = listRes.data || [];
+                // 2) Filter to Algorand platform coins
+                const algorandIds = data
+                    .filter((c) => c && c.platforms && Object.keys(c.platforms).some((k) => k.toLowerCase() === 'algorand' && c.platforms[k]))
+                    .map((c) => c.id);
+
+                if (!algorandIds.length) return { data: { coins: [] } };
+
+                // 3) Trim to requested count to avoid oversized query strings
+                const trimmed = algorandIds.slice(0, Math.min(algorandIds.length, count || 100));
+                const idsParam = encodeURIComponent(trimmed.join(','));
+
+                // 4) Fetch market data for Algorand coins only
+                const marketsPath = `${cgBase}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${trimmed.length}&page=1&ids=${idsParam}&sparkline=true&price_change_percentage=1h,24h,7d`;
+                const marketsRes = await baseQuery(marketsPath);
+                if (marketsRes.error) return { error: marketsRes.error };
+
+                const response = marketsRes.data || [];
+
+                // 5) Transform response into the same shape used elsewhere
+                const coins = response.map((coin) => ({
+                    uuid: coin.id,
+                    id: coin.id,
+                    rank: coin.market_cap_rank || 0,
+                    name: coin.name,
+                    symbol: (coin.symbol || '').toUpperCase(),
+                    price: String(coin.current_price ?? '0'),
+                    change1h: String(coin.price_change_percentage_1h_in_currency ?? '0'),
+                    change: String(coin.price_change_percentage_24h ?? '0'),
+                    change7d: String(coin.price_change_percentage_7d_in_currency ?? '0'),
+                    marketCap: String(coin.market_cap ?? '0'),
+                    '24hVolume': String(coin.total_volume ?? '0'),
+                    supply: { circulating: String(coin.circulating_supply ?? '0') },
+                    sparkline: coin.sparkline_in_7d?.price || []
+                }));
+
+                return { data: { coins } };
+            },
+        }),
         getStats: builder.query({
             query: () => useRapidAPI ? '/stats' : '/global',
             transformResponse: (response) => {
@@ -137,5 +185,6 @@ export const {
     useGetCryptosQuery, 
     useGetStatsQuery,
     useGetCryptoDetailsQuery,
-    useGetCryptoHistoryQuery
+    useGetCryptoHistoryQuery,
+    useGetAlgorandCryptosQuery
 } = cryptoApi;
