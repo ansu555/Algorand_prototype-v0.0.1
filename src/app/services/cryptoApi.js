@@ -10,20 +10,17 @@ const baseUrl = process.env.NEXT_PUBLIC_CRYPTO_API_URL;
 // Check if we should use RapidAPI or fallback to CoinGecko
 const useRapidAPI = baseUrl && cryptoApiHeaders['x-rapidapi-key'];
 
-// CoinGecko API key for authenticated requests
-const coinGeckoApiKey = process.env.NEXT_PUBLIC_COINGECKO_API_KEY;
+// Use Next.js API proxy to avoid CORS issues
+const coinGeckoBaseUrl = '/api/coingecko';
 
 export const cryptoApi = createApi({
     reducerPath: 'cryptoApi',
     baseQuery: fetchBaseQuery({
-        baseUrl: useRapidAPI ? baseUrl : 'https://api.coingecko.com/api/v3',
+        baseUrl: useRapidAPI ? baseUrl : coinGeckoBaseUrl,
         prepareHeaders: (headers) => {
             if (useRapidAPI) {
                 headers.set('x-rapidapi-key', cryptoApiHeaders['x-rapidapi-key']);
                 headers.set('x-rapidapi-host', cryptoApiHeaders['x-rapidapi-host']);
-            } else if (coinGeckoApiKey) {
-                // Use CoinGecko API key for better rate limits
-                headers.set('x-cg-demo-api-key', coinGeckoApiKey);
             }
             return headers;
         }
@@ -35,7 +32,8 @@ export const cryptoApi = createApi({
                     return `/coins?limit=${count || 10}`;
                 } else {
                     // CoinGecko free API endpoint
-                    return `/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${count || 100}&page=1&sparkline=true&price_change_percentage=1h,24h,7d`;
+                    const endpoint = `/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${count || 100}&page=1&sparkline=true&price_change_percentage=1h,24h,7d`;
+                    return `?endpoint=${encodeURIComponent(endpoint)}`;
                 }
             },
             transformResponse: (response) => {
@@ -69,14 +67,21 @@ export const cryptoApi = createApi({
         getAlgorandCryptos: builder.query({
             query: (perPage = 250) => {
                 const ts = Date.now();
-                return `/coins/markets?vs_currency=usd&category=algorand-ecosystem&order=market_cap_desc&per_page=${perPage}&page=1&sparkline=true&price_change_percentage=1h,24h,7d,30d&_t=${ts}`;
+                const endpoint = `/coins/markets?vs_currency=usd&category=algorand-ecosystem&order=market_cap_desc&per_page=${perPage}&page=1&sparkline=true&price_change_percentage=1h,24h,7d,30d&_t=${ts}`;
+                return useRapidAPI ? endpoint : `?endpoint=${encodeURIComponent(endpoint)}`;
             },
             transformResponse: (response) => {
                 // Transform CoinGecko category response into the same "coins" shape
-                const coins = (response || []).map((coin) => ({
+                // Filter out coins with no price (rank 0 coins without market data)
+                const validCoins = (response || []).filter((coin) => 
+                    coin.current_price && 
+                    coin.current_price > 0
+                );
+
+                const coins = validCoins.map((coin, index) => ({
                     uuid: coin.id,
                     id: coin.id,
-                    rank: coin.market_cap_rank || 0,
+                    rank: coin.market_cap_rank || (index + 1), // Use global rank or local index
                     name: coin.name,
                     symbol: (coin.symbol || '').toUpperCase(),
                     price: String(coin.current_price ?? '0'),
@@ -97,7 +102,11 @@ export const cryptoApi = createApi({
             },
         }),
         getStats: builder.query({
-            query: () => useRapidAPI ? '/stats' : '/global',
+            query: () => {
+                if (useRapidAPI) return '/stats';
+                const endpoint = '/global';
+                return `?endpoint=${encodeURIComponent(endpoint)}`;
+            },
             transformResponse: (response) => {
                 if (useRapidAPI) {
                     return response.data;
@@ -114,21 +123,50 @@ export const cryptoApi = createApi({
             },
         }),
         getCryptoDetails: builder.query({
-            query: (coinId) => useRapidAPI ? `/coin/${coinId}` : `/coins/${coinId}`,
+            query: (coinId) => {
+                if (useRapidAPI) {
+                    return `/coin/${coinId}`;
+                } else {
+                    const ts = Date.now();
+                    const endpoint = `/coins/${coinId}?localization=false&tickers=false&community_data=false&developer_data=false&sparkline=false&_t=${ts}`;
+                    return `?endpoint=${encodeURIComponent(endpoint)}`;
+                }
+            },
             transformResponse: (response) => {
                 if (useRapidAPI) {
                     return response.data.coin;
                 } else {
-                    // Transform CoinGecko coin details
+                    // Transform CoinGecko coin details with full supply, ATH, ATL data
+                    const md = response.market_data || {};
                     return {
                         uuid: response.id,
+                        id: response.id,
                         name: response.name,
                         symbol: response.symbol.toUpperCase(),
+                        rank: response.market_cap_rank || 0,
                         description: response.description?.en || '',
-                        price: response.market_data?.current_price.usd.toString() || '0',
-                        marketCap: response.market_data?.market_cap.usd.toString() || '0',
-                        '24hVolume': response.market_data?.total_volume.usd.toString() || '0',
-                        change: response.market_data?.price_change_percentage_24h.toString() || '0',
+                        price: md.current_price?.usd?.toString() || '0',
+                        marketCap: md.market_cap?.usd?.toString() || '0',
+                        '24hVolume': md.total_volume?.usd?.toString() || '0',
+                        change: md.price_change_percentage_24h?.toString() || '0',
+                        supply: {
+                            circulating: md.circulating_supply?.toString() || '0',
+                            total: md.total_supply?.toString() || '0',
+                            max: md.max_supply?.toString() || '0'
+                        },
+                        allTimeHigh: {
+                            price: md.ath?.usd?.toString() || '0',
+                            date: md.ath_date?.usd || '',
+                            // provide both date string and unix timestamp (seconds) for UI compatibility
+                            timestamp: md.ath_date?.usd ? Math.floor(new Date(md.ath_date.usd).getTime() / 1000) : undefined,
+                            changePercentage: md.ath_change_percentage?.usd?.toString() || '0'
+                        },
+                        allTimeLow: {
+                            price: md.atl?.usd?.toString() || '0',
+                            date: md.atl_date?.usd || '',
+                            timestamp: md.atl_date?.usd ? Math.floor(new Date(md.atl_date.usd).getTime() / 1000) : undefined,
+                            changePercentage: md.atl_change_percentage?.usd?.toString() || '0'
+                        }
                     };
                 }
             },
@@ -150,7 +188,8 @@ export const cryptoApi = createApi({
                         '5y': 1825
                     };
                     const days = daysMap[timePeriod] || 7;
-                    return `/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`;
+                    const endpoint = `/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`;
+                    return `?endpoint=${encodeURIComponent(endpoint)}`;
                 }
             },
             transformResponse: (response) => {

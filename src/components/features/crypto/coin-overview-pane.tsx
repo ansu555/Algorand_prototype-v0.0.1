@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ArrowDown, ArrowUp, Star, StarOff } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useGetCryptoDetailsQuery, useGetCryptoHistoryQuery } from "@/app/services/cryptoApi"
+import { useGetCryptoDetailsQuery, useGetCryptoHistoryQuery, useGetAlgorandCryptosQuery } from "@/app/services/cryptoApi"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
@@ -39,6 +39,13 @@ export default function CoinOverviewPane({ coinId }: { coinId?: string }) {
   const { data: coin, isLoading: loadingDetails } = useGetCryptoDetailsQuery(coinId as string, {
     skip: !enabled,
   }) as any
+  // Fallback list market data for marketCap and 24h volume
+  const { data: listData } = useGetAlgorandCryptosQuery(undefined as any, { skip: !enabled }) as any
+  const listCoin = (listData?.coins || []).find((c: any) => (c.uuid || c.id) === coinId)
+  const fallbackMarketCap = listCoin?.marketCap ? parseFloat(listCoin.marketCap) : 0
+  const fallbackVolume = listCoin?.["24hVolume"] ? parseFloat(listCoin["24hVolume"]) : 0
+  const marketCap = (coin?.marketCap && parseFloat(coin.marketCap) > 0) ? parseFloat(coin.marketCap) : fallbackMarketCap
+  const volume24h = (coin?.["24hVolume"] && parseFloat(coin["24hVolume"]) > 0) ? parseFloat(coin["24hVolume"]) : fallbackVolume
   const { data: history, isLoading: loadingHistory } = useGetCryptoHistoryQuery(
     { coinId: coinId as string, timePeriod: TIME_RANGES[timeRange] },
     { skip: !enabled }
@@ -64,6 +71,16 @@ export default function CoinOverviewPane({ coinId }: { coinId?: string }) {
 
   if (isLoading) return <PaneSkeleton />
   if (!coin) return <div className="text-sm text-muted-foreground">Select a coin from the right to view details.</div>
+
+  // Format large USD numbers with units (B, M, K)
+  const formatCompactUSD = (n: number) => {
+    if (n == null || isNaN(n)) return "$—"
+    const abs = Math.abs(n)
+    if (abs >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(1)}B`
+    if (abs >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
+    if (abs >= 1_000) return `$${(n / 1_000).toFixed(1)}K`
+    return `$${n.toLocaleString()}`
+  }
 
   return (
     <div className="space-y-4">
@@ -105,16 +122,16 @@ export default function CoinOverviewPane({ coinId }: { coinId?: string }) {
         <Card>
           <CardHeader className="py-2"><CardTitle className="text-[11px]">Market Cap</CardTitle></CardHeader>
           <CardContent className="pt-0 pb-3">
-            <div className="text-2xl font-bold font-mono">${(parseFloat(coin.marketCap) / 1_000_000_000).toFixed(1)}B</div>
+            <div className="text-2xl font-bold font-mono" title={`$${marketCap.toLocaleString()}`}>{formatCompactUSD(marketCap)}</div>
             <CardDescription className="text-xs">Rank #{coin.rank}</CardDescription>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="py-2"><CardTitle className="text-[11px]">Volume (24h)</CardTitle></CardHeader>
           <CardContent className="pt-0 pb-3">
-            <div className="text-2xl font-bold font-mono">${(parseFloat(coin["24hVolume"]) / 1_000_000_000).toFixed(1)}B</div>
+            <div className="text-2xl font-bold font-mono" title={`$${volume24h.toLocaleString()}`}>{formatCompactUSD(volume24h)}</div>
             <CardDescription className="text-xs">
-              {((parseFloat(coin["24hVolume"]) / parseFloat(coin.marketCap)) * 100).toFixed(2)}% of market cap
+              {marketCap > 0 ? ((volume24h / marketCap) * 100).toFixed(2) : "—"}% of market cap
             </CardDescription>
           </CardContent>
         </Card>
