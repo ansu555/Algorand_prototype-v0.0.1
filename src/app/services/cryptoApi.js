@@ -10,6 +10,9 @@ const baseUrl = process.env.NEXT_PUBLIC_CRYPTO_API_URL;
 // Check if we should use RapidAPI or fallback to CoinGecko
 const useRapidAPI = baseUrl && cryptoApiHeaders['x-rapidapi-key'];
 
+// CoinGecko API key for authenticated requests
+const coinGeckoApiKey = process.env.NEXT_PUBLIC_COINGECKO_API_KEY;
+
 export const cryptoApi = createApi({
     reducerPath: 'cryptoApi',
     baseQuery: fetchBaseQuery({
@@ -18,6 +21,9 @@ export const cryptoApi = createApi({
             if (useRapidAPI) {
                 headers.set('x-rapidapi-key', cryptoApiHeaders['x-rapidapi-key']);
                 headers.set('x-rapidapi-host', cryptoApiHeaders['x-rapidapi-host']);
+            } else if (coinGeckoApiKey) {
+                // Use CoinGecko API key for better rate limits
+                headers.set('x-cg-demo-api-key', coinGeckoApiKey);
             }
             return headers;
         }
@@ -59,36 +65,15 @@ export const cryptoApi = createApi({
                 }
             },
         }),
-        // Algorand ecosystem only: filter coins whose platform is Algorand
+        // Algorand ecosystem only: fetch from CoinGecko category "algorand-ecosystem"
         getAlgorandCryptos: builder.query({
-            // Use queryFn to orchestrate multiple requests against CoinGecko
-            async queryFn(count = 100, _queryApi, _extraOptions, baseQuery) {
-                const cgBase = 'https://api.coingecko.com/api/v3';
-                // 1) Fetch all coins with platforms (force CoinGecko public API)
-                const listRes = await baseQuery(`${cgBase}/coins/list?include_platform=true`);
-                if (listRes.error) return { error: listRes.error };
-
-                const data = listRes.data || [];
-                // 2) Filter to Algorand platform coins
-                const algorandIds = data
-                    .filter((c) => c && c.platforms && Object.keys(c.platforms).some((k) => k.toLowerCase() === 'algorand' && c.platforms[k]))
-                    .map((c) => c.id);
-
-                if (!algorandIds.length) return { data: { coins: [] } };
-
-                // 3) Trim to requested count to avoid oversized query strings
-                const trimmed = algorandIds.slice(0, Math.min(algorandIds.length, count || 100));
-                const idsParam = encodeURIComponent(trimmed.join(','));
-
-                // 4) Fetch market data for Algorand coins only
-                const marketsPath = `${cgBase}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${trimmed.length}&page=1&ids=${idsParam}&sparkline=true&price_change_percentage=1h,24h,7d`;
-                const marketsRes = await baseQuery(marketsPath);
-                if (marketsRes.error) return { error: marketsRes.error };
-
-                const response = marketsRes.data || [];
-
-                // 5) Transform response into the same shape used elsewhere
-                const coins = response.map((coin) => ({
+            query: (perPage = 250) => {
+                const ts = Date.now();
+                return `/coins/markets?vs_currency=usd&category=algorand-ecosystem&order=market_cap_desc&per_page=${perPage}&page=1&sparkline=true&price_change_percentage=1h,24h,7d,30d&_t=${ts}`;
+            },
+            transformResponse: (response) => {
+                // Transform CoinGecko category response into the same "coins" shape
+                const coins = (response || []).map((coin) => ({
                     uuid: coin.id,
                     id: coin.id,
                     rank: coin.market_cap_rank || 0,
@@ -96,15 +81,19 @@ export const cryptoApi = createApi({
                     symbol: (coin.symbol || '').toUpperCase(),
                     price: String(coin.current_price ?? '0'),
                     change1h: String(coin.price_change_percentage_1h_in_currency ?? '0'),
-                    change: String(coin.price_change_percentage_24h ?? '0'),
+                    change: String(coin.price_change_percentage_24h_in_currency ?? '0'),
                     change7d: String(coin.price_change_percentage_7d_in_currency ?? '0'),
+                    change30d: String(coin.price_change_percentage_30d_in_currency ?? '0'),
                     marketCap: String(coin.market_cap ?? '0'),
                     '24hVolume': String(coin.total_volume ?? '0'),
-                    supply: { circulating: String(coin.circulating_supply ?? '0') },
-                    sparkline: coin.sparkline_in_7d?.price || []
+                    supply: {
+                        circulating: String(coin.circulating_supply ?? '0'),
+                        total: String(coin.total_supply ?? '0')
+                    },
+                    sparkline: coin.sparkline_in_7d?.price || [],
+                    image: coin.image || ''
                 }));
-
-                return { data: { coins } };
+                return { coins };
             },
         }),
         getStats: builder.query({

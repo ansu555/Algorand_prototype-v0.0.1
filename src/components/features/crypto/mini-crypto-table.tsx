@@ -85,8 +85,8 @@ export function MiniCryptoTable({
   const [page, setPage] = useState(1)
   const perPage = 7
 
-  // Fetch ONLY Algorand ecosystem coins from CoinGecko
-  const { data, isFetching, error, refetch } = useGetAlgorandCryptosQuery(100)
+  // Fetch ONLY Algorand ecosystem coins from CoinGecko category
+  const { data, isFetching, error, refetch } = useGetAlgorandCryptosQuery(250)
 
   const coins: Cryptocurrency[] = useMemo(() => {
     const list = (data?.coins || []).map((coin: any) => {
