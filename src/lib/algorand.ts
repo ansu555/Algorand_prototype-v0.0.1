@@ -53,6 +53,15 @@ function getNetwork(): 'mainnet' | 'testnet' {
   return network
 }
 
+/**
+ * Get Algod client instance
+ */
+export function getAlgodClient(): algosdk.Algodv2 {
+  const network = getNetwork();
+  const config = ALGORAND_NETWORKS[network];
+  return new algosdk.Algodv2(config.token, config.server, config.port);
+}
+
 export async function buildAlgorandAgent() {
   try {
     const network = getNetwork()
