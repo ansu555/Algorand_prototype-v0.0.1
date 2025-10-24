@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
-import { fetchCoinDetails } from "@/lib/server/prices"
+// Price API route - now using Algorand DEX integration
+// This route is deprecated in favor of /api/algorand/assets/[id]
 
 export const runtime = "nodejs"
 
@@ -25,31 +26,12 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const coin = searchParams.get("coin")
   const window = searchParams.get("window") || undefined
+  
   if (!coin) return NextResponse.json({ error: "Missing coin query param" }, { status: 400 })
 
-  try {
-    const details = await fetchCoinDetails(coin)
-    if (details && Number.isFinite(details.price) && details.price > 0) {
-      const price = Number(details.price)
-      let prevPrice: number | undefined
-      // If a window is requested and we have a 24h change, approximate previous price
-      if (window && typeof details.change24hPct === 'number') {
-        const pct = Number(details.change24hPct)
-        if (Number.isFinite(pct)) {
-          prevPrice = Number((price / (1 + pct / 100)).toFixed(6))
-        }
-      }
-  return NextResponse.json({ coinId: coin, price, symbol: details.symbol, name: details.name, ...(window ? { window } : {}), ...(prevPrice ? { prevPrice } : {}), source: "rapidapi" })
-    }
-  } catch {
-    // ignore and fall back to mock
-  }
-
-  const price = mockPriceForCoin(coin)
-  let prevPrice: number | undefined
-  if (window) {
-    const pct = deterministicPctDelta(coin, window)
-    prevPrice = Number((price / (1 + pct / 100)).toFixed(6))
-  }
-  return NextResponse.json({ coinId: coin, price, ...(window ? { window } : {}), ...(prevPrice ? { prevPrice } : {}), source: "mock" })
+  // Redirect to Algorand API for ASA price data
+  return NextResponse.json({ 
+    error: "This endpoint is deprecated. Use /api/algorand/assets/[id] for ASA price data",
+    redirect: `/api/algorand/assets/${coin}`
+  }, { status: 410 })
 }

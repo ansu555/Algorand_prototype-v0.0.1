@@ -20,7 +20,7 @@ import {
   Github,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useGetCryptoDetailsQuery, useGetCryptoHistoryQuery } from "@/app/services/cryptoApi"
+import { useGetAssetDetailsQuery, useGetAssetHistoryQuery } from "@/app/services/algorandApi"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Area,
@@ -108,19 +108,19 @@ export function CryptoDetail({ id }: { id: string }) {
   const { activeAccount } = useWalletConnection()
   const address = activeAccount?.address
 
-  // Fetch crypto details
+  // Fetch ASA details
   const { 
     data: crypto, 
     isLoading: isLoadingCrypto, 
     error: cryptoError 
-  } = useGetCryptoDetailsQuery(id);
+  } = useGetAssetDetailsQuery(id);
   
   // Fetch price history based on time range
   const { 
     data: historyData, 
     isLoading: isLoadingHistory 
-  } = useGetCryptoHistoryQuery({ 
-    coinId: id, 
+  } = useGetAssetHistoryQuery({ 
+    assetId: id, 
     timePeriod: TIME_RANGES[timeRange] 
   });
 

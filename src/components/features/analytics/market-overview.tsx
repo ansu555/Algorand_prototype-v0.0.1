@@ -4,11 +4,11 @@ import type React from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowDown, ArrowUp, DollarSign, BarChart3, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useGetStatsQuery } from "@/app/services/cryptoApi"
+import { useGetNetworkStatsQuery } from "@/app/services/algorandApi"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export function MarketOverview() {
-  const { data: stats, isFetching, error } = useGetStatsQuery({});
+  const { data: stats, isFetching, error } = useGetNetworkStatsQuery({});
   
   // For debugging
   console.log('Stats API Response:', stats);
@@ -42,21 +42,21 @@ export function MarketOverview() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <StatsCard
-            title="Total Market Cap"
-            value={`$${formatMarketCap(stats.totalMarketCap)}`}
-            change={parseFloat(stats.marketCapChange) || 0}
+            title="Total ASAs"
+            value={stats.totalAssets?.toString() || '0'}
+            change={0}
             icon={<DollarSign className="h-4 w-4" />}
           />
           <StatsCard
-            title="24h Volume"
-            value={`$${formatMarketCap(stats.total24hVolume)}`}
-            change={parseFloat(stats.volume24hChange) || 0}
+            title="Network Status"
+            value={stats.networkStatus || 'Unknown'}
+            change={0}
             icon={<BarChart3 className="h-4 w-4" />}
           />
           <StatsCard
-            title="BTC Dominance"
-            value={`${parseFloat(stats.btcDominance).toFixed(2)}%`}
-            change={parseFloat(stats.btcDominanceChange) || 0}
+            title="Last Round"
+            value={stats.lastRound?.toString() || '0'}
+            change={0}
             icon={<TrendingUp className="h-4 w-4" />}
           />
         </div>

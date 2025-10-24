@@ -17,7 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { ArrowDown, ArrowUp, Search, RefreshCw, Shield } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useGetCryptosQuery } from "@/app/services/cryptoApi"
+import { useGetAssetsQuery } from "@/app/services/algorandApi"
 import { Skeleton } from "@/components/ui/skeleton"
 
 // Type definitions
@@ -115,37 +115,32 @@ export function CryptocurrenciesList() {
   const [riskFilter, setRiskFilter] = useState<string>("all")
   const itemsPerPage = 10
   
-  // Get 100 cryptocurrencies from the API
-  const { data, isFetching, error, refetch } = useGetCryptosQuery(100);
+  // Get 100 ASAs from the Algorand Indexer API
+  const { data, isFetching, error, refetch } = useGetAssetsQuery({ limit: 100 });
   
   // For debugging
   console.log('Cryptos API Response:', data);
   
   // Map API data to our component's expected format
-  const mapApiDataToCryptos = (apiCoins: any[]): Cryptocurrency[] => {
-    if (!apiCoins) return [];
+  const mapApiDataToCryptos = (apiAssets: any[]): Cryptocurrency[] => {
+    if (!apiAssets) return [];
     
-    return apiCoins.map(coin => {
+    return apiAssets.map(asset => {
       // For debugging
-      console.log('Raw coin data:', coin);
+      console.log('Raw asset data:', asset);
       
       const cryptoData = {
-        id: coin.uuid || coin.id || '',
-        rank: parseInt(coin.rank),
-        name: coin.name,
-        symbol: coin.symbol,
-        price: parseFloat(coin.price),
-        // Fix for 1h change - use sparkline data if available or try alternative fields
-        change1h: coin.change1h ? parseFloat(coin.change1h) : parseFloat(coin.change) / 24, // Estimate hourly change
-        change24h: parseFloat(coin.change),
-        // Fix for 7d change - use sparkline data for better estimate if available
-        change7d: coin.change7d ? parseFloat(coin.change7d) : 
-                 (coin.sparkline && coin.sparkline.length > 0) ? 
-                 ((parseFloat(coin.sparkline[coin.sparkline.length-1]) / parseFloat(coin.sparkline[0]) - 1) * 100) : 
-                 parseFloat(coin.change) * 7, // Rough estimate
-        marketCap: parseInt(coin.marketCap),
-        volume24h: parseInt(coin['24hVolume'] || '0'),
-        circulatingSupply: parseInt(coin.supply?.circulating || '0'),
+        id: asset.id || '',
+        rank: parseInt(asset.rank) || 0,
+        name: asset.name,
+        symbol: asset.symbol,
+        price: parseFloat(asset.price || '0'),
+        change1h: parseFloat(asset.change1h || '0'),
+        change24h: parseFloat(asset.change || '0'),
+        change7d: parseFloat(asset.change7d || '0'),
+        marketCap: parseInt(asset.marketCap || '0'),
+        volume24h: parseInt(asset['24hVolume'] || '0'),
+        circulatingSupply: parseInt(asset.supply?.circulating || '0'),
       };
 
       // Calculate risk level
@@ -159,7 +154,7 @@ export function CryptocurrenciesList() {
   };
   
   // Convert API data to our format
-  const allCryptos = data ? mapApiDataToCryptos(data.coins) : [];
+  const allCryptos = data?.assets ? mapApiDataToCryptos(data.assets) : [];
 
   // Filter and sort cryptos
   const filteredCryptos = allCryptos.filter(

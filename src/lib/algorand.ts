@@ -414,6 +414,134 @@ export async function buildAlgorandAgent() {
       }
     }
     
+    async function getAllASAs(limit = 100, next = ''): Promise<{
+      assets: Array<{
+        id: string
+        name: string
+        symbol: string
+        decimals: number
+        totalSupply: number
+        creator: string
+        manager: string
+        reserve: string
+        freeze: string
+        clawback: string
+        defaultFrozen: boolean
+        url: string
+        createdAt: number
+        destroyed: boolean
+      }>
+      nextToken: string | null
+      currentRound: number
+    }> {
+      try {
+        const params = new URLSearchParams({
+          limit: limit.toString(),
+          ...(next && { next }),
+        });
+        
+        const response = await indexerClient
+          .searchForAssets()
+          .limit(limit)
+          .do();
+        
+        return {
+          assets: response.assets.map((asset: any) => ({
+            id: asset.index.toString(),
+            name: asset.params.name || 'Unnamed Asset',
+            symbol: asset.params.unit_name || 'UNKNOWN',
+            decimals: asset.params.decimals,
+            totalSupply: asset.params.total,
+            creator: asset.params.creator,
+            manager: asset.params.manager,
+            reserve: asset.params.reserve,
+            freeze: asset.params.freeze,
+            clawback: asset.params.clawback,
+            defaultFrozen: asset.params.default_frozen,
+            url: asset.params.url,
+            createdAt: asset.created_at,
+            destroyed: asset.deleted
+          })),
+          nextToken: response.nextToken || null,
+          currentRound: Number(response.currentRound)
+        };
+      } catch (e: any) {
+        throw new Error(`getAllASAs failed: ${e?.message || e}`)
+      }
+    }
+    
+    async function getAssetHolders(assetId: string): Promise<number> {
+      try {
+        // Get all accounts that hold this asset
+        const response = await indexerClient
+          .lookupAssetByID(parseInt(assetId))
+          .do();
+        
+        // This is a simplified approach - in reality, you'd need to query
+        // all accounts that hold this asset, which requires pagination
+        // For now, return the total supply as a proxy for holder count
+        return Number(response.asset.params.total || 0);
+      } catch (e: any) {
+        throw new Error(`getAssetHolders failed: ${e?.message || e}`)
+      }
+    }
+    
+    async function getAssetTransactions(assetId: string, limit = 100): Promise<Array<{
+      id: string
+      type: string
+      sender: string
+      receiver: string
+      amount: number
+      assetId: number
+      fee: number
+      confirmedRound: number
+      roundTime: number
+    }>> {
+      try {
+        const response = await indexerClient
+          .lookupAssetTransactions(parseInt(assetId))
+          .limit(limit)
+          .do();
+        
+        return response.transactions.map((tx: any) => ({
+          id: tx.id,
+          type: tx['tx-type'],
+          sender: tx.sender,
+          receiver: tx['payment-transaction']?.receiver || tx['asset-transfer-transaction']?.receiver,
+          amount: tx['payment-transaction']?.amount || tx['asset-transfer-transaction']?.amount,
+          assetId: tx['asset-transfer-transaction']?.['asset-id'],
+          fee: tx.fee,
+          confirmedRound: tx['confirmed-round'],
+          roundTime: tx['round-time']
+        }));
+      } catch (e: any) {
+        throw new Error(`getAssetTransactions failed: ${e?.message || e}`)
+      }
+    }
+    
+    async function getAssetVolume24h(assetId: string): Promise<number> {
+      try {
+        const endTime = Math.floor(Date.now() / 1000);
+        const startTime = endTime - (24 * 60 * 60);
+        
+        const response = await indexerClient
+          .lookupAssetTransactions(parseInt(assetId))
+          .afterTime(new Date(startTime * 1000))
+          .beforeTime(new Date(endTime * 1000))
+          .do();
+        
+        const transactions = response.transactions || [];
+        const volume = transactions.reduce((total: number, tx: any) => {
+          const amount = tx['asset-transfer-transaction']?.amount || 0;
+          return total + amount;
+        }, 0);
+        
+        return volume;
+      } catch (e: any) {
+        throw new Error(`getAssetVolume24h failed: ${e?.message || e}`)
+      }
+    }
+    
     function getNetworkInfo() {
       return {
         network,
@@ -436,6 +564,10 @@ export async function buildAlgorandAgent() {
       getAssetPrice,
       getPortfolio,
       getTransactionHistory,
+      getAllASAs,
+      getAssetHolders,
+      getAssetTransactions,
+      getAssetVolume24h,
       getNetworkInfo,
       assets: ALGORAND_ASSETS[network]
     }

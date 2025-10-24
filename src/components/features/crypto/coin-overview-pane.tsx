@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ArrowDown, ArrowUp, Star, StarOff } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useGetCryptoDetailsQuery, useGetCryptoHistoryQuery } from "@/app/services/cryptoApi"
+import { useGetAssetDetailsQuery, useGetAssetHistoryQuery } from "@/app/services/algorandApi"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
@@ -36,11 +36,11 @@ export default function CoinOverviewPane({ coinId }: { coinId?: string }) {
   const address = activeAccount?.address
 
   const enabled = !!coinId
-  const { data: coin, isLoading: loadingDetails } = useGetCryptoDetailsQuery(coinId as string, {
+  const { data: coin, isLoading: loadingDetails } = useGetAssetDetailsQuery(coinId as string, {
     skip: !enabled,
   }) as any
-  const { data: history, isLoading: loadingHistory } = useGetCryptoHistoryQuery(
-    { coinId: coinId as string, timePeriod: TIME_RANGES[timeRange] },
+  const { data: history, isLoading: loadingHistory } = useGetAssetHistoryQuery(
+    { assetId: coinId as string, timePeriod: TIME_RANGES[timeRange] },
     { skip: !enabled }
   ) as any
 
