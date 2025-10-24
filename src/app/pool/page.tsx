@@ -4,40 +4,102 @@ import Link from "next/link"
 import BackgroundPaths from "@/components/shared/animated-background"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
-import { Search } from "lucide-react"
-import { useMemo, useState } from "react"
+import { Search, Loader2 } from "lucide-react"
+import { useMemo, useState, useEffect } from "react"
+import type { PoolInfo } from "@/lib/dex/types"
 
 type Pool = {
   id: string
   token0: string
   token1: string
-  feeTier: number // 0.003 for 0.3%
+  feeTier: number // in basis points (30 = 0.3%)
   tvlUSD?: number
   volume24hUSD?: number
   myPosition?: boolean
   fees24hUSD?: number
   currentPrice?: number // price of token0 in terms of token1
+  dex: string // 'tinyman' | 'pact' | 'vestige' | 'humble'
+  reserve0?: bigint
+  reserve1?: bigint
+  poolAddress?: string
 }
-
-const mockPools: Pool[] = [
-  { id: "1", token0: "ALGO", token1: "USDC", feeTier: 0.003, tvlUSD: 125000, volume24hUSD: 21000, fees24hUSD: 63, currentPrice: 0.145, myPosition: true },
-  { id: "2", token0: "ALGO", token1: "USDC", feeTier: 0.001, tvlUSD: 88000, volume24hUSD: 9200, fees24hUSD: 8.8, currentPrice: 0.145 },
-  { id: "3", token0: "ALGO", token1: "USDC", feeTier: 0.01, tvlUSD: 157000, volume24hUSD: 34000, fees24hUSD: 340, currentPrice: 0.145 },
-]
 
 export default function PoolPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [tab, setTab] = useState("all")
   const [sortBy, setSortBy] = useState("tvl_desc")
+  const [allPools, setAllPools] = useState<Pool[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch pools on mount
+  useEffect(() => {
+    async function fetchPools() {
+      try {
+        setLoading(true)
+        setError(null)
+        
+        const response = await fetch('/api/pools/all')
+        const data = await response.json()
+        
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to fetch pools')
+        }
+
+        // Map PoolInfo to Pool format
+        const pools: Pool[] = data.pools.map((poolInfo: any) => {
+          // Convert string BigInt values back to BigInt
+          const reserve1 = BigInt(poolInfo.reserve1)
+          const reserve2 = BigInt(poolInfo.reserve2)
+          
+          // Calculate current price from reserves
+          let currentPrice: number | undefined
+          if (reserve1 && reserve2) {
+            const reserve0Num = Number(reserve1) / (10 ** poolInfo.asset1.decimals)
+            const reserve1Num = Number(reserve2) / (10 ** poolInfo.asset2.decimals)
+            currentPrice = reserve1Num / reserve0Num // price of asset1 in terms of asset2
+          }
+
+          return {
+            id: poolInfo.poolId,
+            token0: poolInfo.asset1.symbol,
+            token1: poolInfo.asset2.symbol,
+            feeTier: poolInfo.fee, // Already in basis points
+            dex: poolInfo.dexName,
+            reserve0: reserve1,
+            reserve1: reserve2,
+            poolAddress: poolInfo.poolAddress,
+            currentPrice,
+            // Note: volume24h and fees24h would need additional API calls
+            // For now we'll leave them undefined
+          }
+        })
+
+        setAllPools(pools)
+        console.log(`✅ Loaded ${pools.length} pools from API`)
+      } catch (err: any) {
+        console.error('Error fetching pools:', err)
+        setError(err.message || 'Failed to load pools')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPools()
+  }, [])
 
   const pools = useMemo(() => {
-    let filtered = mockPools
+    let filtered = allPools
     if (tab === "mine") filtered = filtered.filter((p) => p.myPosition)
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase()
-      filtered = filtered.filter((p) => `${p.token0}/${p.token1}`.toLowerCase().includes(q))
+      filtered = filtered.filter((p) => 
+        `${p.token0}/${p.token1}`.toLowerCase().includes(q) ||
+        p.dex.toLowerCase().includes(q)
+      )
     }
     const sorted = [...filtered]
     sorted.sort((a, b) => {
@@ -55,7 +117,7 @@ export default function PoolPage() {
       }
     })
     return sorted
-  }, [searchQuery, tab, sortBy])
+  }, [allPools, searchQuery, tab, sortBy])
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -65,19 +127,27 @@ export default function PoolPage() {
           <div className="flex items-end justify-between gap-4 flex-wrap">
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Liquidity Pools</h1>
-              <p className="text-sm text-muted-foreground mt-1">Discover, search, and manage pools. Add or remove liquidity to earn fees.</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Discover, search, and manage pools. Add or remove liquidity to earn fees.
+              </p>
+              {!loading && !error && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {allPools.length} pools from multiple DEXs (Tinyman, Pact)
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <div className="relative w-full sm:w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search pools or tokens"
+                  placeholder="Search pools, tokens, or DEX"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 h-10 bg-white dark:bg-[#171717] border-2 focus-visible:ring-red-600 dark:focus-visible:ring-[#F3C623]"
+                  disabled={loading}
                 />
               </div>
-              <Select value={sortBy} onValueChange={setSortBy}>
+              <Select value={sortBy} onValueChange={setSortBy} disabled={loading}>
                 <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
@@ -88,25 +158,40 @@ export default function PoolPage() {
                   <SelectItem value="fee_asc">Fee: Low → High</SelectItem>
                 </SelectContent>
               </Select>
-              <Button asChild className="whitespace-nowrap">
+              <Button asChild className="whitespace-nowrap" disabled={loading}>
                 <Link href="/pool/create">Create Position</Link>
               </Button>
             </div>
           </div>
 
-          <Tabs value={tab} onValueChange={setTab} className="w-full">
-            <TabsList>
-              <TabsTrigger value="all">All Pools</TabsTrigger>
-              <TabsTrigger value="mine">My Positions</TabsTrigger>
-            </TabsList>
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950 p-4">
+              <p className="text-sm text-red-800 dark:text-red-200">
+                ⚠️ Error loading pools: {error}
+              </p>
+            </div>
+          )}
 
-            <TabsContent value="all" className="mt-4">
-              <PoolTable pools={pools} />
-            </TabsContent>
-            <TabsContent value="mine" className="mt-4">
-              <PoolTable pools={pools} emptyLabel="No positions yet." />
-            </TabsContent>
-          </Tabs>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-red-600 dark:text-[#F3C623]" />
+              <span className="ml-2 text-sm text-muted-foreground">Loading pools from DEXs...</span>
+            </div>
+          ) : (
+            <Tabs value={tab} onValueChange={setTab} className="w-full">
+              <TabsList>
+                <TabsTrigger value="all">All Pools ({pools.length})</TabsTrigger>
+                <TabsTrigger value="mine">My Positions</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="all" className="mt-4">
+                <PoolTable pools={pools} />
+              </TabsContent>
+              <TabsContent value="mine" className="mt-4">
+                <PoolTable pools={pools} emptyLabel="No positions yet." />
+              </TabsContent>
+            </Tabs>
+          )}
         </div>
       </main>
     </div>
@@ -120,37 +205,88 @@ function PoolTable({ pools, emptyLabel = "No pools found." }: { pools: Pool[]; e
     )
   }
   return (
-    <div className="overflow-x-auto rounded-lg border border-gray-200/40 dark:border-[#F3C623]/20">
-      <table className="w-full text-sm">
-        <thead className="bg-red-50/60 dark:bg-[#F3C623]/10">
-          <tr className="text-left">
-            <th className="px-4 py-3 font-medium text-gray-700 dark:text-[#F3C623]">Pool</th>
-            <th className="px-4 py-3 font-medium text-gray-700 dark:text-[#F3C623]">Yield/TVL</th>
-            <th className="px-4 py-3 font-medium text-gray-700 dark:text-[#F3C623]">Volume 24h</th>
-            <th className="px-4 py-3 font-medium text-gray-700 dark:text-[#F3C623]">TVL</th>
-            <th className="px-4 py-3 font-medium text-gray-700 dark:text-[#F3C623]">Fees 24H</th>
-            <th className="px-4 py-3 font-medium text-gray-700 dark:text-[#F3C623]">Current price</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pools.map((p) => (
-            <tr key={p.id} className="border-t border-gray-200/40 dark:border-[#F3C623]/10">
-              <td className="px-4 py-3 font-semibold">
-                <Link href={`/pool/${p.token0}-${p.token1}?fee=${p.feeTier}`} className="hover:underline">
-                  {p.token0}/{p.token1}
-                </Link>
-              </td>
-              <td className="px-4 py-3">{formatYield(p)}</td>
-              <td className="px-4 py-3 text-muted-foreground">{formatUSD(p.volume24hUSD)}</td>
-              <td className="px-4 py-3 text-muted-foreground">{formatUSD(p.tvlUSD)}</td>
-              <td className="px-4 py-3 text-muted-foreground">{formatUSD(p.fees24hUSD)}</td>
-              <td className="px-4 py-3 text-muted-foreground">{formatPrice(p)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Pool</TableHead>
+          <TableHead>DEX</TableHead>
+          <TableHead>Fee</TableHead>
+          <TableHead>Reserves</TableHead>
+          <TableHead>Current Price</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {pools.map((p) => (
+          <TableRow key={p.id}>
+            <TableCell className="font-semibold">
+              <div className="flex flex-col">
+                <span>{p.token0}/{p.token1}</span>
+                {p.poolAddress && (
+                  <span className="text-xs text-muted-foreground font-mono">
+                    {p.poolAddress.slice(0, 6)}...{p.poolAddress.slice(-4)}
+                  </span>
+                )}
+              </div>
+            </TableCell>
+            <TableCell>
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getDexBadgeColor(p.dex)}`}>
+                {p.dex.charAt(0).toUpperCase() + p.dex.slice(1)}
+              </span>
+            </TableCell>
+            <TableCell className="text-muted-foreground">
+              {(p.feeTier / 100).toFixed(2)}%
+            </TableCell>
+            <TableCell className="text-muted-foreground">
+              {formatReserves(p)}
+            </TableCell>
+            <TableCell className="text-muted-foreground">{formatPrice(p)}</TableCell>
+            <TableCell>
+              <Button asChild size="sm" variant="outline">
+                <Link href={`/pool/${p.id}`}>View</Link>
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   )
+}
+
+function getDexBadgeColor(dex: string) {
+  switch (dex) {
+    case 'tinyman':
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+    case 'pact':
+      return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300'
+    case 'vestige':
+      return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+    case 'humble':
+      return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+    default:
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+  }
+}
+
+function formatReserves(p: Pool) {
+  if (p.reserve0 && p.reserve1) {
+    // Format reserves in a compact way
+    const r0 = Number(p.reserve0) / 1e6 // Assume 6 decimals
+    const r1 = Number(p.reserve1) / 1e6
+    
+    if (r0 < 1000 && r1 < 1000) {
+      return `${r0.toFixed(2)} / ${r1.toFixed(2)}`
+    } else {
+      return `${formatCompact(r0)} / ${formatCompact(r1)}`
+    }
+  }
+  return "—"
+}
+
+function formatCompact(num: number) {
+  if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`
+  if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`
+  return num.toFixed(2)
 }
 
 function formatUSD(v?: number) {
@@ -162,18 +298,10 @@ function formatUSD(v?: number) {
   }
 }
 
-function formatYield(p: Pool) {
-  if (p.tvlUSD && p.tvlUSD > 0 && p.fees24hUSD != null) {
-    const y = (p.fees24hUSD / p.tvlUSD) * 100
-    return `${y.toFixed(2)}%`
-  }
-  return "—"
-}
-
 function formatPrice(p: Pool) {
   if (p.currentPrice != null) {
     try {
-      return `${p.currentPrice.toFixed(4)} ${p.token1}`
+      return `1 ${p.token0} = ${p.currentPrice.toFixed(6)} ${p.token1}`
     } catch {}
   }
   return "—"
