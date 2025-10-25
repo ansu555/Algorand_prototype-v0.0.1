@@ -1,46 +1,238 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
-import { Settings } from "lucide-react"
+import { useWalletConnection, useWalletActions, useTxnLabWallet } from "@/components/providers/txnlab-wallet-provider"
+import { Settings, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SettingsModal } from "./settings-modal"
 import { LimitPanel } from "./limit-panel"
 import { BuyPanel } from "./buy-panel"
 import { SellPanel } from "./sellpanel"
-
-const TOKENS = [
-  { 
-    symbol: 'ALGO', 
-    name: 'Algorand', 
-    image: 'https://cryptologos.cc/logos/algorand-algo-logo.png'
-  },
-  { 
-    symbol: 'USDC', 
-    name: 'USD Coin', 
-    image: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png'
-  },
-  { 
-    symbol: 'USDT', 
-    name: 'Tether', 
-    image: 'https://cryptologos.cc/logos/tether-usdt-logo.png'
-  },
-]
+import { AssetSelector } from "./asset-selector"
+import { useTradeableAssets, AssetInfo } from "@/hooks/use-tradeable-assets"
+import { useToast } from "@/hooks/use-toast"
 
 export function SwapCard() {
   const { activeAccount } = useWalletConnection()
-  const [fromToken, setFromToken] = useState(TOKENS[0])
-  const [toToken, setToToken] = useState(TOKENS[1])
+  const { signTransactions } = useWalletActions()
+  const { assets, loading: assetsLoading } = useTradeableAssets()
+  const { toast } = useToast()
+  
+  const [fromToken, setFromToken] = useState<AssetInfo | null>(null)
+  const [toToken, setToToken] = useState<AssetInfo | null>(null)
   const [fromAmount, setFromAmount] = useState('')
   const [toAmount, setToAmount] = useState('')
   const [slippage, setSlippage] = useState('0.5')
   const [showSettings, setShowSettings] = useState(false)
   const [activeTab, setActiveTab] = useState<'swap' | 'limit' | 'buy' | 'sell'>('swap')
+  const [isSwapping, setIsSwapping] = useState(false)
+  const [quoteLoading, setQuoteLoading] = useState(false)
+  const [routeData, setRouteData] = useState<any>(null)
 
   const isConnected = !!activeAccount
+
+  // Set default assets once loaded
+  useEffect(() => {
+    if (assets.length > 0 && !fromToken) {
+      // Default to ALGO if available
+      const algoAsset = assets.find(a => a.id === 0)
+      if (algoAsset) {
+        setFromToken(algoAsset)
+      }
+    }
+  }, [assets, fromToken])
+
+  // Fetch quote when amount or assets change
+  useEffect(() => {
+    if (fromToken && toToken && fromAmount && parseFloat(fromAmount) > 0) {
+      fetchQuote()
+    } else {
+      setToAmount('')
+      setRouteData(null)
+    }
+  }, [fromToken, toToken, fromAmount])
+
+  // Fetch quote from routing API
+  const fetchQuote = async () => {
+    if (!fromToken || !toToken || !fromAmount) return
+
+    setQuoteLoading(true)
+    setRouteData(null)
+
+    try {
+      const amountInBaseUnits = parseFloat(fromAmount) * Math.pow(10, fromToken.decimals)
+
+      const response = await fetch('/api/router/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fromAssetId: fromToken.id,
+          toAssetId: toToken.id,
+          amount: amountInBaseUnits,
+          slippage: parseFloat(slippage),
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch quote')
+      }
+
+      const data = await response.json()
+      
+      if (data.route && data.outputAmount) {
+        const outputAmount = data.outputAmount / Math.pow(10, toToken.decimals)
+        setToAmount(outputAmount.toFixed(toToken.decimals))
+        setRouteData(data)
+      } else {
+        setToAmount('0')
+        toast({
+          title: "No Route Found",
+          description: "Could not find a swap route for this pair",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('Quote error:', error)
+      setToAmount('0')
+      toast({
+        title: "Quote Failed",
+        description: error instanceof Error ? error.message : "Failed to get quote",
+        variant: "destructive"
+      })
+    } finally {
+      setQuoteLoading(false)
+    }
+  }
+
+  // Execute the swap
+  const executeSwap = async () => {
+    if (!fromToken || !toToken || !fromAmount || !activeAccount) {
+      toast({
+        title: "Cannot Swap",
+        description: "Please ensure all fields are filled and you're connected",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (!routeData) {
+      toast({
+        title: "No Route Available",
+        description: "Unable to find a swap route for this pair",
+        variant: "destructive"
+      })
+      return
+    }
+
+    setIsSwapping(true)
+
+    try {
+      // Step 1: Prepare swap transactions
+      toast({
+        title: "🔄 Preparing Swap...",
+        description: "Building swap transactions"
+      })
+
+      const amountInBaseUnits = parseFloat(fromAmount) * Math.pow(10, fromToken.decimals)
+
+      const prepareRes = await fetch('/api/swap/prepare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fromAssetId: fromToken.id,
+          toAssetId: toToken.id,
+          amount: amountInBaseUnits,
+          slippage: parseFloat(slippage),
+          userAddress: activeAccount.address,
+          route: routeData.route
+        })
+      })
+
+      if (!prepareRes.ok) {
+        const errorData = await prepareRes.json()
+        throw new Error(errorData.error || 'Failed to prepare swap')
+      }
+
+      const { txnsToSign } = await prepareRes.json()
+
+      // Step 2: Sign transactions with wallet
+      toast({
+        title: "✍️ Sign Transaction",
+        description: "Please approve in your wallet"
+      })
+
+      const signedTxns = await signTransactions(txnsToSign)
+
+      // Step 3: Submit to blockchain
+      toast({
+        title: "📡 Submitting to Blockchain...",
+        description: "Processing swap on Algorand"
+      })
+
+      const submitRes = await fetch('/api/swap/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signedTxns })
+      })
+
+      if (!submitRes.ok) {
+        const errorData = await submitRes.json()
+        throw new Error(errorData.error || 'Failed to submit swap')
+      }
+
+      const { txId, confirmedRound } = await submitRes.json()
+
+      // Step 4: SUCCESS! Real transaction confirmed!
+      toast({
+        title: "✅ Swap Successful!",
+        description: (
+          <div className="mt-2 space-y-2 text-sm">
+            <div className="font-semibold text-green-600 dark:text-green-400">
+              Transaction Confirmed!
+            </div>
+            <div>Swapped: {fromAmount} {fromToken.unitName}</div>
+            <div>Received: ~{toAmount} {toToken.unitName}</div>
+            <div className="text-xs text-muted-foreground break-all">
+              Round: {confirmedRound}
+            </div>
+            <a 
+              href={`https://testnet.algoexplorer.io/tx/${txId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:underline text-xs block"
+            >
+              View on AlgoExplorer →
+            </a>
+          </div>
+        ),
+        duration: 10000, // Show for 10 seconds
+      })
+
+      // Clear form after successful swap
+      setFromAmount('')
+      setToAmount('')
+      setRouteData(null)
+
+      console.log('✅ REAL SWAP COMPLETED!')
+      console.log('Transaction ID:', txId)
+      console.log('Confirmed Round:', confirmedRound)
+      console.log('Route used:', routeData)
+
+    } catch (error: any) {
+      console.error('Swap error:', error)
+      toast({
+        title: "❌ Swap Failed",
+        description: error.message || "Transaction failed",
+        variant: "destructive",
+        duration: 7000,
+      })
+    } finally {
+      setIsSwapping(false)
+    }
+  }
 
   // Swap token positions
   const handleSwapTokens = () => {
@@ -51,7 +243,7 @@ export function SwapCard() {
   }
 
   // Check if swap button should be disabled
-  const isSwapDisabled = !fromAmount || parseFloat(fromAmount) <= 0
+  const isSwapDisabled = !fromAmount || parseFloat(fromAmount) <= 0 || !fromToken || !toToken
 
   return (
     <>
@@ -135,19 +327,18 @@ export function SwapCard() {
                     className="h-9 w-full bg-transparent px-0 py-0 border-0 focus-visible:outline-none focus-visible:ring-0 text-3xl placeholder:text-muted-foreground/50"
                   />
                   <span className="h-5 inline-flex items-center whitespace-nowrap text-sm">
-                    ${fromAmount ? (parseFloat(fromAmount) * 100).toFixed(2) : '0.00'}
+                    ${fromAmount && fromToken ? (parseFloat(fromAmount) * 0.18).toFixed(2) : '0.00'}
                   </span>
                 </div>
                 
-                <div className="space-y-2 flex flex-col items-end">
-                  <div className="h-5"></div>
-                  {/* Placeholder dropdown for token selection (populated by backend later) */}
-                  <select
-                    className="h-9 min-w-[90px] rounded-md border border-border bg-background px-2 text-sm focus:outline-none"
-                    aria-label="Select token"
-                    disabled
+                <div className="w-[180px]">
+                  <AssetSelector
+                    assets={assets}
+                    selected={fromToken}
+                    onSelect={setFromToken}
+                    label="Select token"
+                    disabled={assetsLoading}
                   />
-                  <div className="h-5"></div>
                 </div>
               </div>
 
@@ -175,19 +366,18 @@ export function SwapCard() {
                     className="h-9 w-full bg-transparent px-0 py-0 border-0 focus-visible:outline-none focus-visible:ring-0 text-3xl placeholder:text-muted-foreground/50 cursor-not-allowed"
                   />
                   <span className="h-5 inline-flex items-center whitespace-nowrap text-sm">
-                    ${toAmount ? (parseFloat(toAmount) * 100).toFixed(2) : '0.00'}
+                    ${toAmount && toToken ? (parseFloat(toAmount) * 1.0).toFixed(2) : '0.00'}
                   </span>
                 </div>
                 
-                <div className="space-y-2 flex flex-col items-end">
-                  <div className="h-5"></div>
-                  {/* Placeholder dropdown for token selection (populated by backend later) */}
-                  <select
-                    className="h-9 min-w-[90px] rounded-md border border-border bg-background px-2 text-sm focus:outline-none"
-                    aria-label="Select token"
-                    disabled
+                <div className="w-[180px]">
+                  <AssetSelector
+                    assets={assets}
+                    selected={toToken}
+                    onSelect={setToToken}
+                    label="Select token"
+                    disabled={assetsLoading}
                   />
-                  <div className="h-5"></div>
                 </div>
               </div>
             </div>
@@ -206,6 +396,39 @@ export function SwapCard() {
 
           {activeTab === 'swap' && (
             <div className="flex flex-col items-center space-y-3.5">
+              {/* Quote Info */}
+              {fromToken && toToken && toAmount && !quoteLoading && routeData && (
+                <div className="w-full p-3 bg-muted/50 rounded-lg space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Rate</span>
+                    <span className="font-medium">
+                      1 {fromToken.unitName} = {(parseFloat(toAmount) / parseFloat(fromAmount || '1')).toFixed(6)} {toToken.unitName}
+                    </span>
+                  </div>
+                  {routeData.route?.dex && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Route</span>
+                      <span className="font-medium">{routeData.route.dex}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Slippage</span>
+                    <span className="font-medium">{slippage}%</span>
+                  </div>
+                  {routeData.priceImpact && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Price Impact</span>
+                      <span className={cn(
+                        "font-medium",
+                        parseFloat(routeData.priceImpact) > 5 ? "text-destructive" : ""
+                      )}>
+                        {routeData.priceImpact}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {!isConnected ? (
                 <Button
                   className={cn(
@@ -227,12 +450,26 @@ export function SwapCard() {
                     "dark:text-black",
                     "disabled:opacity-50 disabled:cursor-not-allowed"
                   )}
-                  disabled={isSwapDisabled}
-                  onClick={() => {
-                    console.log("Swap clicked", { fromToken, toToken, fromAmount })
-                  }}
+                  disabled={isSwapDisabled || isSwapping || quoteLoading}
+                  onClick={executeSwap}
                 >
-                  {isSwapDisabled ? "Enter Amount" : "Swap"}
+                  {isSwapping ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Swapping...
+                    </>
+                  ) : quoteLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Getting Quote...
+                    </>
+                  ) : isSwapDisabled ? (
+                    "Enter Amount"
+                  ) : !routeData ? (
+                    "No Route Available"
+                  ) : (
+                    "Swap"
+                  )}
                 </Button>
               )}
             </div>

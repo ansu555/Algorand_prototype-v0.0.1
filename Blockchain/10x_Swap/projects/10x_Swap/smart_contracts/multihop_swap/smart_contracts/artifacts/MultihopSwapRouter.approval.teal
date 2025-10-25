@@ -1,0 +1,859 @@
+#pragma version 11
+#pragma typetrack false
+
+// algopy.arc4.ARC4Contract.approval_program() -> uint64:
+main:
+    intcblock 8 0 1 4
+    bytecblock 0x151f7c75 0x151f7c7580 0x73776170
+    // smart_contracts/multihop_swap/contract.py:18
+    // class MultihopSwapRouter(ARC4Contract):
+    txn OnCompletion
+    !
+    assert // OnCompletion must be NoOp
+    txn ApplicationID
+    bz main_create_NoOp@10
+    pushbytess 0x2bfc7b15 0x1002fa46 0x6a70cb42 0x351b03df 0xe457b5af 0x280335d0 // method "execute_swap_2hop(uint64,uint64,uint64,uint64,uint64,uint64,address)uint64", method "execute_swap_3hop(uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,address)uint64", method "execute_swap_algo_to_asa(uint64,uint64,uint64,address)uint64", method "opt_into_asset(uint64)bool", method "withdraw_asset(uint64,uint64,address)bool", method "withdraw_algo(uint64,address)bool"
+    txna ApplicationArgs 0
+    match execute_swap_2hop execute_swap_3hop execute_swap_algo_to_asa opt_into_asset withdraw_asset withdraw_algo
+    err
+
+main_create_NoOp@10:
+    // smart_contracts/multihop_swap/contract.py:18
+    // class MultihopSwapRouter(ARC4Contract):
+    pushbytes 0xfcadc25c // method "create_application()string"
+    txna ApplicationArgs 0
+    match main_create_application_route@11
+    err
+
+main_create_application_route@11:
+    // smart_contracts/multihop_swap/contract.py:26
+    // @abimethod(create="require")
+    pushbytes 0x151f7c7500204d756c7469686f70205377617020526f7574657220496e697469616c697a6564
+    log
+    intc_2 // 1
+    return
+
+
+// contract.MultihopSwapRouter.execute_swap_2hop[routing]() -> void:
+execute_swap_2hop:
+    // smart_contracts/multihop_swap/contract.py:31
+    // @abimethod
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 2
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 3
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 4
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 5
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 6
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 7
+    dup
+    len
+    pushint 32 // 32
+    ==
+    assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
+    // smart_contracts/multihop_swap/contract.py:58-60
+    // # Verify atomic group structure
+    // # Expected: [Payment of input asset, App call to this contract]
+    // assert Global.group_size == UInt64(2), "Invalid group size"
+    global GroupSize
+    pushint 2 // 2
+    ==
+    assert // Invalid group size
+    // smart_contracts/multihop_swap/contract.py:61
+    // assert gtxn.Transaction(0).type == TransactionType.AssetTransfer, "First txn must be asset transfer"
+    intc_1 // 0
+    gtxns TypeEnum
+    intc_3 // axfer
+    ==
+    assert // First txn must be asset transfer
+    // smart_contracts/multihop_swap/contract.py:62
+    // assert gtxn.AssetTransferTransaction(0).xfer_asset == input_asset, "Wrong input asset"
+    intc_1 // 0
+    gtxns XferAsset
+    dig 7
+    ==
+    assert // Wrong input asset
+    // smart_contracts/multihop_swap/contract.py:63
+    // assert gtxn.AssetTransferTransaction(0).asset_receiver == Global.current_application_address, "Must send to contract"
+    intc_1 // 0
+    gtxns AssetReceiver
+    global CurrentApplicationAddress
+    ==
+    assert // Must send to contract
+    // smart_contracts/multihop_swap/contract.py:65-66
+    // # Get input amount from the grouped transaction
+    // input_amount = gtxn.AssetTransferTransaction(0).asset_amount
+    intc_1 // 0
+    gtxns AssetAmount
+    // smart_contracts/multihop_swap/contract.py:68-74
+    // # Execute first hop: Input -> Intermediate
+    // intermediate_amount = self._swap_on_pool(
+    //     pool_app_id=pool1_app_id,
+    //     asset_in=input_asset,
+    //     asset_out=intermediate_asset,
+    //     amount_in=input_amount,
+    // )
+    uncover 4
+    uncover 7
+    dig 7
+    uncover 3
+    callsub _swap_on_pool
+    // smart_contracts/multihop_swap/contract.py:76-82
+    // # Execute second hop: Intermediate -> Output
+    // output_amount = self._swap_on_pool(
+    //     pool_app_id=pool2_app_id,
+    //     asset_in=intermediate_asset,
+    //     asset_out=output_asset,
+    //     amount_in=intermediate_amount,
+    // )
+    uncover 3
+    uncover 5
+    dig 5
+    uncover 3
+    callsub _swap_on_pool
+    // smart_contracts/multihop_swap/contract.py:84-85
+    // # Verify minimum output (slippage protection)
+    // assert output_amount >= min_output, "Output below minimum (slippage exceeded)"
+    dup
+    uncover 3
+    >=
+    assert // Output below minimum (slippage exceeded)
+    // smart_contracts/multihop_swap/contract.py:87-93
+    // # Transfer final output to receiver
+    // itxn.AssetTransfer(
+    //     xfer_asset=output_asset,
+    //     asset_receiver=receiver,
+    //     asset_amount=output_amount,
+    //     fee=UInt64(0),  # Fee pooling - outer txn pays
+    // ).submit()
+    itxn_begin
+    dup
+    itxn_field AssetAmount
+    swap
+    itxn_field AssetReceiver
+    swap
+    itxn_field XferAsset
+    // smart_contracts/multihop_swap/contract.py:87-88
+    // # Transfer final output to receiver
+    // itxn.AssetTransfer(
+    intc_3 // axfer
+    itxn_field TypeEnum
+    // smart_contracts/multihop_swap/contract.py:92
+    // fee=UInt64(0),  # Fee pooling - outer txn pays
+    intc_1 // 0
+    itxn_field Fee
+    // smart_contracts/multihop_swap/contract.py:87-93
+    // # Transfer final output to receiver
+    // itxn.AssetTransfer(
+    //     xfer_asset=output_asset,
+    //     asset_receiver=receiver,
+    //     asset_amount=output_amount,
+    //     fee=UInt64(0),  # Fee pooling - outer txn pays
+    // ).submit()
+    itxn_submit
+    // smart_contracts/multihop_swap/contract.py:95
+    // return ARC4UInt64(output_amount)
+    itob
+    // smart_contracts/multihop_swap/contract.py:31
+    // @abimethod
+    bytec_0 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_2 // 1
+    return
+
+
+// contract.MultihopSwapRouter.execute_swap_3hop[routing]() -> void:
+execute_swap_3hop:
+    // smart_contracts/multihop_swap/contract.py:97
+    // @abimethod
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 2
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 3
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 4
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 5
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 6
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 7
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 8
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 9
+    dup
+    len
+    pushint 32 // 32
+    ==
+    assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
+    // smart_contracts/multihop_swap/contract.py:116
+    // assert Global.group_size == UInt64(2), "Invalid group size"
+    global GroupSize
+    pushint 2 // 2
+    ==
+    assert // Invalid group size
+    // smart_contracts/multihop_swap/contract.py:117
+    // assert gtxn.Transaction(0).type == TransactionType.AssetTransfer, "First txn must be asset transfer"
+    intc_1 // 0
+    gtxns TypeEnum
+    intc_3 // axfer
+    ==
+    assert // First txn must be asset transfer
+    // smart_contracts/multihop_swap/contract.py:118
+    // assert gtxn.AssetTransferTransaction(0).xfer_asset == input_asset, "Wrong input asset"
+    intc_1 // 0
+    gtxns XferAsset
+    dig 9
+    ==
+    assert // Wrong input asset
+    // smart_contracts/multihop_swap/contract.py:120
+    // input_amount = gtxn.AssetTransferTransaction(0).asset_amount
+    intc_1 // 0
+    gtxns AssetAmount
+    // smart_contracts/multihop_swap/contract.py:122-128
+    // # Hop 1: Input -> Intermediate1
+    // intermediate1_amount = self._swap_on_pool(
+    //     pool_app_id=pool1_app_id,
+    //     asset_in=input_asset,
+    //     asset_out=intermediate1_asset,
+    //     amount_in=input_amount,
+    // )
+    uncover 5
+    uncover 9
+    dig 9
+    uncover 3
+    callsub _swap_on_pool
+    // smart_contracts/multihop_swap/contract.py:130-136
+    // # Hop 2: Intermediate1 -> Intermediate2
+    // intermediate2_amount = self._swap_on_pool(
+    //     pool_app_id=pool2_app_id,
+    //     asset_in=intermediate1_asset,
+    //     asset_out=intermediate2_asset,
+    //     amount_in=intermediate1_amount,
+    // )
+    uncover 4
+    uncover 7
+    dig 7
+    uncover 3
+    callsub _swap_on_pool
+    // smart_contracts/multihop_swap/contract.py:138-144
+    // # Hop 3: Intermediate2 -> Output
+    // output_amount = self._swap_on_pool(
+    //     pool_app_id=pool3_app_id,
+    //     asset_in=intermediate2_asset,
+    //     asset_out=output_asset,
+    //     amount_in=intermediate2_amount,
+    // )
+    uncover 3
+    uncover 5
+    dig 5
+    uncover 3
+    callsub _swap_on_pool
+    // smart_contracts/multihop_swap/contract.py:146
+    // assert output_amount >= min_output, "Output below minimum"
+    dup
+    uncover 3
+    >=
+    assert // Output below minimum
+    // smart_contracts/multihop_swap/contract.py:148-154
+    // # Transfer to receiver
+    // itxn.AssetTransfer(
+    //     xfer_asset=output_asset,
+    //     asset_receiver=receiver,
+    //     asset_amount=output_amount,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    dup
+    itxn_field AssetAmount
+    swap
+    itxn_field AssetReceiver
+    swap
+    itxn_field XferAsset
+    // smart_contracts/multihop_swap/contract.py:148-149
+    // # Transfer to receiver
+    // itxn.AssetTransfer(
+    intc_3 // axfer
+    itxn_field TypeEnum
+    // smart_contracts/multihop_swap/contract.py:153
+    // fee=UInt64(0),
+    intc_1 // 0
+    itxn_field Fee
+    // smart_contracts/multihop_swap/contract.py:148-154
+    // # Transfer to receiver
+    // itxn.AssetTransfer(
+    //     xfer_asset=output_asset,
+    //     asset_receiver=receiver,
+    //     asset_amount=output_amount,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // smart_contracts/multihop_swap/contract.py:156
+    // return ARC4UInt64(output_amount)
+    itob
+    // smart_contracts/multihop_swap/contract.py:97
+    // @abimethod
+    bytec_0 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_2 // 1
+    return
+
+
+// contract.MultihopSwapRouter.execute_swap_algo_to_asa[routing]() -> void:
+execute_swap_algo_to_asa:
+    // smart_contracts/multihop_swap/contract.py:158
+    // @abimethod
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 2
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 3
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 4
+    dup
+    len
+    pushint 32 // 32
+    ==
+    assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
+    // smart_contracts/multihop_swap/contract.py:172
+    // assert Global.group_size == UInt64(2), "Invalid group size"
+    global GroupSize
+    pushint 2 // 2
+    ==
+    assert // Invalid group size
+    // smart_contracts/multihop_swap/contract.py:173
+    // assert gtxn.Transaction(0).type == TransactionType.Payment, "First txn must be payment"
+    intc_1 // 0
+    gtxns TypeEnum
+    intc_2 // pay
+    ==
+    assert // First txn must be payment
+    // smart_contracts/multihop_swap/contract.py:174
+    // assert gtxn.PaymentTransaction(0).receiver == Global.current_application_address, "Must send to contract"
+    intc_1 // 0
+    gtxns Receiver
+    global CurrentApplicationAddress
+    ==
+    assert // Must send to contract
+    // smart_contracts/multihop_swap/contract.py:176
+    // algo_amount = gtxn.PaymentTransaction(0).amount
+    intc_1 // 0
+    gtxns Amount
+    // smart_contracts/multihop_swap/contract.py:252
+    // balance_before = output_asset.balance(Global.current_application_address)
+    global CurrentApplicationAddress
+    dig 5
+    asset_holding_get AssetBalance
+    assert // account opted into asset
+    // smart_contracts/multihop_swap/contract.py:254-259
+    // # Send ALGO to pool
+    // itxn.Payment(
+    //     receiver=pool_app_id.address,
+    //     amount=algo_amount,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    // smart_contracts/multihop_swap/contract.py:256
+    // receiver=pool_app_id.address,
+    dig 4
+    app_params_get AppAddress
+    assert // application exists
+    uncover 2
+    itxn_field Amount
+    itxn_field Receiver
+    // smart_contracts/multihop_swap/contract.py:254-255
+    // # Send ALGO to pool
+    // itxn.Payment(
+    intc_2 // pay
+    itxn_field TypeEnum
+    // smart_contracts/multihop_swap/contract.py:258
+    // fee=UInt64(0),
+    intc_1 // 0
+    itxn_field Fee
+    // smart_contracts/multihop_swap/contract.py:254-259
+    // # Send ALGO to pool
+    // itxn.Payment(
+    //     receiver=pool_app_id.address,
+    //     amount=algo_amount,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // smart_contracts/multihop_swap/contract.py:261-266
+    // # Call pool swap
+    // itxn.ApplicationCall(
+    //     app_id=pool_app_id,
+    //     app_args=(Bytes(b"swap"),),
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    // smart_contracts/multihop_swap/contract.py:264
+    // app_args=(Bytes(b"swap"),),
+    bytec_2 // 0x73776170
+    itxn_field ApplicationArgs
+    uncover 3
+    itxn_field ApplicationID
+    // smart_contracts/multihop_swap/contract.py:261-262
+    // # Call pool swap
+    // itxn.ApplicationCall(
+    pushint 6 // appl
+    itxn_field TypeEnum
+    // smart_contracts/multihop_swap/contract.py:265
+    // fee=UInt64(0),
+    intc_1 // 0
+    itxn_field Fee
+    // smart_contracts/multihop_swap/contract.py:261-266
+    // # Call pool swap
+    // itxn.ApplicationCall(
+    //     app_id=pool_app_id,
+    //     app_args=(Bytes(b"swap"),),
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // smart_contracts/multihop_swap/contract.py:268
+    // balance_after = output_asset.balance(Global.current_application_address)
+    global CurrentApplicationAddress
+    dig 4
+    asset_holding_get AssetBalance
+    assert // account opted into asset
+    // smart_contracts/multihop_swap/contract.py:270
+    // return balance_after - balance_before
+    swap
+    -
+    // smart_contracts/multihop_swap/contract.py:186
+    // assert output_amount >= min_output, "Output below minimum"
+    dup
+    uncover 3
+    >=
+    assert // Output below minimum
+    // smart_contracts/multihop_swap/contract.py:188-194
+    // # Transfer output to receiver
+    // itxn.AssetTransfer(
+    //     xfer_asset=output_asset,
+    //     asset_receiver=receiver,
+    //     asset_amount=output_amount,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    dup
+    itxn_field AssetAmount
+    swap
+    itxn_field AssetReceiver
+    swap
+    itxn_field XferAsset
+    // smart_contracts/multihop_swap/contract.py:188-189
+    // # Transfer output to receiver
+    // itxn.AssetTransfer(
+    intc_3 // axfer
+    itxn_field TypeEnum
+    // smart_contracts/multihop_swap/contract.py:193
+    // fee=UInt64(0),
+    intc_1 // 0
+    itxn_field Fee
+    // smart_contracts/multihop_swap/contract.py:188-194
+    // # Transfer output to receiver
+    // itxn.AssetTransfer(
+    //     xfer_asset=output_asset,
+    //     asset_receiver=receiver,
+    //     asset_amount=output_amount,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // smart_contracts/multihop_swap/contract.py:196
+    // return ARC4UInt64(output_amount)
+    itob
+    // smart_contracts/multihop_swap/contract.py:158
+    // @abimethod
+    bytec_0 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_2 // 1
+    return
+
+
+// contract.MultihopSwapRouter.opt_into_asset[routing]() -> void:
+opt_into_asset:
+    // smart_contracts/multihop_swap/contract.py:272
+    // @abimethod
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    // smart_contracts/multihop_swap/contract.py:280-281
+    // # Only allow opt-in from contract creator (for security)
+    // assert Txn.sender == Global.creator_address, "Only creator can opt-in"
+    txn Sender
+    global CreatorAddress
+    ==
+    assert // Only creator can opt-in
+    // smart_contracts/multihop_swap/contract.py:283-289
+    // # Send 0-amount transfer to self to opt in
+    // itxn.AssetTransfer(
+    //     xfer_asset=asset,
+    //     asset_receiver=Global.current_application_address,
+    //     asset_amount=UInt64(0),
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    // smart_contracts/multihop_swap/contract.py:286
+    // asset_receiver=Global.current_application_address,
+    global CurrentApplicationAddress
+    // smart_contracts/multihop_swap/contract.py:287
+    // asset_amount=UInt64(0),
+    intc_1 // 0
+    itxn_field AssetAmount
+    itxn_field AssetReceiver
+    itxn_field XferAsset
+    // smart_contracts/multihop_swap/contract.py:283-284
+    // # Send 0-amount transfer to self to opt in
+    // itxn.AssetTransfer(
+    intc_3 // axfer
+    itxn_field TypeEnum
+    // smart_contracts/multihop_swap/contract.py:288
+    // fee=UInt64(0),
+    intc_1 // 0
+    itxn_field Fee
+    // smart_contracts/multihop_swap/contract.py:283-289
+    // # Send 0-amount transfer to self to opt in
+    // itxn.AssetTransfer(
+    //     xfer_asset=asset,
+    //     asset_receiver=Global.current_application_address,
+    //     asset_amount=UInt64(0),
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // smart_contracts/multihop_swap/contract.py:272
+    // @abimethod
+    bytec_1 // 0x151f7c7580
+    log
+    intc_2 // 1
+    return
+
+
+// contract.MultihopSwapRouter.withdraw_asset[routing]() -> void:
+withdraw_asset:
+    // smart_contracts/multihop_swap/contract.py:293
+    // @abimethod
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 2
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 3
+    dup
+    len
+    pushint 32 // 32
+    ==
+    assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
+    // smart_contracts/multihop_swap/contract.py:306
+    // assert Txn.sender == Global.creator_address, "Only creator can withdraw"
+    txn Sender
+    global CreatorAddress
+    ==
+    assert // Only creator can withdraw
+    // smart_contracts/multihop_swap/contract.py:308-313
+    // itxn.AssetTransfer(
+    //     xfer_asset=asset,
+    //     asset_receiver=receiver,
+    //     asset_amount=amount,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    itxn_field AssetReceiver
+    itxn_field AssetAmount
+    itxn_field XferAsset
+    // smart_contracts/multihop_swap/contract.py:308
+    // itxn.AssetTransfer(
+    intc_3 // axfer
+    itxn_field TypeEnum
+    // smart_contracts/multihop_swap/contract.py:312
+    // fee=UInt64(0),
+    intc_1 // 0
+    itxn_field Fee
+    // smart_contracts/multihop_swap/contract.py:308-313
+    // itxn.AssetTransfer(
+    //     xfer_asset=asset,
+    //     asset_receiver=receiver,
+    //     asset_amount=amount,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // smart_contracts/multihop_swap/contract.py:293
+    // @abimethod
+    bytec_1 // 0x151f7c7580
+    log
+    intc_2 // 1
+    return
+
+
+// contract.MultihopSwapRouter.withdraw_algo[routing]() -> void:
+withdraw_algo:
+    // smart_contracts/multihop_swap/contract.py:317
+    // @abimethod
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 2
+    dup
+    len
+    pushint 32 // 32
+    ==
+    assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
+    // smart_contracts/multihop_swap/contract.py:327
+    // assert Txn.sender == Global.creator_address, "Only creator can withdraw"
+    txn Sender
+    global CreatorAddress
+    ==
+    assert // Only creator can withdraw
+    // smart_contracts/multihop_swap/contract.py:329-333
+    // itxn.Payment(
+    //     receiver=receiver,
+    //     amount=amount,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    itxn_field Receiver
+    itxn_field Amount
+    // smart_contracts/multihop_swap/contract.py:329
+    // itxn.Payment(
+    intc_2 // pay
+    itxn_field TypeEnum
+    // smart_contracts/multihop_swap/contract.py:332
+    // fee=UInt64(0),
+    intc_1 // 0
+    itxn_field Fee
+    // smart_contracts/multihop_swap/contract.py:329-333
+    // itxn.Payment(
+    //     receiver=receiver,
+    //     amount=amount,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // smart_contracts/multihop_swap/contract.py:317
+    // @abimethod
+    bytec_1 // 0x151f7c7580
+    log
+    intc_2 // 1
+    return
+
+
+// contract.MultihopSwapRouter._swap_on_pool(pool_app_id: uint64, asset_in: uint64, asset_out: uint64, amount_in: uint64) -> uint64:
+_swap_on_pool:
+    // smart_contracts/multihop_swap/contract.py:198-205
+    // @subroutine
+    // def _swap_on_pool(
+    //     self,
+    //     pool_app_id: Application,
+    //     asset_in: Asset,
+    //     asset_out: Asset,
+    //     amount_in: UInt64,
+    // ) -> UInt64:
+    proto 4 1
+    // smart_contracts/multihop_swap/contract.py:213-214
+    // # Get contract balance before swap
+    // balance_before = asset_out.balance(Global.current_application_address)
+    global CurrentApplicationAddress
+    frame_dig -2
+    asset_holding_get AssetBalance
+    assert // account opted into asset
+    // smart_contracts/multihop_swap/contract.py:216-223
+    // # Build inner transaction group for swap
+    // # 1. Transfer input asset to pool
+    // itxn.AssetTransfer(
+    //     xfer_asset=asset_in,
+    //     asset_receiver=pool_app_id.address,
+    //     asset_amount=amount_in,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    // smart_contracts/multihop_swap/contract.py:220
+    // asset_receiver=pool_app_id.address,
+    frame_dig -4
+    app_params_get AppAddress
+    assert // application exists
+    frame_dig -1
+    itxn_field AssetAmount
+    itxn_field AssetReceiver
+    frame_dig -3
+    itxn_field XferAsset
+    // smart_contracts/multihop_swap/contract.py:216-218
+    // # Build inner transaction group for swap
+    // # 1. Transfer input asset to pool
+    // itxn.AssetTransfer(
+    intc_3 // axfer
+    itxn_field TypeEnum
+    // smart_contracts/multihop_swap/contract.py:222
+    // fee=UInt64(0),
+    intc_1 // 0
+    itxn_field Fee
+    // smart_contracts/multihop_swap/contract.py:216-223
+    // # Build inner transaction group for swap
+    // # 1. Transfer input asset to pool
+    // itxn.AssetTransfer(
+    //     xfer_asset=asset_in,
+    //     asset_receiver=pool_app_id.address,
+    //     asset_amount=amount_in,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // smart_contracts/multihop_swap/contract.py:225-231
+    // # 2. Call pool's swap method
+    // # Note: This is simplified - real implementation needs proper ABI encoding
+    // itxn.ApplicationCall(
+    //     app_id=pool_app_id,
+    //     app_args=(Bytes(b"swap"),),  # Method selector for swap
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    // smart_contracts/multihop_swap/contract.py:229
+    // app_args=(Bytes(b"swap"),),  # Method selector for swap
+    bytec_2 // 0x73776170
+    itxn_field ApplicationArgs
+    frame_dig -4
+    itxn_field ApplicationID
+    // smart_contracts/multihop_swap/contract.py:225-227
+    // # 2. Call pool's swap method
+    // # Note: This is simplified - real implementation needs proper ABI encoding
+    // itxn.ApplicationCall(
+    pushint 6 // appl
+    itxn_field TypeEnum
+    // smart_contracts/multihop_swap/contract.py:230
+    // fee=UInt64(0),
+    intc_1 // 0
+    itxn_field Fee
+    // smart_contracts/multihop_swap/contract.py:225-231
+    // # 2. Call pool's swap method
+    // # Note: This is simplified - real implementation needs proper ABI encoding
+    // itxn.ApplicationCall(
+    //     app_id=pool_app_id,
+    //     app_args=(Bytes(b"swap"),),  # Method selector for swap
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // smart_contracts/multihop_swap/contract.py:233-234
+    // # Get contract balance after swap
+    // balance_after = asset_out.balance(Global.current_application_address)
+    global CurrentApplicationAddress
+    frame_dig -2
+    asset_holding_get AssetBalance
+    assert // account opted into asset
+    // smart_contracts/multihop_swap/contract.py:236-237
+    // # Calculate output amount
+    // output_amount = balance_after - balance_before
+    swap
+    -
+    // smart_contracts/multihop_swap/contract.py:239
+    // return output_amount
+    retsub

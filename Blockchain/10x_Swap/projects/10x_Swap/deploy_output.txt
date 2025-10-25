@@ -1,0 +1,5 @@
+Using deploy command: /opt/homebrew/bin/poetry run python -m smart_contracts deploy
+Loading deployment environment variables...
+Deploying smart contracts from AlgoKit compliant repository 🚀
+/opt/homebrew/bin/poetry: /Users/engineering_faliure/Desktop/Projects/Algorand_prototype-v0.0.1/Blockchain/10x_Swap/projects/10x_Swap/.venv/bin/python: No module named smart_contracts.__main__; 'smart_contracts' is a package and cannot be directly executed
+Error: Deployment command exited with error code = 1

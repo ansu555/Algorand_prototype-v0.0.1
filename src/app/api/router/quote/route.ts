@@ -130,21 +130,90 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Optional: Refresh router cache
+// POST handler for quote requests (from swap UI)
 export async function POST(request: NextRequest) {
   try {
+    const body = await request.json();
+    const { fromAssetId, toAssetId, amount, slippage, maxHops } = body;
+
+    // Validate required parameters
+    if (fromAssetId === undefined || toAssetId === undefined || !amount) {
+      return NextResponse.json(
+        {
+          error: 'Missing required parameters',
+          required: ['fromAssetId', 'toAssetId', 'amount'],
+        },
+        { status: 400 }
+      );
+    }
+
+    const assetIn = parseInt(fromAssetId.toString());
+    const assetOut = parseInt(toAssetId.toString());
+    const amountIn = BigInt(Math.floor(amount));
+    const slippageTolerance = slippage ? Math.floor(slippage * 100) : 50; // Convert % to basis points
+    const maxHopsValue = maxHops || 3;
+
+    console.log('Quote request:', { assetIn, assetOut, amountIn: amountIn.toString(), slippageTolerance });
+
+    // Get router and find best route
     const router = await getRouter();
-    await router.refresh();
-    
-    return NextResponse.json({
-      success: true,
-      message: 'Router cache refreshed',
+    const quote = await router.findBestRoute({
+      assetIn,
+      assetOut,
+      amountIn,
+      slippageTolerance,
+      maxHops: maxHopsValue,
     });
+
+    if (!quote || !quote.route) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'No route found for this swap pair',
+          message: 'Try a different pair or check if pools exist'
+        },
+        { status: 404 }
+      );
+    }
+
+    // Format response for UI
+    const response = {
+      success: true,
+      outputAmount: Number(quote.amountOut),
+      route: {
+        dex: quote.route.dexes[0] || 'Unknown', // Primary DEX
+        dexes: quote.route.dexes, // All DEXs in route
+        path: quote.route.path.map((asset: any) => ({
+          id: asset.id,
+          name: asset.name,
+          unitName: asset.unitName || asset.symbol,
+          decimals: asset.decimals,
+          outputAmount: asset.outputAmount, // For swap preparation
+        })),
+        hops: quote.route.hops,
+        pools: quote.route.pools.map((pool: any) => ({
+          poolId: pool.poolId,
+          dexName: pool.dexName,
+          poolAddress: pool.poolAddress,
+          appId: pool.appId,
+        })),
+      },
+      priceImpact: quote.priceImpact,
+      minimumReceived: Number(quote.minimumAmountOut),
+      fee: Number(quote.fee),
+      executionPrice: quote.executionPrice,
+    };
+
+    console.log('Quote found:', response);
+
+    return NextResponse.json(response);
   } catch (error: any) {
+    console.error('Quote error:', error);
     return NextResponse.json(
       {
         success: false,
-        error: error.message,
+        error: error.message || 'Failed to get quote',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       },
       { status: 500 }
     );
