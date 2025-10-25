@@ -168,7 +168,8 @@ export async function POST(request: NextRequest) {
       const transactions: algosdk.Transaction[] = []
       
       // Check if user is opted into the pool app
-      let poolOptInTxn: algosdk.Transaction | null = null
+      // Tinyman V2 DOES require opt-in, despite what I said earlier
+      let needsOptIn = false
       try {
         const accountInfo = await algodClient.accountInformation(userAddress).do()
         const isOptedIntoPool = accountInfo.appsLocalState?.some(
@@ -176,20 +177,33 @@ export async function POST(request: NextRequest) {
         )
         
         if (!isOptedIntoPool) {
-          console.log(`⚠️  User not opted into pool app ${pool.appId} - preparing opt-in transaction`)
-          
-          // Create pool opt-in transaction (separate from swap group)
-          poolOptInTxn = algosdk.makeApplicationOptInTxnFromObject({
-            sender: userAddress,
-            appIndex: pool.appId,
-            suggestedParams,
-          })
+          console.log(`❌ User not opted into pool app ${pool.appId}`)
+          needsOptIn = true
         } else {
           console.log(`✅ User already opted into pool app ${pool.appId}`)
         }
       } catch (error) {
         console.error('Error checking pool opt-in:', error)
-        // Continue - the blockchain will reject if not opted in
+      }
+      
+      if (needsOptIn) {
+        // Return error with instructions
+        return NextResponse.json(
+          { 
+            error: 'Pool opt-in required',
+            details: `You must opt into the Tinyman V2 pool (app ${pool.appId}) before swapping. Use the Tinyman app to enable this pool.`,
+            poolAppId: pool.appId,
+            requiresPoolOptIn: true,
+            instructions: [
+              `1. Visit: https://testnet.app.tinyman.org/`,
+              `2. Connect your wallet`,
+              `3. Find the pool for your swap`,
+              `4. Click "Enable Pool" or similar`,
+              `5. Come back and try the swap again`
+            ]
+          },
+          { status: 400 }
+        )
       }
       
       // Transaction: Asset transfer to pool
@@ -251,26 +265,7 @@ export async function POST(request: NextRequest) {
         txn: Buffer.from(algosdk.encodeUnsignedTransaction(txn)).toString('base64'),
       }))
       
-      // If pool opt-in is needed, include it as a separate transaction to sign first
-      if (poolOptInTxn) {
-        const optInTxnToSign = {
-          txn: Buffer.from(algosdk.encodeUnsignedTransaction(poolOptInTxn)).toString('base64'),
-        }
-        
-        console.log('✅ Prepared pool opt-in + direct swap:', 1, 'opt-in +', transactions.length, 'swap transactions')
-        
-        return NextResponse.json({
-          success: true,
-          requiresPoolOptIn: true,
-          poolOptInTxn: optInTxnToSign,
-          txnsToSign,
-          txnCount: transactions.length,
-          swapType: 'direct',
-          message: 'Pool opt-in required. Please sign the opt-in transaction first, then the swap transactions.'
-        })
-      }
-      
-      console.log('✅ Prepared direct swap:', transactions.length, 'transactions')
+      console.log('✅ Prepared direct Tinyman V2 swap:', transactions.length, 'transactions')
       
       return NextResponse.json({
         success: true,
