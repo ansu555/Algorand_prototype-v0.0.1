@@ -30,6 +30,29 @@ const STOPWORDS = new Set([
   'and'
 ])
 
+const COIN_MAP: Record<string, string> = {
+  algo: 'algorand',
+  algorand: 'algorand',
+  btc: 'bitcoin',
+  bitcoin: 'bitcoin',
+  eth: 'ethereum',
+  ethereum: 'ethereum',
+  sol: 'solana',
+  solana: 'solana',
+  avax: 'avalanche-2',
+  avalanche: 'avalanche-2',
+  ada: 'cardano',
+  cardano: 'cardano',
+  dot: 'polkadot',
+  polkadot: 'polkadot',
+  matic: 'matic-network',
+  polygon: 'matic-network',
+  link: 'chainlink',
+  chainlink: 'chainlink',
+  usdc: 'usd-coin',
+  usdt: 'tether'
+}
+
 function extractUserMessage(payload: any): string | null {
   if (payload?.message && typeof payload.message === 'string') {
     return payload.message.trim()
@@ -65,7 +88,7 @@ async function fetchMcpAnalysis(coin: string, options?: { horizonDays?: number; 
   const payload = {
     coin,
     horizonDays: options?.horizonDays ?? 30,
-    tasks: options?.tasks ?? ['analysis', 'prediction', 'strategy'],
+    tasks: options?.tasks ?? ['analysis', 'prediction', 'strategy', 'charts'],
     chartType: options?.chartType ?? 'line'
   }
 
@@ -104,31 +127,176 @@ async function fetchMcpAnalysis(coin: string, options?: { horizonDays?: number; 
   return data
 }
 
-function formatAnalysisMessage(data: any, coin: string, opts?: { concise?: boolean }): string {
+type MarketOverviewStats = {
+  timeframeLabel: string
+  sampleSize: number
+  current?: number
+  high?: number
+  low?: number
+  changePct?: number
+  volatilityPct?: number
+}
+
+function mapCoinToId(coin: string): string {
+  const lower = coin.toLowerCase()
+  return COIN_MAP[lower] || lower
+}
+
+async function fetchMarketOverview(coin: string): Promise<MarketOverviewStats | null> {
+  try {
+    const coinId = mapCoinToId(coin)
+    const apiKey = process.env.COINGECKO_API_KEY || process.env.NEXT_PUBLIC_COINGECKO_API_KEY
+    const params = new URLSearchParams({ vs_currency: 'usd', days: '365', interval: 'daily' })
+    if (apiKey) {
+      params.append('x_cg_demo_api_key', apiKey)
+    }
+
+    const response = await fetch(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?${params.toString()}`)
+    if (!response.ok) {
+      return null
+    }
+
+    const json: any = await response.json()
+    const prices: number[] = Array.isArray(json?.prices)
+      ? json.prices.map((entry: [number, number]) => entry?.[1]).filter((v: number) => typeof v === 'number')
+      : []
+
+    if (prices.length === 0) {
+      return null
+    }
+
+    const current = prices[prices.length - 1]
+    const high = Math.max(...prices)
+    const low = Math.min(...prices)
+    const changePct = ((current - prices[0]) / prices[0]) * 100
+
+    const mean = prices.reduce((sum, value) => sum + value, 0) / prices.length
+    const variance = prices.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) / prices.length
+    const volatilityPct = Math.sqrt(variance) / current * 100
+
+    return {
+      timeframeLabel: '1 Year Overview',
+      sampleSize: prices.length,
+      current,
+      high,
+      low,
+      changePct,
+      volatilityPct
+    }
+  } catch (error) {
+    console.error('Market overview fetch failed:', error)
+    return null
+  }
+}
+
+function formatCurrency(value?: number): string {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return '—'
+  }
+  return value.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 })
+}
+
+function formatPercent(value?: number): string {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return '—'
+  }
+  const sign = value >= 0 ? '+' : ''
+  return `${sign}${value.toFixed(2)}%`
+}
+
+function formatAnalysisMessage(
+  data: any,
+  coin: string,
+  overview: MarketOverviewStats | null,
+  opts?: { concise?: boolean }
+): string {
   const lines: string[] = []
+  const upperCoin = coin.toUpperCase()
+
+  lines.push('🔍 **Prediction Methodology**')
+  const analyzedLabel = data?.methodology?.dataPoints
+    ? `📊 Analyzed: ${data.methodology.dataPoints.toLocaleString()} data points${
+        data.methodology.timeframe ? ` over ${data.methodology.timeframe}` : ''
+      }`
+    : overview?.sampleSize
+    ? `📊 Analyzed: ${overview.sampleSize.toLocaleString()} price points over 1 year`
+    : null
+  if (analyzedLabel) {
+    lines.push(analyzedLabel)
+  }
+
+  if (data?.methodology?.method) {
+    lines.push(`🧮 Method: ${data.methodology.method}`)
+  }
+
+  if (Array.isArray(data?.methodology?.indicators)) {
+    lines.push(`📈 Indicators: ${data.methodology.indicators.join(', ')}`)
+  }
+
+  lines.push(`🎯 Confidence: ${data?.methodology?.confidence ?? 'Not provided'}`)
+
+  if (overview) {
+    lines.push('')
+    lines.push(`📊 **${upperCoin} - ${overview.timeframeLabel}**`)
+    lines.push(
+      `💰 Current: ${formatCurrency(overview.current)} | 📈 High: ${formatCurrency(overview.high)} | 📉 Low: ${formatCurrency(overview.low)}`
+    )
+    lines.push(
+      `📊 Change: ${formatPercent(overview.changePct)} | Volatility: ${
+        typeof overview.volatilityPct === 'number' ? `${overview.volatilityPct.toFixed(2)}%` : '—'
+      }`
+    )
+  }
 
   if (data.summary) {
-    lines.push(data.summary)
+    lines.push('')
+    lines.push(`📊 ${data.summary}`)
   }
 
   if (Array.isArray(data.insights) && data.insights.length > 0 && !opts?.concise) {
-    const insightHeader = data.insights.length > 1 ? 'Top insights:' : 'Key insight:'
-    lines.push('', insightHeader)
-    data.insights.slice(0, 3).forEach((insight: string, index: number) => {
-      lines.push(`${index + 1}. ${insight}`)
+    lines.push('')
+    lines.push('Insights:')
+    data.insights.slice(0, 5).forEach((insight: string) => {
+      lines.push(`- ${insight}`)
     })
   }
 
-  if (data.predictions?.priceTargets && !opts?.concise) {
-    lines.push('', 'Price targets:')
-    for (const target of data.predictions.priceTargets.slice(0, 3)) {
-      const horizon = target?.horizon ? ` (${target.horizon})` : ''
-      lines.push(`• ${target?.label || 'Target'}: $${target?.price?.toFixed?.(4) ?? target?.price}${horizon}`)
-    }
+  if (Array.isArray(data.predictions) && data.predictions.length > 0 && !opts?.concise) {
+    lines.push('')
+    lines.push('Forecast (next):')
+    data.predictions.slice(0, 3).forEach((pred: any) => {
+      const confidence = typeof pred.probability === 'number' ? `${Math.round(pred.probability * 100)}%` : '—'
+      lines.push(`• ${pred.date}: ${formatCurrency(pred.price)} (${confidence})`)
+    })
+  }
+
+  if (Array.isArray(data.strategies) && data.strategies.length > 0 && !opts?.concise) {
+    lines.push('')
+    lines.push('Strategies:')
+    data.strategies.slice(0, 3).forEach((strategy: any) => {
+      lines.push(`• ${strategy.name} (${strategy.risk}) — ${strategy.description}`)
+    })
+  }
+
+  if (Array.isArray(data.charts) && data.charts.length > 0) {
+    lines.push('')
+    lines.push('Charts:')
+    data.charts.forEach((chart: any) => {
+      lines.push(`• ${chart.title}: ${chart.url}`)
+    })
+  }
+
+  if (data.overallAnalysis && !opts?.concise) {
+    lines.push('')
+    lines.push(data.overallAnalysis)
+  }
+
+  if (opts?.concise && data.summary) {
+    return data.summary
   }
 
   if (lines.length === 0) {
-    lines.push(`I couldn't generate a detailed analysis for ${coin.toUpperCase()}, but you can try again in a moment.`)
+    return `I couldn't generate a detailed analysis for ${upperCoin}, but you can try again in a moment.`
   }
 
   return lines.join('\n')
@@ -160,11 +328,12 @@ export async function POST(request: NextRequest) {
       try {
         const data = await fetchMcpAnalysis(coin, {
           horizonDays: 30,
-          tasks: wantsAnalysis ? ['analysis', 'prediction', 'strategy'] : ['analysis'],
+          tasks: ['analysis', 'prediction', 'strategy', 'charts'],
           chartType: wantsAnalysis ? 'candlestick' : 'line'
         })
 
-        const reply = formatAnalysisMessage(data, coin, { concise: wantsPrice && !wantsAnalysis })
+        const overview = await fetchMarketOverview(coin)
+        const reply = formatAnalysisMessage(data, coin, overview, { concise: wantsPrice && !wantsAnalysis })
 
         return NextResponse.json({
           ok: true,
