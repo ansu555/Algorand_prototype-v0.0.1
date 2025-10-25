@@ -15,7 +15,11 @@ import { AssetSelector } from "./asset-selector"
 import { useTradeableAssets, AssetInfo } from "@/hooks/use-tradeable-assets"
 import { useToast } from "@/hooks/use-toast"
 
-export function SwapCard() {
+type SwapCardProps = {
+  onPairChange?: (from: AssetInfo | null, to: AssetInfo | null) => void
+}
+
+export function SwapCard({ onPairChange }: SwapCardProps) {
   const { activeAccount } = useWalletConnection()
   const { signTransactions } = useWalletActions()
   const { assets, loading: assetsLoading } = useTradeableAssets()
@@ -31,6 +35,10 @@ export function SwapCard() {
   const [isSwapping, setIsSwapping] = useState(false)
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [routeData, setRouteData] = useState<any>(null)
+
+  useEffect(() => {
+    onPairChange?.(fromToken, toToken)
+  }, [fromToken, toToken, onPairChange])
 
   const isConnected = !!activeAccount
 
