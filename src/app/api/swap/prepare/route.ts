@@ -77,39 +77,42 @@ export async function POST(request: NextRequest) {
 
     const algodClient = getAlgodClient()
     
-    // Check if user is opted into the output asset
+    // Check if user is opted into the output asset (optional check - blockchain will reject if not)
     if (toAssetId !== 0) { // ALGO doesn't require opt-in
       try {
         const accountInfo = await algodClient.accountInformation(userAddress).do()
         const assets = accountInfo.assets || []
-        const isOptedIn = assets.some((asset: any) => asset['asset-id'] === toAssetId)
+        // Fix: asset ID field is 'asset-id' in the response, not 'assetId'
+        const assetIds = assets.map((a: any) => Number(a['asset-id'] || 0))
+        const isOptedIn = assetIds.includes(Number(toAssetId))
+        
+        console.log('Asset opt-in check:', {
+          userAddress,
+          toAssetId: Number(toAssetId),
+          userAssets: assetIds,
+          totalAssets: assets.length,
+          isOptedIn
+        })
         
         if (!isOptedIn) {
-          return NextResponse.json(
-            { 
-              error: 'Asset opt-in required',
-              details: `You must opt into asset ${toAssetId} before receiving it. Please opt in first using your wallet.`,
-              assetId: toAssetId,
-              requiresOptIn: true
-            },
-            { status: 400 }
-          )
+          console.log(`⚠️  User not opted into asset ${toAssetId} - blockchain will reject`)
+          // Don't block - let blockchain reject with proper error
+          // return NextResponse.json(
+          //   { 
+          //     error: 'Asset opt-in required',
+          //     details: `You must opt into asset ${toAssetId} before receiving it. Please opt in first using your wallet.`,
+          //     assetId: toAssetId,
+          //     requiresOptIn: true
+          //   },
+          //   { status: 400 }
+          // )
+        } else {
+          console.log(`✅ User is opted into asset ${toAssetId}`)
         }
       } catch (error) {
         console.error('Error checking asset opt-in:', error)
         // Continue anyway - the blockchain will reject if not opted in
       }
-    }
-
-    // TEMPORARY: Contract doesn't support ALGO as input yet
-    if (fromAssetId === 0) {
-      return NextResponse.json(
-        { 
-          error: 'ALGO swaps not supported yet',
-          details: 'The MultihopSwapRouter contract currently only supports ASA-to-ASA swaps. ALGO support will be added in a future update. Please select an ASA as the input token.'
-        },
-        { status: 400 }
-      )
     }
 
     if (!route || !route.pools || route.pools.length === 0) {
@@ -123,6 +126,18 @@ export async function POST(request: NextRequest) {
 
     // Determine number of hops
     const numHops = route.pools.length
+    
+    // TEMPORARY: MultihopSwapRouter contract doesn't support ALGO as input yet
+    // But single-hop swaps can use ALGO with direct Tinyman V2
+    if (fromAssetId === 0 && numHops > 1) {
+      return NextResponse.json(
+        { 
+          error: 'ALGO multi-hop swaps not supported yet',
+          details: 'The MultihopSwapRouter contract currently only supports ASA-to-ASA swaps for multi-hop routes. ALGO → ASA single-hop swaps work fine. Please use a single-hop route or select an ASA as the input token.'
+        },
+        { status: 400 }
+      )
+    }
     
     // Handle single-hop (direct) swaps differently from multi-hop
     if (numHops === 1) {
@@ -152,7 +167,32 @@ export async function POST(request: NextRequest) {
       
       const transactions: algosdk.Transaction[] = []
       
-      // Transaction 1: Asset transfer to pool
+      // Check if user is opted into the pool app
+      let poolOptInTxn: algosdk.Transaction | null = null
+      try {
+        const accountInfo = await algodClient.accountInformation(userAddress).do()
+        const isOptedIntoPool = accountInfo.appsLocalState?.some(
+          (app: any) => app.id === pool.appId
+        )
+        
+        if (!isOptedIntoPool) {
+          console.log(`⚠️  User not opted into pool app ${pool.appId} - preparing opt-in transaction`)
+          
+          // Create pool opt-in transaction (separate from swap group)
+          poolOptInTxn = algosdk.makeApplicationOptInTxnFromObject({
+            sender: userAddress,
+            appIndex: pool.appId,
+            suggestedParams,
+          })
+        } else {
+          console.log(`✅ User already opted into pool app ${pool.appId}`)
+        }
+      } catch (error) {
+        console.error('Error checking pool opt-in:', error)
+        // Continue - the blockchain will reject if not opted in
+      }
+      
+      // Transaction: Asset transfer to pool
       if (fromAssetId === 0) {
         transactions.push(
           algosdk.makePaymentTxnWithSuggestedParamsFromObject({
@@ -197,18 +237,38 @@ export async function POST(request: NextRequest) {
           appIndex: pool.appId,
           onComplete: algosdk.OnApplicationComplete.NoOpOC,
           appArgs,
+          accounts: [userAddress], // Pool needs sender address to send output tokens
           foreignAssets: foreignAssets.length > 0 ? foreignAssets : undefined,
           suggestedParams,
         })
       )
       
-      // Assign group ID
+      // Assign group ID to swap transactions
       algosdk.assignGroupID(transactions)
       
-      // Convert to base64 for signing
+      // Convert swap transactions to base64 for signing
       const txnsToSign = transactions.map(txn => ({
         txn: Buffer.from(algosdk.encodeUnsignedTransaction(txn)).toString('base64'),
       }))
+      
+      // If pool opt-in is needed, include it as a separate transaction to sign first
+      if (poolOptInTxn) {
+        const optInTxnToSign = {
+          txn: Buffer.from(algosdk.encodeUnsignedTransaction(poolOptInTxn)).toString('base64'),
+        }
+        
+        console.log('✅ Prepared pool opt-in + direct swap:', 1, 'opt-in +', transactions.length, 'swap transactions')
+        
+        return NextResponse.json({
+          success: true,
+          requiresPoolOptIn: true,
+          poolOptInTxn: optInTxnToSign,
+          txnsToSign,
+          txnCount: transactions.length,
+          swapType: 'direct',
+          message: 'Pool opt-in required. Please sign the opt-in transaction first, then the swap transactions.'
+        })
+      }
       
       console.log('✅ Prepared direct swap:', transactions.length, 'transactions')
       

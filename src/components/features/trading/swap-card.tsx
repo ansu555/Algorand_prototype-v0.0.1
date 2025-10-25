@@ -153,67 +153,47 @@ export function SwapCard() {
 
       if (!prepareRes.ok) {
         const errorData = await prepareRes.json()
-        
-        // Check if asset opt-in is required
-        if (errorData.requiresOptIn) {
-          toast({
-            title: "⚠️ Asset Opt-In Required",
-            description: `Opting into asset ${errorData.assetId}...`
-          })
-          
-          // Automatically create and execute opt-in transaction
-          const optInRes = await fetch('/api/asset/optin', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userAddress: activeAccount.address,
-              assetId: errorData.assetId
-            })
-          })
-          
-          if (!optInRes.ok) {
-            throw new Error('Failed to prepare opt-in transaction')
-          }
-          
-          const { txnToSign } = await optInRes.json()
-          
-          // Sign opt-in transaction
-          toast({
-            title: "✍️ Sign Opt-In",
-            description: "Please approve in your wallet"
-          })
-          
-          const txnForWallet = new Uint8Array(Buffer.from(txnToSign.txn, 'base64'))
-          const signedOptIn = await signTransactions([txnForWallet])
-          
-          // Submit opt-in
-          const signedOptInBase64 = signedOptIn[0] ? Buffer.from(signedOptIn[0]).toString('base64') : null
-          
-          const submitOptInRes = await fetch('/api/asset/optin/submit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ signedTxn: signedOptInBase64 })
-          })
-          
-          if (!submitOptInRes.ok) {
-            throw new Error('Failed to opt into asset')
-          }
-          
-          toast({
-            title: "✅ Opted In!",
-            description: "Now retrying swap..."
-          })
-          
-          // Retry the swap after opt-in
-          return executeSwap()
-        }
-        
         throw new Error(errorData.error || 'Failed to prepare swap')
       }
 
-      const { txnsToSign } = await prepareRes.json()
+      const prepareData = await prepareRes.json()
+      const { txnsToSign, poolOptInTxn, requiresPoolOptIn } = prepareData
 
-      // Step 2: Sign transactions with wallet
+      // Handle pool opt-in if needed
+      if (requiresPoolOptIn && poolOptInTxn) {
+        toast({
+          title: "🏊 Pool Opt-In Required",
+          description: "First-time setup: Opting into Tinyman pool..."
+        })
+
+        // Sign and submit opt-in transaction first
+        const optInTxnArray = [new Uint8Array(Buffer.from(poolOptInTxn.txn, 'base64'))]
+        const signedOptIn = await signTransactions(optInTxnArray)
+        
+        const optInBase64 = signedOptIn.map(txn => 
+          txn ? Buffer.from(txn).toString('base64') : null
+        )
+
+        const optInSubmit = await fetch('/api/swap/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ signedTxns: optInBase64 })
+        })
+
+        if (!optInSubmit.ok) {
+          throw new Error('Failed to opt into pool')
+        }
+
+        toast({
+          title: "✅ Pool Opt-In Complete",
+          description: "Now proceeding with swap..."
+        })
+
+        // Wait a moment for blockchain to process
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+
+      // Step 2: Sign swap transactions with wallet
       toast({
         title: "✍️ Sign Transaction",
         description: "Please approve in your wallet"

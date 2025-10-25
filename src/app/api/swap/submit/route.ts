@@ -59,24 +59,36 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('❌ Submit swap error:', error)
     
-    // Parse Algorand-specific errors
-    let errorMessage = error.message || 'Failed to submit transaction'
+    // Extract detailed error message
+    let errorMessage = 'Transaction pool error - please try again'
+    let errorDetails = ''
     
-    if (error.message?.includes('overspend')) {
-      errorMessage = 'Insufficient balance for this transaction'
-    } else if (error.message?.includes('below min')) {
-      errorMessage = 'Amount is below minimum transaction amount'
-    } else if (error.message?.includes('asset not opted in')) {
-      errorMessage = 'You need to opt-in to this asset first'
-    } else if (error.message?.includes('TransactionPool.Remember')) {
-      errorMessage = 'Transaction pool error - please try again'
+    if (error.message) {
+      errorDetails = error.message
+      
+      // Parse common blockchain errors
+      if (error.message.includes('underflow')) {
+        errorMessage = 'Insufficient balance'
+        errorDetails = 'You do not have enough of the input token to complete this swap'
+      } else if (error.message.includes('not opted in')) {
+        errorMessage = 'Asset opt-in required'
+        errorDetails = error.message
+      } else if (error.message.includes('overspend')) {
+        errorMessage = 'Insufficient ALGO for fees'
+        errorDetails = 'You need at least 0.001 ALGO to pay transaction fees'
+      } else if (error.message.includes('logic eval error')) {
+        errorMessage = 'Smart contract error'
+        errorDetails = error.message
+      }
     }
+    
+    console.error('📋 Error details:', errorDetails)
 
     return NextResponse.json(
       {
         success: false,
         error: errorMessage,
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+        details: errorDetails || (process.env.NODE_ENV === 'development' ? error.stack : undefined),
       },
       { status: 500 }
     )
