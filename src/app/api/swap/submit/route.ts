@@ -26,9 +26,12 @@ export async function POST(request: NextRequest) {
     const algodClient = getAlgodClient()
 
     // Convert base64 signed transactions to Uint8Array
-    const signedTxnBuffers = signedTxns.map((txn: string) =>
-      new Uint8Array(Buffer.from(txn, 'base64'))
-    )
+    // Filter out null values (transactions not signed by user)
+    const signedTxnBuffers = signedTxns
+      .filter((txn: string | null) => txn !== null)
+      .map((txn: string) =>
+        new Uint8Array(Buffer.from(txn, 'base64'))
+      )
 
     // Submit transaction group to the network
     const response = await algodClient.sendRawTransaction(signedTxnBuffers).do()

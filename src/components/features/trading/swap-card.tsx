@@ -153,6 +153,61 @@ export function SwapCard() {
 
       if (!prepareRes.ok) {
         const errorData = await prepareRes.json()
+        
+        // Check if asset opt-in is required
+        if (errorData.requiresOptIn) {
+          toast({
+            title: "⚠️ Asset Opt-In Required",
+            description: `Opting into asset ${errorData.assetId}...`
+          })
+          
+          // Automatically create and execute opt-in transaction
+          const optInRes = await fetch('/api/asset/optin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userAddress: activeAccount.address,
+              assetId: errorData.assetId
+            })
+          })
+          
+          if (!optInRes.ok) {
+            throw new Error('Failed to prepare opt-in transaction')
+          }
+          
+          const { txnToSign } = await optInRes.json()
+          
+          // Sign opt-in transaction
+          toast({
+            title: "✍️ Sign Opt-In",
+            description: "Please approve in your wallet"
+          })
+          
+          const txnForWallet = new Uint8Array(Buffer.from(txnToSign.txn, 'base64'))
+          const signedOptIn = await signTransactions([txnForWallet])
+          
+          // Submit opt-in
+          const signedOptInBase64 = signedOptIn[0] ? Buffer.from(signedOptIn[0]).toString('base64') : null
+          
+          const submitOptInRes = await fetch('/api/asset/optin/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ signedTxn: signedOptInBase64 })
+          })
+          
+          if (!submitOptInRes.ok) {
+            throw new Error('Failed to opt into asset')
+          }
+          
+          toast({
+            title: "✅ Opted In!",
+            description: "Now retrying swap..."
+          })
+          
+          // Retry the swap after opt-in
+          return executeSwap()
+        }
+        
         throw new Error(errorData.error || 'Failed to prepare swap')
       }
 
@@ -177,10 +232,15 @@ export function SwapCard() {
         description: "Processing swap on Algorand"
       })
 
+      // Convert signed Uint8Arrays to base64 strings for API
+      const signedTxnsBase64 = signedTxns.map(txn => 
+        txn ? Buffer.from(txn).toString('base64') : null
+      )
+
       const submitRes = await fetch('/api/swap/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signedTxns })
+        body: JSON.stringify({ signedTxns: signedTxnsBase64 })
       })
 
       if (!submitRes.ok) {

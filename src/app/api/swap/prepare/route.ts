@@ -75,6 +75,43 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const algodClient = getAlgodClient()
+    
+    // Check if user is opted into the output asset
+    if (toAssetId !== 0) { // ALGO doesn't require opt-in
+      try {
+        const accountInfo = await algodClient.accountInformation(userAddress).do()
+        const assets = accountInfo.assets || []
+        const isOptedIn = assets.some((asset: any) => asset['asset-id'] === toAssetId)
+        
+        if (!isOptedIn) {
+          return NextResponse.json(
+            { 
+              error: 'Asset opt-in required',
+              details: `You must opt into asset ${toAssetId} before receiving it. Please opt in first using your wallet.`,
+              assetId: toAssetId,
+              requiresOptIn: true
+            },
+            { status: 400 }
+          )
+        }
+      } catch (error) {
+        console.error('Error checking asset opt-in:', error)
+        // Continue anyway - the blockchain will reject if not opted in
+      }
+    }
+
+    // TEMPORARY: Contract doesn't support ALGO as input yet
+    if (fromAssetId === 0) {
+      return NextResponse.json(
+        { 
+          error: 'ALGO swaps not supported yet',
+          details: 'The MultihopSwapRouter contract currently only supports ASA-to-ASA swaps. ALGO support will be added in a future update. Please select an ASA as the input token.'
+        },
+        { status: 400 }
+      )
+    }
+
     if (!route || !route.pools || route.pools.length === 0) {
       return NextResponse.json(
         { error: 'No route provided' },
@@ -82,10 +119,108 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const algodClient = getAlgodClient()
     const suggestedParams = await algodClient.getTransactionParams().do()
 
-    // Get MultihopSwapRouter contract App ID
+    // Determine number of hops
+    const numHops = route.pools.length
+    
+    // Handle single-hop (direct) swaps differently from multi-hop
+    if (numHops === 1) {
+      // Single-hop: Use direct Tinyman V2 swap (no router contract needed)
+      console.log('Single-hop swap - using direct Tinyman V2')
+      
+      const pool = route.pools[0]
+      if (!pool.appId) {
+        return NextResponse.json(
+          { error: 'Pool application ID not available' },
+          { status: 503 }
+        )
+      }
+      
+      // Calculate minimum output with slippage
+      const expectedOutput = route.amountOut || route.quote?.amountOut || amount * 0.95
+      const slippageBps = Math.floor((slippage || 0.5) * 100)
+      const minOutput = Math.floor(expectedOutput * (10000 - slippageBps) / 10000)
+      
+      console.log('Direct Tinyman V2 swap:', {
+        fromAssetId,
+        toAssetId,
+        poolAppId: pool.appId,
+        amount,
+        minOutput
+      })
+      
+      const transactions: algosdk.Transaction[] = []
+      
+      // Transaction 1: Asset transfer to pool
+      if (fromAssetId === 0) {
+        transactions.push(
+          algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+            sender: userAddress,
+            receiver: pool.poolAddress || '',
+            amount: Math.floor(amount),
+            suggestedParams,
+          })
+        )
+      } else {
+        transactions.push(
+          algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
+            sender: userAddress,
+            receiver: pool.poolAddress || '',
+            assetIndex: fromAssetId,
+            amount: Math.floor(amount),
+            suggestedParams,
+          })
+        )
+      }
+      
+      // Transaction 2: Call pool's swap method
+      // Tinyman V2 uses "swap" method with parameters
+      const swapMethod = algosdk.ABIMethod.fromSignature("swap(string,uint64)uint64")
+      const methodSelector = swapMethod.getSelector()
+      
+      // Determine swap mode based on which asset is being sold
+      const swapMode = fromAssetId < toAssetId ? "fixed-input" : "fixed-output"
+      
+      const appArgs: Uint8Array[] = [methodSelector]
+      // Encode swap mode as ABI string
+      const modeBytes = new TextEncoder().encode(swapMode)
+      const modeLength = new Uint8Array([0, modeBytes.length]) // ABI string length prefix
+      appArgs.push(new Uint8Array([...modeLength, ...modeBytes]))
+      appArgs.push(algosdk.encodeUint64(minOutput))
+      
+      const foreignAssets = [fromAssetId, toAssetId].filter(id => id !== 0)
+      
+      transactions.push(
+        algosdk.makeApplicationCallTxnFromObject({
+          sender: userAddress,
+          appIndex: pool.appId,
+          onComplete: algosdk.OnApplicationComplete.NoOpOC,
+          appArgs,
+          foreignAssets: foreignAssets.length > 0 ? foreignAssets : undefined,
+          suggestedParams,
+        })
+      )
+      
+      // Assign group ID
+      algosdk.assignGroupID(transactions)
+      
+      // Convert to base64 for signing
+      const txnsToSign = transactions.map(txn => ({
+        txn: Buffer.from(algosdk.encodeUnsignedTransaction(txn)).toString('base64'),
+      }))
+      
+      console.log('✅ Prepared direct swap:', transactions.length, 'transactions')
+      
+      return NextResponse.json({
+        success: true,
+        txnsToSign,
+        txnCount: transactions.length,
+        swapType: 'direct',
+      })
+    }
+
+    // Get MultihopSwapRouter contract App ID for multi-hop swaps
     const routerAppId = getContractAppId('testnet')
     
     if (routerAppId === 0) {
@@ -94,20 +229,10 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-
-    // Determine number of hops
-    const numHops = route.pools.length
     
     if (numHops > 3) {
       return NextResponse.json(
         { error: 'Maximum 3 hops supported' },
-        { status: 400 }
-      )
-    }
-
-    if (numHops < 2) {
-      return NextResponse.json(
-        { error: 'Multi-hop routing requires at least 2 pools. For single swaps, use direct DEX.' },
         { status: 400 }
       )
     }
@@ -236,7 +361,8 @@ export async function POST(request: NextRequest) {
         userAddress
       })
       
-      const abiMethod = algosdk.ABIMethod.fromSignature("execute_swap_2hop(asset,asset,asset,application,application,uint64,account)uint64")
+      // Use correct ABI signature from contract (all uint64, not reference types)
+      const abiMethod = algosdk.ABIMethod.fromSignature("execute_swap_2hop(uint64,uint64,uint64,uint64,uint64,uint64,address)uint64")
       const methodSelector = abiMethod.getSelector()
       
       const encodedArgs: Uint8Array[] = [methodSelector]
@@ -326,7 +452,8 @@ export async function POST(request: NextRequest) {
         pool3AppId
       })
       
-      const abiMethod = algosdk.ABIMethod.fromSignature("execute_swap_3hop(asset,asset,asset,asset,application,application,application,uint64,account)uint64")
+      // Use correct ABI signature from contract (all uint64, not reference types)
+      const abiMethod = algosdk.ABIMethod.fromSignature("execute_swap_3hop(uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,address)uint64")
       const methodSelector = abiMethod.getSelector()
       
       const encodedArgs: Uint8Array[] = [methodSelector]
