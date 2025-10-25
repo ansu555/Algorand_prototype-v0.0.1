@@ -11,7 +11,6 @@ from algopy import (
     Application,
     op,
     subroutine,
-    TransactionType,
 )
 from algopy.arc4 import abimethod, Address, String, UInt64 as ARC4UInt64, Bool, DynamicArray
 
@@ -58,7 +57,7 @@ class MultihopSwapRouter(ARC4Contract):
         # Verify atomic group structure
         # Expected: [Payment of input asset, App call to this contract]
         assert Global.group_size == UInt64(2), "Invalid group size"
-        assert gtxn.Transaction(0).type == TransactionType.AssetTransfer, "First txn must be asset transfer"
+        assert gtxn.Transaction(0).type == op.TransactionType.AssetTransfer, "First txn must be asset transfer"
         assert gtxn.AssetTransferTransaction(0).xfer_asset == input_asset, "Wrong input asset"
         assert gtxn.AssetTransferTransaction(0).asset_receiver == Global.current_application_address, "Must send to contract"
         
@@ -114,7 +113,7 @@ class MultihopSwapRouter(ARC4Contract):
         """
         
         assert Global.group_size == UInt64(2), "Invalid group size"
-        assert gtxn.Transaction(0).type == TransactionType.AssetTransfer, "First txn must be asset transfer"
+        assert gtxn.Transaction(0).type == op.TransactionType.AssetTransfer, "First txn must be asset transfer"
         assert gtxn.AssetTransferTransaction(0).xfer_asset == input_asset, "Wrong input asset"
         
         input_amount = gtxn.AssetTransferTransaction(0).asset_amount
@@ -170,7 +169,7 @@ class MultihopSwapRouter(ARC4Contract):
         """
         
         assert Global.group_size == UInt64(2), "Invalid group size"
-        assert gtxn.Transaction(0).type == TransactionType.Payment, "First txn must be payment"
+        assert gtxn.Transaction(0).type == op.TransactionType.Payment, "First txn must be payment"
         assert gtxn.PaymentTransaction(0).receiver == Global.current_application_address, "Must send to contract"
         
         algo_amount = gtxn.PaymentTransaction(0).amount
@@ -211,13 +210,13 @@ class MultihopSwapRouter(ARC4Contract):
         """
         
         # Get contract balance before swap
-        balance_before = asset_out.balance(Global.current_application_address)
+        balance_before = op.balance(Global.current_application_address, asset_out)
         
         # Build inner transaction group for swap
         # 1. Transfer input asset to pool
         itxn.AssetTransfer(
             xfer_asset=asset_in,
-            asset_receiver=pool_app_id.address,
+            asset_receiver=Application(pool_app_id).address,
             asset_amount=amount_in,
             fee=UInt64(0),
         ).submit()
@@ -231,7 +230,7 @@ class MultihopSwapRouter(ARC4Contract):
         ).submit()
         
         # Get contract balance after swap
-        balance_after = asset_out.balance(Global.current_application_address)
+        balance_after = op.balance(Global.current_application_address, asset_out)
         
         # Calculate output amount
         output_amount = balance_after - balance_before
@@ -249,11 +248,11 @@ class MultihopSwapRouter(ARC4Contract):
         Swap ALGO for ASA on a pool
         """
         
-        balance_before = output_asset.balance(Global.current_application_address)
+        balance_before = op.balance(Global.current_application_address, output_asset)
         
         # Send ALGO to pool
         itxn.Payment(
-            receiver=pool_app_id.address,
+            receiver=Application(pool_app_id).address,
             amount=algo_amount,
             fee=UInt64(0),
         ).submit()
@@ -265,7 +264,7 @@ class MultihopSwapRouter(ARC4Contract):
             fee=UInt64(0),
         ).submit()
         
-        balance_after = output_asset.balance(Global.current_application_address)
+        balance_after = op.balance(Global.current_application_address, output_asset)
         
         return balance_after - balance_before
     

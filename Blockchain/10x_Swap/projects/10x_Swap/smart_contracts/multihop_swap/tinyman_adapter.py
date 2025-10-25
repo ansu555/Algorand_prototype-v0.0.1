@@ -11,8 +11,6 @@ from algopy import (
     Application,
     op,
     subroutine,
-    TransactionType,
-    arc4,
 )
 from algopy.arc4 import abimethod, Address, UInt64 as ARC4UInt64, Bool
 
@@ -41,29 +39,28 @@ class TinymanPoolAdapter(ARC4Contract):
         # Transfer input asset to pool
         itxn.AssetTransfer(
             xfer_asset=asset_in,
-            asset_receiver=pool_app_id.address,
+            asset_receiver=Application(pool_app_id).address,
             asset_amount=amount_in,
             fee=UInt64(0),
         ).submit()
         
         # Get balance before
-        balance_before = asset_out.balance(Global.current_application_address)
+        balance_before = op.balance(Global.current_application_address, asset_out)
         
         # Call Tinyman's swap method via inner application call
         # Method signature: "swap(uint64,uint64)uint64"
-        # Encode method selector and arguments
-        method_selector = arc4.arc4_signature("swap(uint64,uint64)uint64")
-        arg1 = arc4.UInt64(amount_in)
-        arg2 = arc4.UInt64(min_amount_out)
-        
         itxn.ApplicationCall(
             app_id=pool_app_id,
-            app_args=(method_selector, arg1.bytes, arg2.bytes),
+            app_args=(
+                op.method("swap(uint64,uint64)uint64"),
+                op.itob(amount_in),
+                op.itob(min_amount_out),
+            ),
             fee=UInt64(0),
         ).submit()
         
         # Get balance after
-        balance_after = asset_out.balance(Global.current_application_address)
+        balance_after = op.balance(Global.current_application_address, asset_out)
         
         output_amount = balance_after - balance_before
         
