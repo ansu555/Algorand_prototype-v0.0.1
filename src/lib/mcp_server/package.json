@@ -1,0 +1,27 @@
+{
+  "name": "mcp-analytics-server",
+  "version": "1.0.0",
+  "description": "MCP Analytics Server for crypto market analysis, predictions, and strategies",
+  "main": "main.ts",
+  "scripts": {
+    "dev": "tsx watch main.ts",
+    "start": "tsx main.ts",
+    "build": "tsc",
+    "clean": "rm -rf dist charts/*.svg"
+  },
+  "keywords": ["mcp", "analytics", "crypto", "predictions"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.5.0",
+    "tsx": "^4.19.1",
+    "typescript": "^5.5.4"
+  }
+}

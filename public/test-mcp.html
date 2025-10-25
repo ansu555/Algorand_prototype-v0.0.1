@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MCP Analysis Debug Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        button { padding: 10px 20px; font-size: 16px; margin: 10px 0; }
+        .log { background: #f0f0f0; padding: 10px; margin: 10px 0; border-left: 4px solid #007bff; }
+        .error { border-left-color: #dc3545; background: #fff0f0; }
+        .success { border-left-color: #28a745; background: #f0fff0; }
+        pre { white-space: pre-wrap; word-wrap: break-word; }
+    </style>
+</head>
+<body>
+    <h1>MCP Analysis API Debug Test</h1>
+    <button onclick="testAPI()">Test API Call</button>
+    <button onclick="clearLogs()">Clear Logs</button>
+    
+    <div id="logs"></div>
+
+    <script>
+        function log(message, type = 'log') {
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            document.getElementById('logs').appendChild(div);
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        async function testAPI() {
+            clearLogs();
+            log('🔍 Starting API test...', 'log');
+            
+            try {
+                log('📤 Sending request to /api/mcp/analyze', 'log');
+                
+                const requestBody = {
+                    coin: 'algorand',
+                    horizonDays: 7,
+                    tasks: ['analysis'],
+                    chartType: 'line'
+                };
+                
+                log('Request body: <pre>' + JSON.stringify(requestBody, null, 2) + '</pre>', 'log');
+                
+                const response = await fetch('/api/mcp/analyze', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                log(`📥 Response status: ${response.status} ${response.statusText}`, 'log');
+                log(`Content-Type: ${response.headers.get('content-type')}`, 'log');
+                log(`Content-Length: ${response.headers.get('content-length')}`, 'log');
+                
+                // Try to read as text first
+                const text = await response.text();
+                log(`📦 Response size: ${text.length} bytes`, 'log');
+                
+                if (!text || text.trim() === '') {
+                    throw new Error('Empty response from server');
+                }
+                
+                log('First 200 chars: <pre>' + text.substring(0, 200) + '</pre>', 'log');
+                
+                // Try to parse JSON
+                let data;
+                try {
+                    data = JSON.parse(text);
+                    log('✅ JSON parsed successfully', 'success');
+                    log('Full response: <pre>' + JSON.stringify(data, null, 2) + '</pre>', 'success');
+                } catch (parseError) {
+                    log('❌ JSON parse error: ' + parseError.message, 'error');
+                    log('Full text: <pre>' + text + '</pre>', 'error');
+                    throw parseError;
+                }
+                
+                if (data.ok) {
+                    log('✅ Analysis completed successfully!', 'success');
+                    if (data.summary) {
+                        log('Summary: ' + data.summary, 'success');
+                    }
+                } else {
+                    log('❌ Analysis failed: ' + (data.error || 'Unknown error'), 'error');
+                }
+                
+            } catch (error) {
+                log('❌ Error: ' + error.message, 'error');
+                log('Stack: <pre>' + error.stack + '</pre>', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

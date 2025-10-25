@@ -36,6 +36,7 @@ import { toast } from "@/hooks/use-toast"
 import { describeRule } from "@/lib/shared/rules"
 import { createRule } from "@/features/agent/api/client"
 import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
+import { AssetAnalysis } from "./asset-analysis"
 
 // Define time ranges for chart
 const TIME_RANGES = {
@@ -314,6 +315,7 @@ export function CryptoDetail({ id }: { id: string }) {
       <Tabs defaultValue="overview" className="mb-8">
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="analysis">AI Analysis</TabsTrigger>
           <TabsTrigger value="markets">Markets</TabsTrigger>
           <TabsTrigger value="historical">Historical Data</TabsTrigger>
           <TabsTrigger value="about">About</TabsTrigger>
@@ -457,6 +459,14 @@ export function CryptoDetail({ id }: { id: string }) {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="analysis">
+          <AssetAnalysis 
+            coinId={id}
+            coinName={crypto.name}
+            coinSymbol={crypto.symbol}
+          />
         </TabsContent>
 
         <TabsContent value="markets">
