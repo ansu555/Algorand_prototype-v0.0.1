@@ -164,7 +164,12 @@ export function SwapCard() {
         description: "Please approve in your wallet"
       })
 
-      const signedTxns = await signTransactions(txnsToSign)
+      // Convert base64 txns to Uint8Array format expected by wallet
+      const txnsForWallet = txnsToSign.map((txnObj: any) => 
+        new Uint8Array(Buffer.from(txnObj.txn, 'base64'))
+      )
+
+      const signedTxns = await signTransactions(txnsForWallet)
 
       // Step 3: Submit to blockchain
       toast({

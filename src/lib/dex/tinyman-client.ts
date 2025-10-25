@@ -20,6 +20,7 @@ import {
   getPoolKey,
   calculateFee,
 } from './utils';
+import { getTinymanV2PoolAppId, registerTinymanV2Pool } from './tinyman-v2-pools';
 
 // Tinyman V2 constants
 const TINYMAN_V2_VALIDATOR_APP_ID_MAINNET = 1002541853;
@@ -41,6 +42,7 @@ interface TinymanPool {
   current_asset_2_reserves: string;
   current_issued_liquidity_assets: string;
   is_verified: boolean;
+  v2_address?: string; // V2 pool address (if this is a V1.1 pool)
 }
 
 export class TinymanV2Client implements IDexClient {
@@ -115,6 +117,52 @@ export class TinymanV2Client implements IDexClient {
             continue;
           }
 
+          // For Tinyman V2, we need the pool application ID
+          // Strategy:
+          // 1. Check lookup table first (fast)
+          // 2. Try to fetch from blockchain (slow, but caches result)
+          let poolAppId: number | undefined
+          
+          // First, try lookup table
+          poolAppId = getTinymanV2PoolAppId(asset1Id, asset2Id)
+          
+          // If not in lookup table and this is a V1.1 pool with v2_address, fetch from blockchain
+          if (!poolAppId && pool.version === '1.1' && pool.v2_address) {
+            try {
+              // Fetch account info to get the application ID
+              const accountInfo = await this.algodClient.accountInformation(pool.v2_address).do()
+              
+              // V2 pools are smart contracts, check if this address is an application
+              if (accountInfo && accountInfo.createdApps && accountInfo.createdApps.length > 0) {
+                poolAppId = Number(accountInfo.createdApps[0].id)
+                
+                // Register this pool for future lookups
+                registerTinymanV2Pool({
+                  asset1Id,
+                  asset2Id,
+                  appId: poolAppId,
+                  address: pool.v2_address
+                })
+              } else if (accountInfo && accountInfo.appsLocalState) {
+                // Or check if it's opted into an application
+                const apps = accountInfo.appsLocalState
+                if (apps.length > 0) {
+                  poolAppId = Number(apps[0].id)
+                  
+                  // Register this pool for future lookups
+                  registerTinymanV2Pool({
+                    asset1Id,
+                    asset2Id,
+                    appId: poolAppId,
+                    address: pool.v2_address
+                  })
+                }
+              }
+            } catch (error) {
+              console.warn(`Could not fetch app ID for pool ${pool.address} (v2: ${pool.v2_address})`)
+            }
+          }
+
           const poolInfo: PoolInfo = {
             poolId: pool.address,
             dexName: 'tinyman',
@@ -137,6 +185,7 @@ export class TinymanV2Client implements IDexClient {
             totalLiquidity: BigInt(pool.current_issued_liquidity_assets || 0),
             fee: 30, // Tinyman V2 has 0.3% fee (30 basis points)
             poolAddress: pool.address,
+            appId: poolAppId, // Pool application ID (V2 only)
             lastUpdated: now,
           };
 
