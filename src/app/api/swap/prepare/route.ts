@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import algosdk from 'algosdk'
 import { getAlgodClient } from '@/lib/algorand'
+import { TinymanV2Client } from '@/lib/dex/tinyman-client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +19,8 @@ export async function POST(request: NextRequest) {
       amount,
       slippage,
       userAddress,
-      route
+      route,
+      minimumReceived,
     } = body
 
     console.log('Prepare swap request:', {
@@ -45,23 +47,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const algodClient = getAlgodClient()
-    const suggestedParams = await algodClient.getTransactionParams().do()
+  const algodClient = getAlgodClient()
+  const suggestedParams = await algodClient.getTransactionParams().do()
 
-    // Get pool info from route
-    const pool = route.pools[0]
-    const poolAddress = pool.poolAddress
-    const poolAppId = pool.appId
+    // Get pool info from route or fetch from Tinyman as fallback
+  let poolAddress: string | undefined = route?.pools?.[0]?.poolAddress
+  let poolAppId: number | undefined = route?.pools?.[0]?.appId
+
+    if (!poolAddress || !poolAppId) {
+      // Fallback: discover pool from Tinyman for the asset pair
+      const tinyman = new TinymanV2Client(algodClient, 'testnet')
+      // Try cache lookup first
+      const match = await tinyman.getPool(fromAssetId, toAssetId)
+      if (match) {
+        poolAddress = match.poolAddress
+        poolAppId = match.appId
+      }
+    }
+
+    // If appId is missing, default to Tinyman V2 validator app id (testnet)
+    if (!poolAppId) {
+      // Tinyman V2 validator app id on testnet
+      poolAppId = 148607000
+    }
 
     if (!poolAddress || !poolAppId) {
       return NextResponse.json(
-        { error: 'Invalid pool information in route' },
+        { error: 'Could not resolve pool info (address/appId) for this pair' },
         { status: 400 }
       )
     }
 
     // Calculate minimum output with slippage
-    const outputAmount = route.path?.[1]?.outputAmount || amount * 0.95 // Fallback estimate
+    const outputAmount = (typeof minimumReceived === 'number' && minimumReceived > 0)
+      ? minimumReceived
+      : amount * 0.95 // Fallback estimate if not provided
     const slippageBps = Math.floor((slippage || 0.5) * 100) // Convert % to basis points
     const minOutput = Math.floor(outputAmount * (10000 - slippageBps) / 10000)
 

@@ -147,7 +147,8 @@ export function SwapCard() {
           amount: amountInBaseUnits,
           slippage: parseFloat(slippage),
           userAddress: activeAccount.address,
-          route: routeData.route
+          route: routeData.route,
+          minimumReceived: routeData.minimumReceived,
         })
       })
 
@@ -164,7 +165,21 @@ export function SwapCard() {
         description: "Please approve in your wallet"
       })
 
-      const signedTxns = await signTransactions(txnsToSign)
+      // Helper: base64 -> Uint8Array (browser-safe)
+      const base64ToUint8Array = (b64: string): Uint8Array => {
+        const binary = atob(b64)
+        const len = binary.length
+        const bytes = new Uint8Array(len)
+        for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i)
+        return bytes
+      }
+
+      // Convert returned base64-encoded unsigned txns to Uint8Array[] for wallet signing
+      const txnsBytes: Uint8Array[] = (txnsToSign || []).map((t: any) =>
+        base64ToUint8Array(t?.txn ?? t)
+      )
+
+      const signedTxnsBytes = await signTransactions(txnsBytes)
 
       // Step 3: Submit to blockchain
       toast({
@@ -172,10 +187,22 @@ export function SwapCard() {
         description: "Processing swap on Algorand"
       })
 
+      // Helper: Uint8Array -> base64 (browser-safe)
+      const uint8ArrayToBase64 = (arr: Uint8Array): string => {
+        let binary = ''
+        for (let i = 0; i < arr.length; i++) binary += String.fromCharCode(arr[i])
+        return btoa(binary)
+      }
+
+      // Some wallets may return null for txns they don't sign (e.g., foreign txns)
+      const signedTxnsBase64: string[] = (signedTxnsBytes || [])
+        .filter((u8): u8 is Uint8Array => !!u8)
+        .map((u8) => uint8ArrayToBase64(u8))
+
       const submitRes = await fetch('/api/swap/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signedTxns })
+        body: JSON.stringify({ signedTxns: signedTxnsBase64 })
       })
 
       if (!submitRes.ok) {
