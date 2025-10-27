@@ -83,7 +83,7 @@ export function Header() {
     { name: "Trade", href: "/trade" },
     { name: "Pool", href: "/pool" },
     { name: "Stake", href: "/stake" },
-    { name: "Portfolio", href: "/agent-dashboard" },
+    { name: "Portfolio", href: "/portfolio" },
   ];
 
   const saveRule = async (rule: any) => {
