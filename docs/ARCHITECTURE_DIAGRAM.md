@@ -314,3 +314,8 @@ where:
 - **Geographic**: CDN for API endpoints
 - **Load**: Handle 1000+ requests/sec
 - **Data**: Process 10,000+ pools efficiently
+
+## Related documents
+
+- System architecture overview: ./SYSTEM_ARCHITECTURE.md
+- Backend architecture details: ./BACKEND_ARCHITECTURE.md

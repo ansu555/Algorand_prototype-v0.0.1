@@ -935,3 +935,8 @@ class HealthMonitor {
 ```
 
 This comprehensive backend architecture provides robust, scalable infrastructure for multi-chain DeFi operations with AI integration, ensuring high availability, security, and performance across all supported networks.
+
+## Related documents
+
+- System architecture: ./SYSTEM_ARCHITECTURE.md
+- Architecture diagram: ./ARCHITECTURE_DIAGRAM.md

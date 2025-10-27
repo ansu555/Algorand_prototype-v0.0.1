@@ -86,11 +86,11 @@ Algorand_prototype-v0.0.1/
 
 ### 📚 Documentation
 
-For detailed information about the codebase structure:
+Single-source docs (minimal set):
 
-- **[� File Structure Guide](./docs/FILE_STRUCTURE.md)** - Comprehensive guide to every folder and file
-- **[🏗️ System Architecture](./docs/SYSTEM_ARCHITECTURE.md)** - High-level system design and multi-chain infrastructure
-- **[⚙️ Backend Architecture](./docs/BACKEND_ARCHITECTURE.md)** - Technical implementation details and patterns
+- **[🏗️ System Architecture](./docs/SYSTEM_ARCHITECTURE.md)**
+- **[🧩 Architecture Diagram](./docs/ARCHITECTURE_DIAGRAM.md)**
+- **[⚙️ Backend Architecture](./docs/BACKEND_ARCHITECTURE.md)**
 
 ### Key Architectural Decisions
 
