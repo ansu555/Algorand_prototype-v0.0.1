@@ -92,9 +92,15 @@ export class AssetDiscoveryService {
       console.log(`✅ Discovered ${assets.length} tradeable assets`);
 
       return assets.sort((a, b) => {
-        // Sort: verified first, then by name
+        // Sort: verified first, then by pool count, then by name
         if (a.verified && !b.verified) return -1;
         if (!a.verified && b.verified) return 1;
+        
+        // For same token names, prioritize the one with more pools
+        if (a.unitName === b.unitName) {
+          return (b.poolCount || 0) - (a.poolCount || 0);
+        }
+        
         return a.unitName.localeCompare(b.unitName);
       });
     } catch (error) {
@@ -249,8 +255,8 @@ export class AssetDiscoveryService {
     // Known verified testnet assets
     const verifiedTestnetAssets = [
       0, // ALGO
-      10458941, // USDC testnet
-      67395862, // USDC testnet (another)
+      67395862, // USDC testnet (primary - has most pools)
+      10458941, // USDC testnet (secondary)
       67396430, // USDt testnet
       70283957, // ALGF testnet
     ];

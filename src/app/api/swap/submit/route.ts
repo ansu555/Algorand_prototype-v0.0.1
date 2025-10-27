@@ -65,8 +65,12 @@ export async function POST(request: NextRequest) {
       errorMessage = 'Amount is below minimum transaction amount'
     } else if (error.message?.includes('asset not opted in')) {
       errorMessage = 'You need to opt-in to this asset first'
-    } else if (error.message?.includes('TransactionPool.Remember')) {
-      errorMessage = 'Transaction pool error - please try again'
+    } else if (error.message?.includes('TransactionPool.Remember') || error.message?.includes('transaction pool')) {
+      errorMessage = 'Transaction rejected by pool. Check your balance and try again.'
+    } else if (error.message?.includes('logic eval error')) {
+      errorMessage = 'Smart contract execution failed. Check slippage settings.'
+    } else if (error.message?.includes('would result negative')) {
+      errorMessage = 'Insufficient liquidity or amount too large'
     }
 
     return NextResponse.json(

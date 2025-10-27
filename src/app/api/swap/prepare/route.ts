@@ -47,8 +47,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-  const algodClient = getAlgodClient()
-  const suggestedParams = await algodClient.getTransactionParams().do()
+    const algodClient = getAlgodClient()
+    
+    // Check if user is opted into required assets
+    try {
+      const accountInfo = await algodClient.accountInformation(userAddress).do()
+      
+      // Check opt-in for non-ALGO assets
+      const requiredAssets = [fromAssetId, toAssetId].filter(id => id !== 0)
+      const userAssets = new Set((accountInfo.assets || []).map((a: any) => a['asset-id']))
+      
+      for (const assetId of requiredAssets) {
+        if (!userAssets.has(assetId)) {
+          return NextResponse.json(
+            { error: `You need to opt-in to asset ${assetId} first` },
+            { status: 400 }
+          )
+        }
+      }
+    } catch (error) {
+      console.warn('Could not verify asset opt-ins:', error)
+    }
+
+    const suggestedParams = await algodClient.getTransactionParams().do()
 
     // Get pool info from route or fetch from Tinyman as fallback
   let poolAddress: string | undefined = route?.pools?.[0]?.poolAddress
