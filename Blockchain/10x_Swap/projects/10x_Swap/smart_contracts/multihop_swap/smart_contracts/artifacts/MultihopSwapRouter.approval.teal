@@ -34,7 +34,7 @@ main_create_application_route@11:
     return
 
 
-// contract.MultihopSwapRouter.execute_swap_2hop[routing]() -> void:
+// smart_contracts.multihop_swap.contract.MultihopSwapRouter.execute_swap_2hop[routing]() -> void:
 execute_swap_2hop:
     // smart_contracts/multihop_swap/contract.py:31
     // @abimethod
@@ -199,7 +199,7 @@ execute_swap_2hop:
     return
 
 
-// contract.MultihopSwapRouter.execute_swap_3hop[routing]() -> void:
+// smart_contracts.multihop_swap.contract.MultihopSwapRouter.execute_swap_3hop[routing]() -> void:
 execute_swap_3hop:
     // smart_contracts/multihop_swap/contract.py:97
     // @abimethod
@@ -380,7 +380,7 @@ execute_swap_3hop:
     return
 
 
-// contract.MultihopSwapRouter.execute_swap_algo_to_asa[routing]() -> void:
+// smart_contracts.multihop_swap.contract.MultihopSwapRouter.execute_swap_algo_to_asa[routing]() -> void:
 execute_swap_algo_to_asa:
     // smart_contracts/multihop_swap/contract.py:158
     // @abimethod
@@ -567,7 +567,7 @@ execute_swap_algo_to_asa:
     return
 
 
-// contract.MultihopSwapRouter.opt_into_asset[routing]() -> void:
+// smart_contracts.multihop_swap.contract.MultihopSwapRouter.opt_into_asset[routing]() -> void:
 opt_into_asset:
     // smart_contracts/multihop_swap/contract.py:272
     // @abimethod
@@ -629,7 +629,7 @@ opt_into_asset:
     return
 
 
-// contract.MultihopSwapRouter.withdraw_asset[routing]() -> void:
+// smart_contracts.multihop_swap.contract.MultihopSwapRouter.withdraw_asset[routing]() -> void:
 withdraw_asset:
     // smart_contracts/multihop_swap/contract.py:293
     // @abimethod
@@ -694,7 +694,7 @@ withdraw_asset:
     return
 
 
-// contract.MultihopSwapRouter.withdraw_algo[routing]() -> void:
+// smart_contracts.multihop_swap.contract.MultihopSwapRouter.withdraw_algo[routing]() -> void:
 withdraw_algo:
     // smart_contracts/multihop_swap/contract.py:317
     // @abimethod
@@ -749,7 +749,7 @@ withdraw_algo:
     return
 
 
-// contract.MultihopSwapRouter._swap_on_pool(pool_app_id: uint64, asset_in: uint64, asset_out: uint64, amount_in: uint64) -> uint64:
+// smart_contracts.multihop_swap.contract.MultihopSwapRouter._swap_on_pool(pool_app_id: uint64, asset_in: uint64, asset_out: uint64, amount_in: uint64) -> uint64:
 _swap_on_pool:
     // smart_contracts/multihop_swap/contract.py:198-205
     // @subroutine

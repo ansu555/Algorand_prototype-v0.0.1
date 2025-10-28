@@ -157,7 +157,7 @@
       "stack_out": []
     },
     "141": {
-      "subroutine": "contract.MultihopSwapRouter.execute_swap_2hop[routing]",
+      "subroutine": "smart_contracts.multihop_swap.contract.MultihopSwapRouter.execute_swap_2hop[routing]",
       "params": {},
       "block": "execute_swap_2hop",
       "stack_in": [],
@@ -1356,7 +1356,7 @@
       ]
     },
     "241": {
-      "callsub": "contract.MultihopSwapRouter._swap_on_pool",
+      "callsub": "smart_contracts.multihop_swap.contract.MultihopSwapRouter._swap_on_pool",
       "op": "callsub _swap_on_pool",
       "defined_out": [
         "intermediate_amount#0",
@@ -1431,7 +1431,7 @@
       ]
     },
     "252": {
-      "callsub": "contract.MultihopSwapRouter._swap_on_pool",
+      "callsub": "smart_contracts.multihop_swap.contract.MultihopSwapRouter._swap_on_pool",
       "op": "callsub _swap_on_pool",
       "defined_out": [
         "min_output#0",
@@ -1628,7 +1628,7 @@
       "stack_out": []
     },
     "284": {
-      "subroutine": "contract.MultihopSwapRouter.execute_swap_3hop[routing]",
+      "subroutine": "smart_contracts.multihop_swap.contract.MultihopSwapRouter.execute_swap_3hop[routing]",
       "params": {},
       "block": "execute_swap_3hop",
       "stack_in": [],
@@ -3104,7 +3104,7 @@
       ]
     },
     "395": {
-      "callsub": "contract.MultihopSwapRouter._swap_on_pool",
+      "callsub": "smart_contracts.multihop_swap.contract.MultihopSwapRouter._swap_on_pool",
       "op": "callsub _swap_on_pool",
       "defined_out": [
         "intermediate1_amount#0",
@@ -3193,7 +3193,7 @@
       ]
     },
     "406": {
-      "callsub": "contract.MultihopSwapRouter._swap_on_pool",
+      "callsub": "smart_contracts.multihop_swap.contract.MultihopSwapRouter._swap_on_pool",
       "op": "callsub _swap_on_pool",
       "defined_out": [
         "intermediate2_amount#0",
@@ -3268,7 +3268,7 @@
       ]
     },
     "417": {
-      "callsub": "contract.MultihopSwapRouter._swap_on_pool",
+      "callsub": "smart_contracts.multihop_swap.contract.MultihopSwapRouter._swap_on_pool",
       "op": "callsub _swap_on_pool",
       "defined_out": [
         "min_output#0",
@@ -3465,7 +3465,7 @@
       "stack_out": []
     },
     "449": {
-      "subroutine": "contract.MultihopSwapRouter.execute_swap_algo_to_asa[routing]",
+      "subroutine": "smart_contracts.multihop_swap.contract.MultihopSwapRouter.execute_swap_algo_to_asa[routing]",
       "params": {},
       "block": "execute_swap_algo_to_asa",
       "stack_in": [],
@@ -4624,7 +4624,7 @@
       "stack_out": []
     },
     "587": {
-      "subroutine": "contract.MultihopSwapRouter.opt_into_asset[routing]",
+      "subroutine": "smart_contracts.multihop_swap.contract.MultihopSwapRouter.opt_into_asset[routing]",
       "params": {},
       "block": "opt_into_asset",
       "stack_in": [],
@@ -4837,7 +4837,7 @@
       "stack_out": []
     },
     "623": {
-      "subroutine": "contract.MultihopSwapRouter.withdraw_asset[routing]",
+      "subroutine": "smart_contracts.multihop_swap.contract.MultihopSwapRouter.withdraw_asset[routing]",
       "params": {},
       "block": "withdraw_asset",
       "stack_in": [],
@@ -5201,7 +5201,7 @@
       "stack_out": []
     },
     "674": {
-      "subroutine": "contract.MultihopSwapRouter.withdraw_algo[routing]",
+      "subroutine": "smart_contracts.multihop_swap.contract.MultihopSwapRouter.withdraw_algo[routing]",
       "params": {},
       "block": "withdraw_algo",
       "stack_in": [],
@@ -5463,7 +5463,7 @@
       "stack_out": []
     },
     "714": {
-      "subroutine": "contract.MultihopSwapRouter._swap_on_pool",
+      "subroutine": "smart_contracts.multihop_swap.contract.MultihopSwapRouter._swap_on_pool",
       "params": {
         "pool_app_id#0": "uint64",
         "asset_in#0": "uint64",
