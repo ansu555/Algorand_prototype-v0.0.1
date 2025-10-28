@@ -1,8 +1,8 @@
 # 10xSwap Backend Architecture Deep Dive
 
 ## Table of Contents
-1. [Core Agent System](#core-agent-system)
-2. [Multi-Chain Management](#multi-chain-management)
+1. [Core Algorand System](#core-algorand-system)
+2. [Smart Contract Integration](#smart-contract-integration)
 3. [Transaction Processing Pipeline](#transaction-processing-pipeline)
 4. [AI Integration Layer](#ai-integration-layer)
 5. [Data Persistence Strategy](#data-persistence-strategy)
@@ -12,107 +12,79 @@
 
 ---
 
-## Core Agent System
+## Core Algorand System
 
-### Agent Factory Pattern
+### Algorand SDK Integration
 
-The system uses a factory pattern to create and manage per-chain agent instances:
+The system uses Algorand SDK for all blockchain interactions:
 
 ```typescript
-// lib/agent.ts - Core architecture
-class AgentManager {
-  private static instances = new Map<number, Promise<Agent>>()
+// lib/algorand.ts - Core architecture
+import algosdk from 'algosdk'
+
+class AlgorandManager {
+  private algodClient: algosdk.Algodv2
+  private indexerClient: algosdk.Indexer
   
-  static async getAgent(chainIdOverride?: number): Promise<Agent> {
-    const chainId = chainIdOverride ?? Number(process.env.CHAIN_ID) ?? 43113
+  async initialize(network: 'mainnet' | 'testnet'): Promise<void> {
+    const config = this.getNetworkConfig(network)
     
-    if (!this.instances.has(chainId)) {
-      this.instances.set(chainId, this.buildAgent(chainId))
-    }
+    // Initialize Algod client for transactions
+    this.algodClient = new algosdk.Algodv2(
+      config.token,
+      config.algodServer,
+      ''
+    )
     
-    return this.instances.get(chainId)!
+    // Initialize Indexer client for queries
+    this.indexerClient = new algosdk.Indexer(
+      config.token,
+      config.indexerServer,
+      ''
+    )
   }
   
-  private static async buildAgent(chainId: number): Promise<Agent> {
-    // Chain-specific configuration resolution
-    const config = this.resolveChainConfig(chainId)
-    
-    // Initialize blockchain clients
-    const publicClient = createPublicClient({
-      chain: config.chain,
-      transport: http(config.rpcUrl)
-    })
-    
-    // Initialize 0xGasless AgentKit
-    const agentkit = await Agentkit.configureWithWallet({
-      privateKey: config.privateKey,
-      rpcUrl: config.rpcUrl,
-      apiKey: config.gaslessApiKey,
-      chainID: chainId,
-      paymasterUrl: config.paymasterUrl
-    })
-    
-    return new Agent(publicClient, agentkit, config)
+  private getNetworkConfig(network: string) {
+    return {
+      algodServer: process.env.ALGOD_SERVER || 
+        `https://${network}-api.algonode.cloud`,
+      indexerServer: process.env.INDEXER_SERVER || 
+        `https://${network}-idx.algonode.cloud`,
+      token: process.env.ALGOD_TOKEN || ''
+    }
+  }
+  
+  async getAccountInfo(address: string) {
+    return await this.algodClient.accountInformation(address).do()
+  }
+  
+  async submitTransaction(signedTxn: Uint8Array) {
+    return await this.algodClient.sendRawTransaction(signedTxn).do()
   }
 }
 ```
 
-### Chain Configuration Resolution
+### Wallet Management
 
-Each chain has specific environment variables that are resolved at runtime:
+Algorand supports multiple wallet providers through WalletConnect:
 
 ```typescript
-interface ChainConfig {
-  chainId: number
-  chain: Chain
-  rpcUrl: string
-  gaslessApiKey: string
-  paymasterUrl?: string
-  nativeSymbol: string
-  explorerUrl: string
-  swapEnabled: boolean
-}
-
-function resolveChainConfig(chainId: number): ChainConfig {
-  const configs: Record<number, Partial<ChainConfig>> = {
-    8453: {  // Base
-      chain: base,
-      rpcUrl: process.env.RPC_URL_BASE || process.env.RPC_URL,
-      gaslessApiKey: process.env.GASLESS_API_KEY_BASE || process.env.GASLESS_API_KEY,
-      paymasterUrl: process.env.GASLESS_PAYMASTER_URL_BASE,
-      nativeSymbol: 'ETH',
-      explorerUrl: 'https://basescan.org',
-      swapEnabled: true
-    },
-    43114: { // Avalanche
-      chain: avalanche,
-      rpcUrl: process.env.RPC_URL_AVALANCHE || process.env.RPC_URL,
-      gaslessApiKey: process.env.GASLESS_API_KEY_AVALANCHE || process.env.GASLESS_API_KEY,
-      paymasterUrl: process.env.GASLESS_PAYMASTER_URL_AVALANCHE,
-      nativeSymbol: 'AVAX',
-      explorerUrl: 'https://snowtrace.io',
-      swapEnabled: true
-    },
-    43113: { // Fuji
-      chain: avalancheFuji,
-      rpcUrl: process.env.RPC_URL_FUJI || process.env.RPC_URL,
-      gaslessApiKey: process.env.GASLESS_API_KEY_FUJI || process.env.GASLESS_API_KEY,
-      paymasterUrl: process.env.GASLESS_PAYMASTER_URL_FUJI,
-      nativeSymbol: 'AVAX',
-      explorerUrl: 'https://testnet.snowtrace.io',
-      swapEnabled: false
-    }
+interface AlgorandWalletConfig {
+  network: 'mainnet' | 'testnet'
+  walletProviders: string[]  // ['pera', 'defly', 'myalgo']
+  nodeConfig: {
+    algodServer: string
+    indexerServer: string
+    token: string
   }
-  
-  return { chainId, ...configs[chainId] } as ChainConfig
 }
 ```
 
 ---
 
-## Multi-Chain Management
+## Smart Contract Integration
 
-### Token Registry System
+### Asset Discovery System
 
 The token registry provides a standardized way to handle tokens across different chains:
 

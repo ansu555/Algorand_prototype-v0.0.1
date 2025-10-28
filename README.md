@@ -1,6 +1,6 @@
 # 10xSwap: AI-Powered Algorand DEX
 
-10xSwap is a modern web application that allows users to explore cryptocurrency markets, manage assets, and execute  transactions across multiple network Algorand. It features an AI-powered chat agent that can understand natural language commands to perform actions like checking balances, getting token prices, and executing swaps and transfers.
+10xSwap is a modern web application that allows users to explore cryptocurrency markets, manage assets, and execute transactions on the Algorand blockchain. It features an AI-powered chat agent that can understand natural language commands to perform actions like checking balances, getting token prices, and executing swaps and transfers.
 
 ## Table of Contents
 
@@ -20,14 +20,14 @@
 ## ✨ Features
 
 - **🤖 AI-Powered Chat Agent**: Natural language interface for blockchain operations
-- **💸 Gasless Transactions**: Execute transactions without paying gas fees
-- **🔗 Multi-Chain Support**: Base, Avalanche, and Algorand blockchain integration
-- **💱 DEX Integration**: Swap tokens via Tinyman on Algorand
+- **� Algorand Blockchain**: Fast, secure, and carbon-neutral blockchain integration
+- **💱 DEX Integration**: Swap tokens via Tinyman and Pact on Algorand
 - **👛 Multi-Wallet Support**: Pera, Defly, MyAlgo wallet connections
 - **📊 Real-Time Market Data**: Live cryptocurrency prices and analytics
-- **🔄 Smart Transfers**: Automatic token swapping when balance is insufficient
-- **⚡ Instant Finality**: Fast transaction confirmation on Algorand
+- **🔄 Automated Trading Rules**: DCA, Rebalance, and Rotation strategies
+- **⚡ Instant Finality**: Sub-3 second transaction confirmation on Algorand
 - **🎨 Modern UI**: Responsive design with dark mode support
+- **📦 On-Chain Smart Contracts**: Deployed autopilot rules and multi-hop swap router
 
 ## 🏗️ Project Structure
 
@@ -378,30 +378,6 @@ Here is a detailed map of triggers and actions:
 ## 📦 Supported Tokens
 
 This project maintains a registry of supported tokens per chain in `src/lib/tokens.ts`. The UI and backend expect these symbols when requesting balances or swaps.
-
-**Base mainnet (8453)**
-
-| Symbol | Address |
-|--------|---------|
-| ETH    | native  |
-| WETH   | 0x4200000000000000000000000000000000000006 |
-| USDC   | 0x833589fCD6EDb6E08f4c7C10d6D3e96cF6a47b8f |
-
-**Avalanche mainnet (43114)**
-
-| Symbol | Address |
-|--------|---------|
-| AVAX   | native  |
-| WAVAX  | 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7 |
-| USDC   | 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E |
-
-**Fuji testnet (43113)**
-
-| Symbol | Address |
-|--------|---------|
-| AVAX   | native  |
-| WAVAX  | 0xd00ae08403B9bbb9124bb305C09058E32C39A48c |
-| USDC   | 0x5425890298aed601595a70AB815c96711a31Bc65 |
 
 **Algorand mainnet**
 

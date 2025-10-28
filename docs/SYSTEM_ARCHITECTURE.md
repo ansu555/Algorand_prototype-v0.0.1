@@ -16,15 +16,15 @@
 
 ## System Overview
 
-10xSwap is a comprehensive DeFi aggregation platform that combines traditional DEX functionality with AI-powered trading agents. The system operates across multiple blockchain networks, providing gasless transactions through ERC-4337 account abstraction.
+10xSwap is a comprehensive DeFi platform built on Algorand that combines traditional DEX functionality with AI-powered trading agents. The system provides fast, secure, and carbon-neutral transactions on the Algorand blockchain.
 
 ### Core Features
-- **Multi-chain DEX aggregation** (Base, Avalanche, Avalanche Fuji)
+- **Algorand DEX aggregation** (Tinyman, Pact)
 - **AI-powered trading agent** with natural language interface
-- **Gasless transactions** via 0xGasless account abstraction
+- **Automated trading rules** (DCA, Rebalance, Rotation)
 - **Real-time market data** and price feeds
-- **Automated trading rules** and portfolio management
-- **Smart account management** with EOA/Smart Account dual support
+- **On-chain smart contracts** for autopilot rules and swap routing
+- **Multi-wallet support** (Pera, Defly, MyAlgo)
 
 ### System Components
 ```
@@ -87,13 +87,145 @@
 │  └─────────────┘  └─────────────┘  └─────────────┘        │
 │         │                 │                 │              │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │           Multi-Chain Agent Factory                │   │
+│  │           Algorand Services                        │   │
 │  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐  │   │
-│  │  │  Base Agent │ │ Avalanche   │ │ Fuji Agent  │  │   │
-│  │  │   (8453)    │ │ Agent       │ │  (43113)    │  │   │
-│  │  │             │ │  (43114)    │ │             │  │   │
+│  │  │  Wallet     │ │ DEX Router  │ │ Price       │  │   │
+│  │  │  Manager    │ │ (Tinyman/   │ │ Oracle      │  │   │
+│  │  │             │ │  Pact)      │ │             │  │   │
 │  │  └─────────────┘ └─────────────┘ └─────────────┘  │   │
 │  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│                    Core Services Layer                      │
+│                                                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
+│  │   Algorand  │  │   Asset     │  │   Price     │        │
+│  │   SDK       │  │   Registry  │  │   Oracle    │        │
+│  └─────────────┘  └─────────────┘  └─────────────┘        │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Algorand Integration
+
+The platform is built exclusively on Algorand with these configurations:
+
+#### Algorand Mainnet
+```typescript
+// Configuration
+{
+  network: "mainnet",
+  algodToken: process.env.ALGOD_TOKEN,
+  algodServer: process.env.ALGOD_SERVER || "https://mainnet-api.algonode.cloud",
+  indexerServer: process.env.INDEXER_SERVER || "https://mainnet-idx.algonode.cloud",
+  nativeToken: "ALGO",
+  dexProtocols: ["Tinyman V2", "Pact"],
+  explorer: "algoexplorer.io"
+}
+```
+
+#### Algorand Testnet
+```typescript
+// Configuration
+{
+  network: "testnet",
+  algodToken: process.env.ALGOD_TOKEN,
+  algodServer: process.env.ALGOD_SERVER || "https://testnet-api.algonode.cloud",
+  indexerServer: process.env.INDEXER_SERVER || "https://testnet-idx.algonode.cloud",
+  nativeToken: "ALGO",
+  dexProtocols: ["Tinyman V2", "Pact"],
+  explorer: "testnet.algoexplorer.io"
+}
+```
+
+### Smart Contracts
+
+```typescript
+interface DeployedContracts {
+  // Swap Router
+  multihopSwapRouter: {
+    appId: 748465069,
+    address: "BWTHQBCPPGGGAHRMBDNGKJ7HNEXV6WZ5S6XQEKX4UN7UGJUCAUHVYIZQFY"
+  },
+  
+  // DEX Adapters
+  tinymanPoolAdapter: {
+    appId: 748465270,
+    address: "GG2DXJ3NBFVUCDJF5ZUE3ZQAHSZKKAFGXSRR2OILXMWMZPW4VQFAYMRG5M"
+  },
+  
+  // Autopilot Rules
+  autoPilotRuleContract: {
+    appId: 748707872,
+    address: "5XIVYTVBVO7CKQDRFD7H4LZODUSK7R4KL5EY2TSPTOROCXNSPLYILJMEOA"
+  }
+}
+```
+
+---
+
+## Multi-Chain Infrastructure
+
+### Algorand Asset Registry
+
+| Asset | ASA ID (Mainnet) | ASA ID (Testnet) | Decimals |
+|-------|------------------|------------------|----------|
+| ALGO | 0 | 0 | 6 |
+| USDC | 31566704 | 10458941 | 6 |
+| USDT | 312769 | - | 6 |
+| WBTC | 1058926737 | - | 8 |
+| goETH | - | 386195940 | 18 |
+
+### Environment Configuration
+
+```bash
+# Algorand Network
+NEXT_PUBLIC_ALGORAND_NETWORK=testnet
+
+# Algorand Node Configuration
+ALGOD_TOKEN=
+ALGOD_SERVER=https://testnet-api.algonode.cloud
+INDEXER_SERVER=https://testnet-idx.algonode.cloud
+
+# Deployer Wallet
+DEPLOYER_MNEMONIC=your-25-word-mnemonic-phrase
+
+# API Keys
+COINRANKING_API_KEY=your-coinranking-key
+```
+
+### Asset Discovery System
+
+```typescript
+interface AssetRegistry {
+  // Discover tradeable assets from DEX pools
+  discoverAssets(): Promise<TradableAsset[]>
+  
+  // Resolve asset by symbol or ID
+  resolveAsset(symbolOrId: string | number): TradableAsset | null
+  
+  // Get all pool liquidity for asset
+  getAssetLiquidity(assetId: number): Promise<PoolInfo[]>
+}
+
+// Example asset definition
+interface TradableAsset {
+  id: number           // ASA ID
+  symbol: string       // Symbol (ALGO, USDC, etc)
+  name: string        // Full name
+  decimals: number    // Decimal places
+  verified: boolean   // Verified asset
+  poolCount: number   // Number of DEX pools
+  totalLiquidity: number // Total liquidity in USD
+}
+```
+
+---
+
+## Data Flow & Communication
+
+### Frontend to Backend Communication
+````
 │                                                             │
 ├─────────────────────────────────────────────────────────────┤
 │                    Core Services Layer                      │

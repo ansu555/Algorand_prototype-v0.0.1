@@ -1,6 +1,67 @@
-# System Architecture: Price Oracle + Optimal Routing
+# 10xSwap Architecture (Algorand)
 
-## Overview Diagram
+This document combines the overall system architecture and the detailed Price Oracle + Routing diagrams into a single, Algorand-focused view.
+
+## 1) Overall System Overview
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│                              FRONTEND (Next.js)                            │
+│                                                                            │
+│  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐   ┌────────────┐   │
+│  │  Swap UI     │   │  Portfolio   │   │  Agent Chat  │   │  Rules UI  │   │
+│  └──────┬───────┘   └──────┬───────┘   └──────┬───────┘   └──────┬─────┘   │
+└─────────┼──────────────────┼───────────────────┼──────────────────┼────────┘
+          │                  │                   │                  │
+┌─────────▼──────────────────▼───────────────────▼──────────────────▼────────┐
+│                              API LAYER (Next.js)                           │
+│                                                                            │
+│  /api/price/*   /api/pools/*   /api/router/*    /api/agent/*   /api/rules/*│
+│      │               │               │               │              │       │
+└──────┼───────────────┼───────────────┼───────────────┼──────────────┼──────┘
+       │               │               │               │              │
+┌──────▼─────────┐ ┌───▼──────────┐ ┌──▼────────────┐ ┌─▼───────────┐ ┌▼─────┐
+│  Price Oracle  │ │ Pool/Indexer │ │  Router Svc   │ │ Agent/Rules │ │ Auth │
+│  Aggregator    │ │  Access      │ │  (Tinyman/    │ │  Executor   │ │/ACL  │
+│  (multi-source)│ │              │ │   Pact)       │ │  (Autopilot)│ │      │
+└──────┬─────────┘ └────┬─────────┘ └────┬──────────┘ └────┬────────┘ └──────┘
+       │                │                │                 │
+       │                │                │                 │
+┌──────▼───────────┐ ┌──▼────────────┐ ┌─▼─────────────┐  │
+│  Caching Layer   │ │  Data (DB)    │ │  Wallet/Signer│  │
+│  (Price/Pool TTL)│ │  (logs, rules)│ │  (WalletConnect)│ │
+└──────┬───────────┘ └────┬──────────┘ └────┬──────────┘  │
+       │                   │                 │             │
+       └───────────────────┼─────────────────┼─────────────┘
+                           │                 │
+                 ┌─────────▼─────────────────▼─────────────────────┐
+                 │                   BLOCKCHAIN                    │
+                 │                 (Algorand)                      │
+                 │                                                 │
+                 │  ┌──────────────┐   ┌──────────────┐           │
+                 │  │  Tinyman V2  │   │    Pact      │           │
+                 │  │   Pools      │   │   Pools      │           │
+                 │  └──────┬───────┘   └──────┬───────┘           │
+                 │         │                  │                   │
+                 │  ┌──────▼────────┐  ┌──────▼────────┐          │
+                 │  │  Contracts    │  │  Algorand     │          │
+                 │  │  - Router     │  │  Indexer      │          │
+                 │  │  - Pool Adptr │  │  (read chain) │          │
+                 │  │  - Autopilot  │  └───────────────┘          │
+                 │  │    Rules      │                              │
+                 │  └───────────────┘                              │
+                 └─────────────────────────────────────────────────┘
+```
+
+Key:
+- Contracts deployed on Algorand testnet: MultihopSwapRouter, TinymanPoolAdapter, AutoPilotRuleContract
+- Services interact with Tinyman/Pact pools and Algorand Indexer for data and execution
+
+---
+
+## 2) Price Oracle + Optimal Routing
+
+### Overview Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -83,7 +144,7 @@
                     └────────────────┘
 ```
 
-## Data Flow
+## 3) Data Flow
 
 ### 1. Price Fetching Flow
 
@@ -173,7 +234,7 @@ Router Initialized? ─No──► Fetch All Pools
          Return Quote
 ```
 
-## Component Interaction
+## 4) Component Interaction
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -213,7 +274,7 @@ Router Initialized? ─No──► Fetch All Pools
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Architecture Layers
+## 5) Architecture Layers
 
 ### Layer 1: Data Sources
 - **Tinyman Analytics**: Real pool reserves
@@ -248,7 +309,7 @@ Router Initialized? ─No──► Fetch All Pools
 - **Real-time Updates**: Live prices
 - **User Interaction**: Swap interface
 
-## Key Algorithms
+## 6) Key Algorithms
 
 ### 1. Weighted Price Calculation
 
@@ -291,7 +352,7 @@ where:
   Pact threshold = $50,000
 ```
 
-## Performance Optimizations
+## 7) Performance Optimizations
 
 1. **Parallel Fetching**: All price sources queried simultaneously
 2. **Smart Caching**: Different TTLs for different data types
@@ -299,7 +360,7 @@ where:
 4. **Graph Pruning**: Only viable pools included in routing
 5. **Early Exit**: Return first optimal route found
 
-## Security Considerations
+## 8) Security Considerations
 
 1. **Input Validation**: All parameters sanitized
 2. **Rate Limiting**: API call throttling
@@ -307,7 +368,7 @@ where:
 4. **Type Safety**: TypeScript prevents type errors
 5. **Slippage Protection**: Minimum output enforced
 
-## Scalability
+## 9) Scalability
 
 - **Horizontal**: Add more DEX clients easily
 - **Vertical**: Optimize cache and algorithms
@@ -315,7 +376,7 @@ where:
 - **Load**: Handle 1000+ requests/sec
 - **Data**: Process 10,000+ pools efficiently
 
-## Related documents
+## 10) Related documents
 
 - System architecture overview: ./SYSTEM_ARCHITECTURE.md
 - Backend architecture details: ./BACKEND_ARCHITECTURE.md

@@ -74,7 +74,7 @@ Authorization: Bearer YOUR_API_KEY
 ```
 
 **Parameters:**
-- `coin` (required): Coin symbol (btc, eth, sol, avax, etc.)
+- `coin` (required): Coin symbol (btc, algo, sol, etc.)
 - `horizonDays` (optional, default: 30): Days of historical data to analyze
 - `granularity` (optional, default: "1d"): Data granularity - "1h", "4h", or "1d"
 - `tasks` (optional): Array of tasks to perform. If empty, performs all tasks.
@@ -120,12 +120,10 @@ Authorization: Bearer YOUR_API_KEY
 ## Supported Coins
 
 - BTC (Bitcoin)
-- ETH (Ethereum)
+- ALGO (Algorand)
 - SOL (Solana)
-- AVAX (Avalanche)
 - ADA (Cardano)
 - DOT (Polkadot)
-- MATIC (Polygon)
 - LINK (Chainlink)
 
 More coins can be added by extending the `coinMap` in `main.ts`.
