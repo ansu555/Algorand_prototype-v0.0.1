@@ -55,7 +55,9 @@ export async function POST(request: NextRequest) {
       
       // Check opt-in for non-ALGO assets
       const requiredAssets = [fromAssetId, toAssetId].filter(id => id !== 0)
-      const userAssets = new Set((accountInfo.assets || []).map((a: any) => a['asset-id']))
+      // FIX: Use 'assetId' (camelCase) not 'asset-id' (kebab-case)
+      // algosdk returns assetId as BigInt, so convert to Number for comparison
+      const userAssets = new Set((accountInfo.assets || []).map((a: any) => Number(a.assetId)))
       
       for (const assetId of requiredAssets) {
         if (!userAssets.has(assetId)) {

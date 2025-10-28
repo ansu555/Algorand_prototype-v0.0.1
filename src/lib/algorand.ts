@@ -95,8 +95,8 @@ export async function buildAlgorandAgent() {
           return (Number(accountInfo.amount) / 1000000).toString()
         }
         
-        // ASA balance
-        const asset = accountInfo.assets?.find((a: any) => a['asset-id'] === assetId)
+        // ASA balance - FIX: Use assetId (camelCase) not 'asset-id' (kebab-case)
+        const asset = accountInfo.assets?.find((a: any) => Number(a.assetId) === assetId)
         if (!asset) return '0'
         
         const networkAssets = ALGORAND_ASSETS[network]
@@ -146,9 +146,9 @@ export async function buildAlgorandAgent() {
           // ASA transfer
           const assetInfo = Object.values(ALGORAND_ASSETS[network]).find(a => a.id === assetId)
           if (!assetInfo) throw new Error(`Unknown asset ID: ${assetId}`)
-          // Ensure sender is opted-in to ASA
+          // Ensure sender is opted-in to ASA - FIX: Use assetId (camelCase) not 'asset-id' (kebab-case)
           const acctInfo = await algodClient.accountInformation(account.addr).do()
-          const hasOptIn = (acctInfo.assets || []).some((a: any) => a['asset-id'] === assetId)
+          const hasOptIn = (acctInfo.assets || []).some((a: any) => Number(a.assetId) === assetId)
           if (!hasOptIn) {
             const optInTxn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
               sender: account.addr,

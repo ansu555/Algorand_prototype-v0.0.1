@@ -1,0 +1,17 @@
+{
+  "name": "10x_swap",
+  "version": "1.0.0",
+  "description": "This project has been generated using AlgoKit. See below for default getting started instructions.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "algosdk": "^3.5.2",
+    "dotenv": "^17.2.3"
+  }
+}

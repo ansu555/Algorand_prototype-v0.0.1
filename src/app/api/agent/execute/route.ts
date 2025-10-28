@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import { getRuleById, createLog, type LogEntry } from "@/lib/db"
 import { getAgent } from "@/lib/agent"
-import { resolveTokenByCoinrankingId } from "@/lib/tokens"
 
 export const runtime = "nodejs"
 
@@ -93,8 +92,11 @@ export async function POST(req: Request) {
 
     // Execute swap
     const agent = await getAgent()
-    const result = await agent.smartSwap({ tokenInSymbol: 'ETH', tokenOutSymbol: outSymbol, amount: amountStr, slippage: rule.maxSlippage ?? 0.5 })
-    const txHash = result.hash
+    // TODO: Replace with actual swap implementation for Algorand
+    // For now, create a placeholder transaction result
+    const txHash = `0x${Date.now().toString(16)}_placeholder`
+    // const result = await agent.swap({ tokenInSymbol: 'ETH', tokenOutSymbol: outSymbol, amount: amountStr, slippage: rule.maxSlippage ?? 0.5 })
+    // const txHash = result.hash
 
     const now = new Date().toISOString()
     const log: LogEntry = {

@@ -32,7 +32,8 @@ export class PactRealSwap {
   async isOptedIntoUSDC(): Promise<boolean> {
     try {
       const accountInfo = await this.algodClient.accountInformation(this.account.addr).do()
-      return accountInfo.assets?.some((asset: any) => asset['asset-id'] === this.USDC_ASSET_ID) || false
+      // FIX: Use assetId (camelCase) not 'asset-id' (kebab-case)
+      return accountInfo.assets?.some((asset: any) => Number(asset.assetId) === this.USDC_ASSET_ID) || false
     } catch (error) {
       console.error('Error checking USDC opt-in:', error)
       return false
