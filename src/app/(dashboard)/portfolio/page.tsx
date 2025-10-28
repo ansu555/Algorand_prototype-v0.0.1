@@ -10,7 +10,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { formatTrigger, type Rule } from "@/lib/shared/rules"
 import { forceRunPoller, useAgentData } from "@/features/agent/hooks/useAgentData"
 import { deleteRule as apiDeleteRule } from "@/features/agent/api/client"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp, Play, Trash2, Eye } from "lucide-react"
 import { useWalletConnection } from '@/components/providers/txnlab-wallet-provider'
 
 export default function PortfolioPage() {
@@ -237,65 +237,160 @@ export default function PortfolioPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
+                              <Button 
+                                size="sm" 
+                                variant="default" 
+                                onClick={() => executeNow(rule)}
+                                className="h-8"
+                              >
+                                <Play className="h-3 w-3 mr-1" />
+                                Execute
+                              </Button>
                               {isPaused ? (
-                                <Button size="sm" variant="outline" onClick={() => pauseResume(rule, "active")}>
+                                <Button size="sm" variant="outline" onClick={() => pauseResume(rule, "active")} className="h-8">
                                   Resume
                                 </Button>
                               ) : (
-                                <Button size="sm" variant="outline" onClick={() => pauseResume(rule, "paused")}>
+                                <Button size="sm" variant="outline" onClick={() => pauseResume(rule, "paused")} className="h-8">
                                   Pause
                                 </Button>
                               )}
+                              <Button 
+                                size="sm" 
+                                variant="destructive" 
+                                onClick={() => onDelete(rule)}
+                                className="h-8"
+                              >
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                Delete
+                              </Button>
                               <Dialog>
                                 <DialogTrigger asChild>
-                                  <Button size="sm" variant="outline">
-                                    View
+                                  <Button size="sm" variant="ghost" className="h-8">
+                                    <Eye className="h-3 w-3 mr-1" />
+                                    Details
                                   </Button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-2xl">
+                                <DialogContent className="max-w-4xl">
                                   <DialogHeader>
                                     <DialogTitle>Rule Details</DialogTitle>
                                   </DialogHeader>
-                                  <div className="space-y-3">
-                                    <div>
-                                      <div className="text-sm font-medium text-muted-foreground">ID</div>
-                                      <div className="text-sm font-mono break-all">{rule.id}</div>
+                                  
+                                  {/* Compact 2-column layout */}
+                                  <div className="grid grid-cols-2 gap-4">
+                                    {/* Left Column */}
+                                    <div className="space-y-3">
+                                      {/* Type & Status */}
+                                      <div className="flex gap-2">
+                                        <div className="flex-1 p-3 bg-muted/50 rounded-lg">
+                                          <div className="text-xs font-medium text-muted-foreground mb-1">Type</div>
+                                          <Badge variant="outline">{rule.type.toUpperCase()}</Badge>
+                                        </div>
+                                        <div className="flex-1 p-3 bg-muted/50 rounded-lg">
+                                          <div className="text-xs font-medium text-muted-foreground mb-1">Status</div>
+                                          <Badge variant={rule.status === "paused" ? "secondary" : "default"}>
+                                            {rule.status.toUpperCase()}
+                                          </Badge>
+                                        </div>
+                                      </div>
+
+                                      {/* Targets */}
+                                      <div className="p-3 bg-muted/50 rounded-lg">
+                                        <div className="text-xs font-medium text-muted-foreground mb-1">Targets</div>
+                                        <div className="flex flex-wrap gap-1">
+                                          {rule.targets.map((target, idx) => (
+                                            <Badge key={idx} variant="default" className="text-xs">
+                                              {symbolById[target] || target}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      {/* Trigger */}
+                                      <div className="p-3 bg-muted/50 rounded-lg">
+                                        <div className="text-xs font-medium text-muted-foreground mb-1">Trigger</div>
+                                        <div className="text-sm">{formatTrigger(rule)}</div>
+                                        {rule.trigger?.value && (
+                                          <div className="text-xs text-muted-foreground mt-1">
+                                            Threshold: {rule.trigger.value}%
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Trading Params */}
+                                      <div className="p-3 bg-muted/50 rounded-lg">
+                                        <div className="text-xs font-medium text-muted-foreground mb-2">Trading</div>
+                                        <div className="grid grid-cols-2 gap-2 text-xs">
+                                          <div>
+                                            <span className="text-muted-foreground">Spend:</span> ${rule.maxSpendUSD}
+                                          </div>
+                                          <div>
+                                            <span className="text-muted-foreground">Slippage:</span> {rule.maxSlippage}%
+                                          </div>
+                                        </div>
+                                      </div>
                                     </div>
-                                    <div>
-                                      <div className="text-sm font-medium text-muted-foreground">Type</div>
-                                      <div className="text-sm">{rule.type.toUpperCase()}</div>
-                                    </div>
-                                    <div>
-                                      <div className="text-sm font-medium text-muted-foreground">Targets</div>
-                                      <div className="text-sm">{renderTargets(rule.targets)}</div>
-                                    </div>
-                                    <div>
-                                      <div className="text-sm font-medium text-muted-foreground">Trigger</div>
-                                      <div className="text-sm">{formatTrigger(rule)}</div>
-                                    </div>
-                                    <div>
-                                      <div className="text-sm font-medium text-muted-foreground">Max Spend (USD)</div>
-                                      <div className="text-sm">${rule.maxSpendUSD}</div>
-                                    </div>
-                                    <div>
-                                      <div className="text-sm font-medium text-muted-foreground">Max Slippage</div>
-                                      <div className="text-sm">{rule.maxSlippage}%</div>
-                                    </div>
-                                    <div>
-                                      <div className="text-sm font-medium text-muted-foreground">Cooldown</div>
-                                      <div className="text-sm">{rule.cooldownMinutes} minutes</div>
-                                    </div>
-                                    <div>
-                                      <div className="text-sm font-medium text-muted-foreground">Created</div>
-                                      <div className="text-sm">{new Date(rule.createdAt).toLocaleString()}</div>
+
+                                    {/* Right Column */}
+                                    <div className="space-y-3">
+                                      {/* Timing */}
+                                      <div className="p-3 bg-muted/50 rounded-lg">
+                                        <div className="text-xs font-medium text-muted-foreground mb-2">Timing</div>
+                                        <div className="space-y-1 text-xs">
+                                          <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Cooldown:</span>
+                                            <span>{rule.cooldownMinutes}m</span>
+                                          </div>
+                                          <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Next Check:</span>
+                                            <span>{nextCheck(rule)}</span>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Created */}
+                                      <div className="p-3 bg-muted/50 rounded-lg">
+                                        <div className="text-xs font-medium text-muted-foreground mb-1">Created</div>
+                                        <div className="text-xs font-mono">
+                                          {new Date(rule.createdAt).toLocaleString()}
+                                        </div>
+                                      </div>
+
+                                      {/* Rule ID */}
+                                      <div className="p-3 bg-muted/50 rounded-lg">
+                                        <div className="text-xs font-medium text-muted-foreground mb-1">ID</div>
+                                        <div className="text-xs font-mono break-all">{rule.id}</div>
+                                      </div>
+
+                                      {/* Owner */}
+                                      <div className="p-3 bg-muted/50 rounded-lg">
+                                        <div className="text-xs font-medium text-muted-foreground mb-1">Owner</div>
+                                        <div className="text-xs font-mono break-all">
+                                          {rule.ownerAddress.slice(0, 12)}...{rule.ownerAddress.slice(-8)}
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
-                                  <div className="flex gap-2 mt-4">
-                                    <Button size="sm" onClick={() => executeNow(rule)} className="flex-1">
+
+                                  {/* Action Buttons */}
+                                  <div className="flex gap-2 pt-4 border-t">
+                                    <Button 
+                                      size="sm" 
+                                      onClick={() => executeNow(rule)} 
+                                      className="flex-1"
+                                      variant="default"
+                                    >
+                                      <Play className="h-3 w-3 mr-1" />
                                       Execute Now
                                     </Button>
-                                    <Button size="sm" variant="destructive" onClick={() => onDelete(rule)} className="flex-1">
-                                      Delete
+                                    <Button 
+                                      size="sm" 
+                                      variant="destructive" 
+                                      onClick={() => onDelete(rule)} 
+                                      className="flex-1"
+                                    >
+                                      <Trash2 className="h-3 w-3 mr-1" />
+                                      Delete Rule
                                     </Button>
                                   </div>
                                 </DialogContent>
