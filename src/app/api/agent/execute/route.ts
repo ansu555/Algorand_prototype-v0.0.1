@@ -67,11 +67,23 @@ export async function POST(req: Request) {
     const prices: Record<string, number | null> = {}
     await Promise.all(targets.map(async (coinId) => { prices[coinId] = await fetchPrice(baseUrl, coinId) }))
 
+    // Map Coinranking IDs to Algorand asset symbols
+    const coinrankingToAlgorandMap: Record<string, string> = {
+      'razxDUgYGNAdQ': 'ALGO',  // Ethereum UUID → ALGO
+      'Qwsogvtv82FCd': 'BTC',   // Bitcoin
+      'aKzUVe4Hh_CON': 'GOETH', // GoEthereum testnet token
+      'WcwrkfNI4FUAe': 'USDC',  // USDC
+      'USDC': 'USDC',
+      'usdc': 'USDC',
+      // Add more mappings as needed
+    }
+
     const legs = targets.map((coinId) => {
-      const token = null // Token resolution by Coinranking ID disabled; mapping required for real execution
+      // Try to map the coinId to an Algorand symbol
+      const symbol = coinrankingToAlgorandMap[coinId] || coinId.toUpperCase()
       const price = prices[coinId]
       const qty = price && price > 0 ? perLegSpend / price : 0
-      return { coinId, symbol: (token as any)?.symbol ?? null, side: 'buy' as const, price: price ?? 0, qty, spendUSD: perLegSpend }
+      return { coinId, symbol, side: 'buy' as const, price: price ?? 0, qty, spendUSD: perLegSpend }
     })
     const plan = { totalSpendUSD: spendTotal, legs }
 
@@ -79,7 +91,7 @@ export async function POST(req: Request) {
     const first = legs[0]
     if (!first) return NextResponse.json({ success: false, error: 'No execution legs computed' }, { status: 400 })
     const outSymbol = first.symbol || first.coinId
-  if (!first.symbol) throw new Error(`Unsupported target ${first.coinId}. Provide symbol mapping before execution.`)
+    if (!first.symbol) throw new Error(`Unsupported target ${first.coinId}. Provide symbol mapping before execution.`)
     if (!(first.spendUSD > 0)) throw new Error('Per-leg spend must be > 0')
 
     // Compute ETH sell amount from USD budget using ETH price (Coinranking ETH uuid)
