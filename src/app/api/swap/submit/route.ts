@@ -50,14 +50,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       txId,
-      confirmedRound,
+      confirmedRound: Number(confirmedRound), // FIX: Convert BigInt to Number
     })
 
   } catch (error: any) {
     console.error('❌ Submit swap error:', error)
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.body,
+      status: error.status,
+      type: error.constructor.name
+    })
     
     // Parse Algorand-specific errors
     let errorMessage = error.message || 'Failed to submit transaction'
+    let debugInfo = ''
     
     if (error.message?.includes('overspend')) {
       errorMessage = 'Insufficient balance for this transaction'
@@ -66,17 +73,23 @@ export async function POST(request: NextRequest) {
     } else if (error.message?.includes('asset not opted in')) {
       errorMessage = 'You need to opt-in to this asset first'
     } else if (error.message?.includes('TransactionPool.Remember') || error.message?.includes('transaction pool')) {
-      errorMessage = 'Transaction rejected by pool. Check your balance and try again.'
+      errorMessage = 'Transaction rejected by pool. This might be due to incorrect transaction structure for Tinyman V2.'
+      debugInfo = 'Tinyman V2 requires the official SDK (@tinymanorg/tinyman-js-sdk) to build proper swap transactions.'
     } else if (error.message?.includes('logic eval error')) {
       errorMessage = 'Smart contract execution failed. Check slippage settings.'
     } else if (error.message?.includes('would result negative')) {
       errorMessage = 'Insufficient liquidity or amount too large'
+    } else if (error.message?.includes('invalid ApplicationCall Txn')) {
+      errorMessage = 'Invalid transaction structure for Tinyman V2 pool'
+      debugInfo = 'Tinyman V2 requires specific ABI method calls. Manual transaction construction is not supported.'
     }
 
     return NextResponse.json(
       {
         success: false,
         error: errorMessage,
+        debugInfo,
+        rawError: process.env.NODE_ENV === 'development' ? error.message : undefined,
         details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       },
       { status: 500 }

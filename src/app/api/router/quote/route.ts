@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAlgodClient } from '@/lib/algorand';
 import { TinymanV2Client } from '@/lib/dex/tinyman-client';
+import { PactClient } from '@/lib/dex/pact-client';
 import { SwapRouter } from '@/lib/routing/swap-router';
 import { formatAssetAmount } from '@/lib/dex/utils';
 
@@ -24,11 +25,12 @@ async function getRouter(): Promise<SwapRouter> {
   console.log('Initializing new router instance...');
   const algodClient = getAlgodClient();
   
-  // Initialize DEX clients
+  // Initialize DEX clients - now with both Tinyman and Pact!
   const tinymanClient = new TinymanV2Client(algodClient, 'testnet');
+  const pactClient = new PactClient(algodClient, 'testnet');
   
-  // Create router with all DEX clients
-  const router = new SwapRouter([tinymanClient]);
+  // Create router with both DEX clients for best route finding
+  const router = new SwapRouter([tinymanClient, pactClient]);
   await router.initialize();
   
   routerInstance = router;
