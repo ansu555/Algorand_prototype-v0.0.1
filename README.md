@@ -114,7 +114,6 @@ Single-source docs (minimal set):
 ### Blockchain
 - **Algorand SDK** - Algorand blockchain integration
 - **TxnLab Use-Wallet** - Multi-wallet provider
-- **0xGasless Agentkit** - Gasless transactions (Base, Avalanche)
 - **Tinyman SDK** - DEX integration for Algorand
 
 ### AI & Backend
@@ -202,8 +201,6 @@ The application requires several API keys for full functionality. Here's where t
 
 | Service | Environment Variable | Where to Get | Purpose |
 |---------|---------------------|--------------|---------|
-| **0xGasless** | `GASLESS_API_KEY_*` | [0xGasless Dashboard](https://dashboard.0xgasless.com/) | Gasless transaction sponsorship |
-| **0xGasless Paymaster** | `GASLESS_PAYMASTER_URL_*` | [0xGasless Dashboard](https://dashboard.0xgasless.com/) | Per-chain paymaster endpoints |
 | **OpenRouter** | `OPENROUTER_API_KEY` | [OpenRouter Platform](https://openrouter.ai/keys) | AI/LLM services (recommended) |
 | **OpenAI** | `OPENAI_API_KEY` | [OpenAI Platform](https://platform.openai.com/api-keys) | Alternative AI provider |
 | **CoinRanking** | `COINRANKING_API_KEY` | [CoinRanking API](https://developers.coinranking.com/api) | Cryptocurrency market data |
@@ -212,39 +209,34 @@ The application requires several API keys for full functionality. Here's where t
 
 ### 🔗 RPC Endpoints
 
-| Network | Environment Variable | Free Options | Premium Options |
-|---------|---------------------|--------------|-----------------|
-| **Base Mainnet** | `RPC_URL_BASE` | [Base Public RPC](https://mainnet.base.org) | [Alchemy](https://alchemy.com), [Infura](https://infura.io) |
-| **Avalanche Mainnet** | `RPC_URL_AVALANCHE` | [Avalanche Public RPC](https://api.avax.network/ext/bc/C/rpc) | [Alchemy](https://alchemy.com), [Infura](https://infura.io) |
-| **Fuji Testnet** | `RPC_URL_FUJI` | [Fuji Public RPC](https://api.avax-test.network/ext/bc/C/rpc) | [Alchemy](https://alchemy.com), [Infura](https://infura.io) |
+| Network | Environment Variable | Free Options |
+|---------|---------------------|--------------|
+| **Algorand Mainnet** | `ALGOD_SERVER` | `https://mainnet-api.algonode.cloud` |
+| **Algorand Testnet** | `ALGOD_SERVER` | `https://testnet-api.algonode.cloud` |
 
-### ⚙️ Multi-Chain Configuration
+### ⚙️ Algorand Configuration
 
-The application supports per-chain configuration. Each chain requires its own set of API keys and endpoints:
+The application uses the following environment variables for Algorand:
 
-- **Base Mainnet (8453)**: `*_BASE` suffix
-- **Avalanche Mainnet (43114)**: `*_AVALANCHE` suffix  
-- **Fuji Testnet (43113)**: `*_FUJI` suffix
-
-Example configuration pattern:
 ```env
-# Base Mainnet
-GASLESS_API_KEY_BASE="your_base_api_key"
-GASLESS_PAYMASTER_URL_BASE="your_base_paymaster_url"
-RPC_URL_BASE="your_base_rpc_url"
+# Algorand Network (testnet or mainnet)
+NEXT_PUBLIC_ALGORAND_NETWORK="testnet"
 
-# Avalanche Mainnet
-GASLESS_API_KEY_AVALANCHE="your_avalanche_api_key"
-GASLESS_PAYMASTER_URL_AVALANCHE="your_avalanche_paymaster_url"
-RPC_URL_AVALANCHE="your_avalanche_rpc_url"
+# Algorand Node Configuration
+ALGOD_TOKEN=""
+ALGOD_SERVER="https://testnet-api.algonode.cloud"
+INDEXER_SERVER="https://testnet-idx.algonode.cloud"
+
+# Deployer Wallet Mnemonic
+DEPLOYER_MNEMONIC="your 25-word mnemonic phrase for the deployer account"
 ```
 
 ### 🔐 Security Notes
 
-- **NEVER** use a private key with significant real funds for `PRIVATE_KEY`
-- Use a dedicated wallet for testing and development
-- Keep your `.env.local` file secure and never commit it to version control
-- Consider using different API keys for development and production environments
+- **NEVER** use a wallet with significant real funds for `DEPLOYER_MNEMONIC` during development.
+- Use a dedicated wallet for testing and development.
+- Keep your `.env.local` file secure and never commit it to version control.
+- Consider using different API keys for development and production environments.
 
 ## 📡 API Endpoints
 
@@ -265,9 +257,7 @@ This is the main endpoint for all user interactions with the AI agent.
     { "role": "user", "content": "what's my address?" }
   ],
   "threadId": "optional-session-id",
-  "walletAddress": "0x... (optional, from user's connected wallet)",
-  "chainId": 8453
-}
+  "walletAddress": "YOUR_ALGORAND_ADDRESS"
 }
 ```
 
@@ -276,7 +266,7 @@ This is the main endpoint for all user interactions with the AI agent.
 ```json
 {
   "ok": true,
-  "content": "Smart Account (gasless): 0x...",
+  "content": "Your address is YOUR_ALGORAND_ADDRESS",
   "threadId": "session-id"
 }
 ```
@@ -337,43 +327,35 @@ Here is a detailed map of triggers and actions:
 
 #### 🔑 Address
 - **Triggers**: `address`, `wallet`
-- **Action**: Shows the gasless Smart Account, the server's EOA, and the user's connected wallet address (if available).
+- **Action**: Shows the user's connected wallet address.
 
 #### 💰 Balances
 - **Triggers**: `balance`, `balances`
-- **Default Account**: Smart Account
 - **Examples**:
-  - `ETH balance` → `ETH: 0.0000 ($0.00)`
-  - `USDC balance` → `USDC: 5.0000 ($5.00)`
-  - `balance 0x...` → Fetches balance for a specific token contract.
-- **Targeting Other Accounts**:
-  - `ETH balance connected eoa` → Shows balance for your connected wallet.
-  - `USDC balance server eoa` → Shows balance for the server's key.
+  - `ALGO balance` → `ALGO: 123.45 ($15.67)`
+  - `USDC balance` → `USDC: 500.00 ($500.00)`
 
 #### 📊 Prices & Market
 - **Triggers**: `price`, `prices`, `market`, `top`, `tokens`
 - **Examples**:
-  - `price eth`, `price of solana`
+  - `price algo`, `price of algorand`
   - `market`, `top 10 coins`
 
 #### ⛽ Gas
 - **Triggers**: `gas`, `gas price`, `fees`
-- **Action**: Shows the current gas and base fee on the Base network.
+- **Action**: Shows the current Algorand network transaction fees.
 
 #### 📂 Portfolio
 - **Triggers**: `portfolio`, `overview`, `total value`, `net worth`
-- **Default Account**: Smart Account
-- **Targeting**: Works just like balances (`portfolio connected eoa`, `portfolio server eoa`).
+- **Action**: Displays a summary of all assets in the connected wallet.
 
 #### 🔄 Transactions
 - **Triggers**: `transactions`, `history`, `recent`, `tx`
-- **Action**: Shows a summary of recent transactions from the Smart Account.
+- **Action**: Shows a summary of recent transactions from the connected wallet.
 
-#### 💸 Transfer (from Smart Account)
-- **Basic**: `transfer 0.01 ETH to 0x...`
-- **Priority**: `fast transfer 1 USDC to 0x...` (options: `fast`, `cheap`, `urgent`, `economy`)
-- **Smart (Auto-Swap)**: `smart transfer 5 USDC to 0x...` (swaps other assets if balance is too low)
-- **Batch**: `batch transfer 1 USDC to 0xA and 0.5 ETH to 0xB`
+#### 💸 Transfer
+- **Format**: `transfer <amount> <ASSET> to <ADDRESS>`
+- **Example**: `transfer 10 ALGO to ZQ...`
 
 ## 📦 Supported Tokens
 
@@ -399,11 +381,8 @@ This project maintains a registry of supported tokens per chain in `src/lib/toke
 If you need additional tokens supported, add them to `src/lib/tokens.ts` and the UI will pick them up automatically.
 
 #### 💸 Transfer Commands
-- **Basic**: `transfer 0.01 ETH to 0x...`
-- **Priority**: `fast transfer 1 USDC to 0x...` (options: `fast`, `cheap`, `urgent`, `economy`)
-- **Smart (Auto-Swap)**: `smart transfer 5 USDC to 0x...` (swaps other assets if balance is too low)
-- **Batch**: `batch transfer 1 USDC to 0xA and 0.5 ETH to 0xB`
-- **Scheduled**: `schedule transfer 2 USDC to 0x... for tomorrow at 2pm`
+- **Format**: `transfer <amount> <ASSET> to <ADDRESS>`
+- **Example**: `transfer 10 ALGO to ZQ...`
 
 #### 🔁 Swap (Tinyman DEX Integration)
 - **Format**: `swap <amount> <FROM> for <TO>`
@@ -417,15 +396,7 @@ If you need additional tokens supported, add them to `src/lib/tokens.ts` and the
 - **Portfolio**: `algorand portfolio`, `algo overview`
 - **Transfer**: `transfer 10 ALGO to ALGORAND_ADDRESS`
 - **Price**: `algo price`, `price of algorand`
-- **Atomic Swaps**: `atomic swap info` (coming soon)
 - **History**: `algorand transactions`, `algo history`
-
-#### 🎯 Address Targeting Keywords
-Use these keywords in your balance or portfolio queries to specify the address.
-- **Connected EOA**: `connected`, `my wallet`, `metamask`, `my eoa`
-- **Server EOA**: `server eoa`, `agent key`, `server wallet`
-- **Smart Account**: `smart account`, `smart`, `gasless`
-- **Plain "eoa"**: Defaults to your connected wallet if available, otherwise falls back to the server EOA.
 
 ### Other API Routes
 
@@ -496,7 +467,6 @@ This project is licensed under the MIT License.
 - **TxnLab** - Wallet provider
 - **Shadcn UI** - Component library
 - **Vercel** - Hosting platform
-- **0xGasless** - Gasless transaction support
 
 ---
 
