@@ -125,11 +125,13 @@ if __name__ == "__main__":
         address=deployer_address,
     )
     
-    # Load application spec
-    spec_path = Path(__file__).parent / "smart_contracts" / "artifacts" / "AutoPilotRuleContract.arc56.json"
+    # Load application spec from root artifacts folder
+    # Path: Algorand_prototype-v0.0.1/artifacts/autopilot_rule/
+    # Go up: autopilot_rule -> smart_contracts -> 10x_Swap -> projects -> Blockchain -> Algorand_prototype-v0.0.1
+    spec_path = Path(__file__).parent.parent.parent.parent.parent / "artifacts" / "autopilot_rule" / "AutoPilotRuleContract.arc56.json"
     
     if not spec_path.exists():
-        raise FileNotFoundError(f"App spec not found: {spec_path}")
+        raise FileNotFoundError(f"App spec not found: {spec_path}\n   Please compile the contract first using: algokit compile py contract.py")
     
     with open(spec_path) as f:
         app_spec_dict = json.load(f)
