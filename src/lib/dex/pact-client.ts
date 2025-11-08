@@ -123,14 +123,14 @@ export class PactClient implements IDexClient {
       request.amountIn,
       reserveIn,
       reserveOut,
-      pool.fee / 10000 // Convert basis points to decimal
+      pool.fee // Keep as basis points (integer)
     );
 
     // Calculate price impact
     const priceImpact = calculatePriceImpact(request.amountIn, reserveIn, amountOut, reserveOut);
 
-    // Apply slippage tolerance
-    const slippageTolerance = request.slippageTolerance ?? 0.005; // 0.5% default
+    // Apply slippage tolerance (convert from decimal to basis points)
+    const slippageTolerance = request.slippageTolerance ?? 50; // 50 bps = 0.5% default
     const minimumAmountOut = applySlippage(amountOut, slippageTolerance);
 
     // Calculate execution prices

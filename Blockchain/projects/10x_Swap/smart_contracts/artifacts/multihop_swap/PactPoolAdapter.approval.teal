@@ -1,0 +1,651 @@
+#pragma version 11
+#pragma typetrack false
+
+// algopy.arc4.ARC4Contract.approval_program() -> uint64:
+main:
+    intcblock 8 0 1 6
+    bytecblock 0x151f7c75 0xf4b4e0f4 0x00
+    // pact_adapter.py:17
+    // class PactPoolAdapter(ARC4Contract):
+    txn NumAppArgs
+    bz main___algopy_default_create@12
+    txn OnCompletion
+    !
+    assert // OnCompletion must be NoOp
+    txn ApplicationID
+    assert
+    pushbytess 0xc2b166ce 0x314dd71b 0xdb993102 0x1b5f93b5 0x351b03df // method "swap_fixed_input(uint64,uint64,uint64,uint64,uint64)uint64", method "swap_algo_to_asa(uint64,uint64,uint64,uint64)uint64", method "swap_asa_to_algo(uint64,uint64,uint64,uint64)uint64", method "get_quote(uint64,uint64,bool)uint64", method "opt_into_asset(uint64)bool"
+    txna ApplicationArgs 0
+    match swap_fixed_input swap_algo_to_asa swap_asa_to_algo get_quote opt_into_asset
+    err
+
+main___algopy_default_create@12:
+    txn OnCompletion
+    !
+    txn ApplicationID
+    !
+    &&
+    assert // OnCompletion must be NoOp && can only call when creating
+    intc_2 // 1
+    return
+
+
+// pact_adapter.PactPoolAdapter.swap_fixed_input[routing]() -> void:
+swap_fixed_input:
+    // pact_adapter.py:25
+    // @abimethod
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 2
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 3
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 4
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 5
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    // pact_adapter.py:54-55
+    // # Get balance before swap to calculate received amount
+    // balance_before, exists_before = op.AssetHoldingGet.asset_balance(Global.current_application_address, asset_out)
+    global CurrentApplicationAddress
+    dig 3
+    asset_holding_get AssetBalance
+    pop
+    cover 3
+    // pact_adapter.py:57-63
+    // # Step 1: Transfer input asset to pool contract
+    // itxn.AssetTransfer(
+    //     xfer_asset=asset_in,
+    //     asset_receiver=pool_app_id.address,
+    //     asset_amount=amount_in,
+    //     fee=UInt64(0),  # Fee pooling enabled
+    // ).submit()
+    itxn_begin
+    // pact_adapter.py:60
+    // asset_receiver=pool_app_id.address,
+    dig 5
+    app_params_get AppAddress
+    assert // application exists
+    dig 2
+    itxn_field AssetAmount
+    itxn_field AssetReceiver
+    uncover 4
+    itxn_field XferAsset
+    // pact_adapter.py:57-58
+    // # Step 1: Transfer input asset to pool contract
+    // itxn.AssetTransfer(
+    pushint 4 // axfer
+    itxn_field TypeEnum
+    // pact_adapter.py:62
+    // fee=UInt64(0),  # Fee pooling enabled
+    intc_1 // 0
+    itxn_field Fee
+    // pact_adapter.py:57-63
+    // # Step 1: Transfer input asset to pool contract
+    // itxn.AssetTransfer(
+    //     xfer_asset=asset_in,
+    //     asset_receiver=pool_app_id.address,
+    //     asset_amount=amount_in,
+    //     fee=UInt64(0),  # Fee pooling enabled
+    // ).submit()
+    itxn_submit
+    // pact_adapter.py:69-77
+    // itxn.ApplicationCall(
+    //     app_id=pool_app_id,
+    //     app_args=(
+    //         swap_method,
+    //         op.itob(amount_in),
+    //         op.itob(min_amount_out),
+    //     ),
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    // pact_adapter.py:73
+    // op.itob(amount_in),
+    swap
+    itob
+    // pact_adapter.py:74
+    // op.itob(min_amount_out),
+    dig 1
+    itob
+    // pact_adapter.py:65-68
+    // # Step 2: Call Pact's swap method
+    // # Pact uses method signature: "SWAP(uint64,uint64)uint64"
+    // # This triggers the pool to calculate and send output
+    // swap_method = Bytes.from_hex("f4b4e0f4")  # ABI method selector for SWAP
+    bytec_1 // 0xf4b4e0f4
+    itxn_field ApplicationArgs
+    swap
+    itxn_field ApplicationArgs
+    itxn_field ApplicationArgs
+    uncover 3
+    itxn_field ApplicationID
+    // pact_adapter.py:69
+    // itxn.ApplicationCall(
+    intc_3 // appl
+    itxn_field TypeEnum
+    // pact_adapter.py:76
+    // fee=UInt64(0),
+    intc_1 // 0
+    itxn_field Fee
+    // pact_adapter.py:69-77
+    // itxn.ApplicationCall(
+    //     app_id=pool_app_id,
+    //     app_args=(
+    //         swap_method,
+    //         op.itob(amount_in),
+    //         op.itob(min_amount_out),
+    //     ),
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // pact_adapter.py:79-80
+    // # Step 3: Get balance after to determine output amount
+    // balance_after, exists_after = op.AssetHoldingGet.asset_balance(Global.current_application_address, asset_out)
+    global CurrentApplicationAddress
+    uncover 2
+    asset_holding_get AssetBalance
+    pop
+    // pact_adapter.py:82-83
+    // # Calculate actual output received
+    // output_amount = balance_after - balance_before
+    uncover 2
+    -
+    // pact_adapter.py:85-86
+    // # Verify minimum output (slippage protection)
+    // assert output_amount >= min_amount_out, "Output below minimum - slippage exceeded"
+    dup
+    uncover 2
+    >=
+    assert // Output below minimum - slippage exceeded
+    // pact_adapter.py:88
+    // return ARC4UInt64(output_amount)
+    itob
+    // pact_adapter.py:25
+    // @abimethod
+    bytec_0 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_2 // 1
+    return
+
+
+// pact_adapter.PactPoolAdapter.swap_algo_to_asa[routing]() -> void:
+swap_algo_to_asa:
+    // pact_adapter.py:90
+    // @abimethod
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 2
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 3
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 4
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    // pact_adapter.py:104
+    // balance_before, exists_before = op.AssetHoldingGet.asset_balance(Global.current_application_address, output_asset)
+    global CurrentApplicationAddress
+    dig 3
+    asset_holding_get AssetBalance
+    pop
+    cover 3
+    // pact_adapter.py:106-111
+    // # Send ALGO to pool via payment transaction
+    // itxn.Payment(
+    //     receiver=pool_app_id.address,
+    //     amount=algo_amount,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    // pact_adapter.py:108
+    // receiver=pool_app_id.address,
+    dig 4
+    app_params_get AppAddress
+    assert // application exists
+    dig 2
+    itxn_field Amount
+    itxn_field Receiver
+    // pact_adapter.py:106-107
+    // # Send ALGO to pool via payment transaction
+    // itxn.Payment(
+    intc_2 // pay
+    itxn_field TypeEnum
+    // pact_adapter.py:110
+    // fee=UInt64(0),
+    intc_1 // 0
+    itxn_field Fee
+    // pact_adapter.py:106-111
+    // # Send ALGO to pool via payment transaction
+    // itxn.Payment(
+    //     receiver=pool_app_id.address,
+    //     amount=algo_amount,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // pact_adapter.py:115-123
+    // itxn.ApplicationCall(
+    //     app_id=pool_app_id,
+    //     app_args=(
+    //         swap_method,
+    //         op.itob(algo_amount),
+    //         op.itob(min_amount_out),
+    //     ),
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    // pact_adapter.py:119
+    // op.itob(algo_amount),
+    swap
+    itob
+    // pact_adapter.py:120
+    // op.itob(min_amount_out),
+    dig 1
+    itob
+    // pact_adapter.py:113-114
+    // # Call swap method
+    // swap_method = Bytes.from_hex("f4b4e0f4")  # ABI method selector for SWAP
+    bytec_1 // 0xf4b4e0f4
+    itxn_field ApplicationArgs
+    swap
+    itxn_field ApplicationArgs
+    itxn_field ApplicationArgs
+    uncover 3
+    itxn_field ApplicationID
+    // pact_adapter.py:115
+    // itxn.ApplicationCall(
+    intc_3 // appl
+    itxn_field TypeEnum
+    // pact_adapter.py:122
+    // fee=UInt64(0),
+    intc_1 // 0
+    itxn_field Fee
+    // pact_adapter.py:115-123
+    // itxn.ApplicationCall(
+    //     app_id=pool_app_id,
+    //     app_args=(
+    //         swap_method,
+    //         op.itob(algo_amount),
+    //         op.itob(min_amount_out),
+    //     ),
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // pact_adapter.py:125
+    // balance_after, exists_after = op.AssetHoldingGet.asset_balance(Global.current_application_address, output_asset)
+    global CurrentApplicationAddress
+    uncover 2
+    asset_holding_get AssetBalance
+    pop
+    // pact_adapter.py:126
+    // output_amount = balance_after - balance_before
+    uncover 2
+    -
+    // pact_adapter.py:128
+    // assert output_amount >= min_amount_out, "Output below minimum"
+    dup
+    uncover 2
+    >=
+    assert // Output below minimum
+    // pact_adapter.py:130
+    // return ARC4UInt64(output_amount)
+    itob
+    // pact_adapter.py:90
+    // @abimethod
+    bytec_0 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_2 // 1
+    return
+
+
+// pact_adapter.PactPoolAdapter.swap_asa_to_algo[routing]() -> void:
+swap_asa_to_algo:
+    // pact_adapter.py:132
+    // @abimethod
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 2
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 3
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 4
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    // pact_adapter.py:146-147
+    // # Get ALGO balance before
+    // algo_balance_before = op.balance(Global.current_application_address)
+    global CurrentApplicationAddress
+    balance
+    // pact_adapter.py:149-155
+    // # Transfer input asset to pool
+    // itxn.AssetTransfer(
+    //     xfer_asset=input_asset,
+    //     asset_receiver=pool_app_id.address,
+    //     asset_amount=amount_in,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    // pact_adapter.py:152
+    // asset_receiver=pool_app_id.address,
+    dig 4
+    app_params_get AppAddress
+    assert // application exists
+    dig 3
+    itxn_field AssetAmount
+    itxn_field AssetReceiver
+    uncover 3
+    itxn_field XferAsset
+    // pact_adapter.py:149-150
+    // # Transfer input asset to pool
+    // itxn.AssetTransfer(
+    pushint 4 // axfer
+    itxn_field TypeEnum
+    // pact_adapter.py:154
+    // fee=UInt64(0),
+    intc_1 // 0
+    itxn_field Fee
+    // pact_adapter.py:149-155
+    // # Transfer input asset to pool
+    // itxn.AssetTransfer(
+    //     xfer_asset=input_asset,
+    //     asset_receiver=pool_app_id.address,
+    //     asset_amount=amount_in,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // pact_adapter.py:159-167
+    // itxn.ApplicationCall(
+    //     app_id=pool_app_id,
+    //     app_args=(
+    //         swap_method,
+    //         op.itob(amount_in),
+    //         op.itob(min_amount_out),
+    //     ),
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    // pact_adapter.py:163
+    // op.itob(amount_in),
+    uncover 2
+    itob
+    // pact_adapter.py:164
+    // op.itob(min_amount_out),
+    dig 2
+    itob
+    // pact_adapter.py:157-158
+    // # Call swap method
+    // swap_method = Bytes.from_hex("f4b4e0f4")  # ABI method selector for SWAP
+    bytec_1 // 0xf4b4e0f4
+    itxn_field ApplicationArgs
+    swap
+    itxn_field ApplicationArgs
+    itxn_field ApplicationArgs
+    uncover 2
+    itxn_field ApplicationID
+    // pact_adapter.py:159
+    // itxn.ApplicationCall(
+    intc_3 // appl
+    itxn_field TypeEnum
+    // pact_adapter.py:166
+    // fee=UInt64(0),
+    intc_1 // 0
+    itxn_field Fee
+    // pact_adapter.py:159-167
+    // itxn.ApplicationCall(
+    //     app_id=pool_app_id,
+    //     app_args=(
+    //         swap_method,
+    //         op.itob(amount_in),
+    //         op.itob(min_amount_out),
+    //     ),
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // pact_adapter.py:169-170
+    // # Get ALGO balance after
+    // algo_balance_after = op.balance(Global.current_application_address)
+    global CurrentApplicationAddress
+    balance
+    // pact_adapter.py:171
+    // output_amount = algo_balance_after - algo_balance_before
+    swap
+    -
+    // pact_adapter.py:173
+    // assert output_amount >= min_amount_out, "Output below minimum"
+    dup
+    uncover 2
+    >=
+    assert // Output below minimum
+    // pact_adapter.py:175
+    // return ARC4UInt64(output_amount)
+    itob
+    // pact_adapter.py:132
+    // @abimethod
+    bytec_0 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_2 // 1
+    return
+
+
+// pact_adapter.PactPoolAdapter.get_quote[routing]() -> void:
+get_quote:
+    // pact_adapter.py:177
+    // @abimethod
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 2
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    txna ApplicationArgs 3
+    dup
+    len
+    intc_2 // 1
+    ==
+    assert // invalid number of bytes for arc4.bool
+    // pact_adapter.py:201-209
+    // result = itxn.ApplicationCall(
+    //     app_id=pool_app_id,
+    //     app_args=(
+    //         quote_method,
+    //         op.itob(asset_in_amount),
+    //         Bytes(b"\x01") if is_asset_in_first else Bytes(b"\x00"),
+    //     ),
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    // pact_adapter.py:205
+    // op.itob(asset_in_amount),
+    swap
+    itob
+    // pact_adapter.py:206
+    // Bytes(b"\x01") if is_asset_in_first else Bytes(b"\x00"),
+    swap
+    bytec_2 // 0x00
+    !=
+    bytec_2 // 0x00
+    pushbytes 0x01
+    uncover 2
+    select
+    // pact_adapter.py:198-200
+    // # Call Pact's quote method
+    // # Method signature: "get_swap_quote(uint64,bool)uint64"
+    // quote_method = Bytes.from_hex("a1b2c3d4")  # ABI method selector for get_swap_quote
+    pushbytes 0xa1b2c3d4
+    itxn_field ApplicationArgs
+    swap
+    itxn_field ApplicationArgs
+    itxn_field ApplicationArgs
+    itxn_field ApplicationID
+    // pact_adapter.py:201
+    // result = itxn.ApplicationCall(
+    intc_3 // appl
+    itxn_field TypeEnum
+    // pact_adapter.py:208
+    // fee=UInt64(0),
+    intc_1 // 0
+    itxn_field Fee
+    // pact_adapter.py:201-209
+    // result = itxn.ApplicationCall(
+    //     app_id=pool_app_id,
+    //     app_args=(
+    //         quote_method,
+    //         op.itob(asset_in_amount),
+    //         Bytes(b"\x01") if is_asset_in_first else Bytes(b"\x00"),
+    //     ),
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    itxn LastLog
+    // pact_adapter.py:213
+    // output_amount = op.btoi(output_bytes)
+    btoi
+    // pact_adapter.py:215
+    // return ARC4UInt64(output_amount)
+    itob
+    // pact_adapter.py:177
+    // @abimethod
+    bytec_0 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_2 // 1
+    return
+
+
+// pact_adapter.PactPoolAdapter.opt_into_asset[routing]() -> void:
+opt_into_asset:
+    // pact_adapter.py:217
+    // @abimethod
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_0 // 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    btoi
+    // pact_adapter.py:232-233
+    // # Only allow creator to opt-in (security)
+    // assert Txn.sender == Global.creator_address, "Only creator can opt-in"
+    txn Sender
+    global CreatorAddress
+    ==
+    assert // Only creator can opt-in
+    // pact_adapter.py:235-241
+    // # Send 0-amount transfer to self to opt in
+    // itxn.AssetTransfer(
+    //     xfer_asset=asset,
+    //     asset_receiver=Global.current_application_address,
+    //     asset_amount=UInt64(0),
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    // pact_adapter.py:238
+    // asset_receiver=Global.current_application_address,
+    global CurrentApplicationAddress
+    // pact_adapter.py:239
+    // asset_amount=UInt64(0),
+    intc_1 // 0
+    itxn_field AssetAmount
+    itxn_field AssetReceiver
+    itxn_field XferAsset
+    // pact_adapter.py:235-236
+    // # Send 0-amount transfer to self to opt in
+    // itxn.AssetTransfer(
+    pushint 4 // axfer
+    itxn_field TypeEnum
+    // pact_adapter.py:240
+    // fee=UInt64(0),
+    intc_1 // 0
+    itxn_field Fee
+    // pact_adapter.py:235-241
+    // # Send 0-amount transfer to self to opt in
+    // itxn.AssetTransfer(
+    //     xfer_asset=asset,
+    //     asset_receiver=Global.current_application_address,
+    //     asset_amount=UInt64(0),
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // pact_adapter.py:217
+    // @abimethod
+    pushbytes 0x151f7c7580
+    log
+    intc_2 // 1
+    return

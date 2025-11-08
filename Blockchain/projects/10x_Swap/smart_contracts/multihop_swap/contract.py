@@ -11,6 +11,7 @@ from algopy import (
     Application,
     op,
     subroutine,
+    TransactionType,
 )
 from algopy.arc4 import abimethod, Address, String, UInt64 as ARC4UInt64, Bool, DynamicArray
 
@@ -35,11 +36,15 @@ class MultihopSwapRouter(ARC4Contract):
         output_asset: Asset,
         pool1_app_id: Application,
         pool2_app_id: Application,
+        adapter1_app_id: Application,
+        adapter2_app_id: Application,
         min_output: UInt64,
         receiver: Account,
     ) -> ARC4UInt64:
         """
         Execute a 2-hop swap: Input -> Intermediate -> Output
+        
+        Now supports multiple DEX adapters (Tinyman, Pact, etc.)
         
         Args:
             input_asset: The asset being swapped from
@@ -47,6 +52,8 @@ class MultihopSwapRouter(ARC4Contract):
             output_asset: The final output asset
             pool1_app_id: Application ID of first DEX pool
             pool2_app_id: Application ID of second DEX pool
+            adapter1_app_id: Adapter contract for first hop (Tinyman/Pact)
+            adapter2_app_id: Adapter contract for second hop (Tinyman/Pact)
             min_output: Minimum acceptable output amount (slippage protection)
             receiver: Account to receive the final output
             
@@ -57,27 +64,31 @@ class MultihopSwapRouter(ARC4Contract):
         # Verify atomic group structure
         # Expected: [Payment of input asset, App call to this contract]
         assert Global.group_size == UInt64(2), "Invalid group size"
-        assert gtxn.Transaction(0).type == op.TransactionType.AssetTransfer, "First txn must be asset transfer"
+        assert gtxn.Transaction(0).type == TransactionType.AssetTransfer, "First txn must be asset transfer"
         assert gtxn.AssetTransferTransaction(0).xfer_asset == input_asset, "Wrong input asset"
         assert gtxn.AssetTransferTransaction(0).asset_receiver == Global.current_application_address, "Must send to contract"
         
         # Get input amount from the grouped transaction
         input_amount = gtxn.AssetTransferTransaction(0).asset_amount
         
-        # Execute first hop: Input -> Intermediate
-        intermediate_amount = self._swap_on_pool(
+        # Execute first hop: Input -> Intermediate using specified adapter
+        intermediate_amount = self._swap_via_adapter(
+            adapter_app_id=adapter1_app_id,
             pool_app_id=pool1_app_id,
             asset_in=input_asset,
             asset_out=intermediate_asset,
             amount_in=input_amount,
+            min_amount_out=UInt64(0),  # No min check on intermediate hops
         )
         
-        # Execute second hop: Intermediate -> Output
-        output_amount = self._swap_on_pool(
+        # Execute second hop: Intermediate -> Output using specified adapter
+        output_amount = self._swap_via_adapter(
+            adapter_app_id=adapter2_app_id,
             pool_app_id=pool2_app_id,
             asset_in=intermediate_asset,
             asset_out=output_asset,
             amount_in=intermediate_amount,
+            min_amount_out=min_output,  # Final min check here
         )
         
         # Verify minimum output (slippage protection)
@@ -113,7 +124,7 @@ class MultihopSwapRouter(ARC4Contract):
         """
         
         assert Global.group_size == UInt64(2), "Invalid group size"
-        assert gtxn.Transaction(0).type == op.TransactionType.AssetTransfer, "First txn must be asset transfer"
+        assert gtxn.Transaction(0).type == TransactionType.AssetTransfer, "First txn must be asset transfer"
         assert gtxn.AssetTransferTransaction(0).xfer_asset == input_asset, "Wrong input asset"
         
         input_amount = gtxn.AssetTransferTransaction(0).asset_amount
@@ -169,7 +180,7 @@ class MultihopSwapRouter(ARC4Contract):
         """
         
         assert Global.group_size == UInt64(2), "Invalid group size"
-        assert gtxn.Transaction(0).type == op.TransactionType.Payment, "First txn must be payment"
+        assert gtxn.Transaction(0).type == TransactionType.Payment, "First txn must be payment"
         assert gtxn.PaymentTransaction(0).receiver == Global.current_application_address, "Must send to contract"
         
         algo_amount = gtxn.PaymentTransaction(0).amount
@@ -195,6 +206,74 @@ class MultihopSwapRouter(ARC4Contract):
         return ARC4UInt64(output_amount)
     
     @subroutine
+    def _swap_via_adapter(
+        self,
+        adapter_app_id: Application,
+        pool_app_id: Application,
+        asset_in: Asset,
+        asset_out: Asset,
+        amount_in: UInt64,
+        min_amount_out: UInt64,
+    ) -> UInt64:
+        """
+        Execute swap using a DEX-specific adapter contract
+        
+        This allows the router to support multiple DEXs (Tinyman, Pact, etc.)
+        by delegating to specialized adapter contracts that handle each DEX's
+        specific transaction structure and ABI.
+        
+        Args:
+            adapter_app_id: The adapter contract (TinymanPoolAdapter or PactPoolAdapter)
+            pool_app_id: The DEX pool application ID
+            asset_in: Input asset
+            asset_out: Output asset
+            amount_in: Amount to swap
+            min_amount_out: Minimum output (0 for intermediate hops)
+            
+        Returns:
+            Actual output amount received
+        """
+        
+        # Transfer input asset to adapter contract
+        itxn.AssetTransfer(
+            xfer_asset=asset_in,
+            asset_receiver=adapter_app_id.address,
+            asset_amount=amount_in,
+            fee=UInt64(0),
+        ).submit()
+        
+        # Call adapter's swap method
+        # Method signature: "swap_fixed_input(application,asset,asset,uint64,uint64)uint64"
+        swap_method = Bytes.from_hex("0f2f6f7f")  # ABI method selector
+        result = itxn.ApplicationCall(
+            app_id=adapter_app_id,
+            app_args=(
+                swap_method,
+                op.itob(pool_app_id.id),
+                op.itob(asset_in.id),
+                op.itob(asset_out.id),
+                op.itob(amount_in),
+                op.itob(min_amount_out),
+            ),
+            fee=UInt64(0),
+        ).submit()
+        
+        # Extract output amount from adapter's return value
+        output_bytes = result.last_log
+        output_amount = op.btoi(output_bytes)
+        
+        # Transfer received assets from adapter back to router
+        itxn.AssetTransfer(
+            xfer_asset=asset_out,
+            asset_sender=adapter_app_id.address,
+            asset_receiver=Global.current_application_address,
+            asset_amount=output_amount,
+            fee=UInt64(0),
+        ).submit()
+        
+        return output_amount
+    
+    @subroutine
     def _swap_on_pool(
         self,
         pool_app_id: Application,
@@ -210,13 +289,13 @@ class MultihopSwapRouter(ARC4Contract):
         """
         
         # Get contract balance before swap
-        balance_before = op.balance(Global.current_application_address, asset_out)
+        balance_before, exists_before = op.AssetHoldingGet.asset_balance(Global.current_application_address, asset_out)
         
         # Build inner transaction group for swap
         # 1. Transfer input asset to pool
         itxn.AssetTransfer(
             xfer_asset=asset_in,
-            asset_receiver=Application(pool_app_id).address,
+            asset_receiver=pool_app_id.address,
             asset_amount=amount_in,
             fee=UInt64(0),
         ).submit()
@@ -230,7 +309,7 @@ class MultihopSwapRouter(ARC4Contract):
         ).submit()
         
         # Get contract balance after swap
-        balance_after = op.balance(Global.current_application_address, asset_out)
+        balance_after, exists_after = op.AssetHoldingGet.asset_balance(Global.current_application_address, asset_out)
         
         # Calculate output amount
         output_amount = balance_after - balance_before
@@ -248,11 +327,11 @@ class MultihopSwapRouter(ARC4Contract):
         Swap ALGO for ASA on a pool
         """
         
-        balance_before = op.balance(Global.current_application_address, output_asset)
+        balance_before, exists_before = op.AssetHoldingGet.asset_balance(Global.current_application_address, output_asset)
         
         # Send ALGO to pool
         itxn.Payment(
-            receiver=Application(pool_app_id).address,
+            receiver=pool_app_id.address,
             amount=algo_amount,
             fee=UInt64(0),
         ).submit()
@@ -264,7 +343,7 @@ class MultihopSwapRouter(ARC4Contract):
             fee=UInt64(0),
         ).submit()
         
-        balance_after = op.balance(Global.current_application_address, output_asset)
+        balance_after, exists_after = op.AssetHoldingGet.asset_balance(Global.current_application_address, output_asset)
         
         return balance_after - balance_before
     
