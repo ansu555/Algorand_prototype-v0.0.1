@@ -81,7 +81,7 @@ export function MiniCryptoTable({
   const [search, setSearch] = useState("")
   const [rankFilter, setRankFilter] = useState<string>("all") // all | top10 | top50 | top100
   const [riskFilter, setRiskFilter] = useState<string>("all") // all | Low | Medium | High
-  const [sortAsc, setSortAsc] = useState(false) // sort by rank
+  const [sortAsc, setSortAsc] = useState(true) // sort by rank
   const [page, setPage] = useState(1)
   const perPage = 7
 
