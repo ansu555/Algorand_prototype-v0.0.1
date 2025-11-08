@@ -1,0 +1,39 @@
+name: Daily Poller
+
+on:
+  schedule:
+    # Runs daily at midnight UTC (0:00)
+    - cron: '0 0 * * *'
+  
+  # Allows manual trigger from GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  trigger-poller:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Trigger Poller API
+        run: |
+          echo "🚀 Triggering daily poller..."
+          
+          response=$(curl -s -w "\n%{http_code}" \
+            "https://algorand-prototype-v0-0-1.vercel.app/api/poller/run?token=${{ secrets.CRON_SECRET }}")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          echo "Response Code: $http_code"
+          echo "Response Body: $body"
+          
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "✅ Poller executed successfully"
+          else
+            echo "❌ Poller failed with status $http_code"
+            exit 1
+          fi
+      
+      - name: Send notification on failure
+        if: failure()
+        run: |
+          echo "⚠️ Daily poller failed. Check the logs above."
