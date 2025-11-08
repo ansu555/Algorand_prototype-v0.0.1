@@ -1,4 +1,0 @@
-{
-  "comment": "Cron jobs disabled due to Vercel plan limit. Use alternative scheduling methods.",
-  "crons": []
-}
