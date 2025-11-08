@@ -64,14 +64,14 @@ export class AssetDiscoveryService {
         assetData.set(assetId, existing);
       });
 
-      // Discover assets from Pact pools
-      const pactAssets = await this.discoverPactAssets();
-      pactAssets.forEach(({ assetId, poolCount }) => {
-        const existing = assetData.get(assetId) || { poolCount: 0, dexSources: new Set<string>() };
-        existing.poolCount += poolCount;
-        existing.dexSources.add('Pact');
-        assetData.set(assetId, existing);
-      });
+      // Discover assets from Pact pools - COMMENTED OUT (Only using Tinyman)
+      // const pactAssets = await this.discoverPactAssets();
+      // pactAssets.forEach(({ assetId, poolCount }) => {
+      //   const existing = assetData.get(assetId) || { poolCount: 0, dexSources: new Set<string>() };
+      //   existing.poolCount += poolCount;
+      //   existing.dexSources.add('Pact');
+      //   assetData.set(assetId, existing);
+      // });
 
       // Fetch detailed info for all discovered assets
       const assets: AssetInfo[] = [];
