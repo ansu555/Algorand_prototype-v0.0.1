@@ -47,7 +47,20 @@ fi
 
 echo
 
-# Compile TinymanPoolAdapter (if needed)
+# Compile TinymanPoolAdapter
+echo "📦 Compiling TinymanPoolAdapter..."
+cd "$SCRIPT_DIR/multihop_swap"
+algokit compile py tinyman_adapter.py
+
+# Move artifacts
+if [ -f "TinymanPoolAdapter.approval.teal" ]; then
+    mv TinymanPoolAdapter.* "$ARTIFACTS_DIR/multihop_swap/"
+    echo "✅ TinymanPoolAdapter compiled and moved to artifacts/multihop_swap/"
+else
+    echo "❌ TinymanPoolAdapter compilation failed"
+fi
+
+echo
 if [ -f "$SCRIPT_DIR/multihop_swap/tinyman_adapter.py" ]; then
     echo "📦 Compiling TinymanPoolAdapter..."
     cd "$SCRIPT_DIR/multihop_swap"

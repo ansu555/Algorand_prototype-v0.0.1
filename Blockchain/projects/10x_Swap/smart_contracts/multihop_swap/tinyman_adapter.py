@@ -39,20 +39,24 @@ class TinymanPoolAdapter(ARC4Contract):
         # Transfer input asset to pool
         itxn.AssetTransfer(
             xfer_asset=asset_in,
-            asset_receiver=Application(pool_app_id).address,
+            asset_receiver=pool_app_id.address,
             asset_amount=amount_in,
             fee=UInt64(0),
         ).submit()
         
         # Get balance before
-        balance_before = op.balance(Global.current_application_address, asset_out)
+        balance_before, exists_before = op.AssetHoldingGet.asset_balance(
+            Global.current_application_address, asset_out
+        )
         
         # Call Tinyman's swap method via inner application call
         # Method signature: "swap(uint64,uint64)uint64"
+        # Method selector computed as SHA-512/256 hash (first 4 bytes)
+        # swap(uint64,uint64)uint64 -> 0xd71d146d
         itxn.ApplicationCall(
             app_id=pool_app_id,
             app_args=(
-                op.method("swap(uint64,uint64)uint64"),
+                Bytes.from_hex("d71d146d"),
                 op.itob(amount_in),
                 op.itob(min_amount_out),
             ),
@@ -60,7 +64,9 @@ class TinymanPoolAdapter(ARC4Contract):
         ).submit()
         
         # Get balance after
-        balance_after = op.balance(Global.current_application_address, asset_out)
+        balance_after, exists_after = op.AssetHoldingGet.asset_balance(
+            Global.current_application_address, asset_out
+        )
         
         output_amount = balance_after - balance_before
         
