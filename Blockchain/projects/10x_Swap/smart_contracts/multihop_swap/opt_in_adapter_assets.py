@@ -78,14 +78,15 @@ def opt_into_assets():
     print(f"📋 Assets to opt-in: {ASSETS_TO_OPT_IN}")
     print()
     
-    # Load the contract ABI from ARC56 (in main artifacts folder)
-    # Path: smart_contracts/artifacts/multihop_swap/
-    arc56_path = Path(__file__).parent.parent / "artifacts" / "multihop_swap" / "PactPoolAdapter.arc56.json"
+    # Load the contract ABI from ARC56 (in root artifacts folder)
+    # Path: Algorand_prototype-v0.0.1/artifacts/multihop_swap/
+    # Go up: multihop_swap -> smart_contracts -> 10x_Swap -> projects -> Blockchain -> Algorand_prototype-v0.0.1
+    arc56_path = Path(__file__).parent.parent.parent.parent.parent / "artifacts" / "multihop_swap" / "PactPoolAdapter.arc56.json"
     
     if not arc56_path.exists():
         print(f"❌ ARC56 file not found at: {arc56_path}")
         print(f"   Please compile the contract first and ensure artifacts are in:")
-        print(f"   smart_contracts/artifacts/multihop_swap/")
+        print(f"   artifacts/multihop_swap/ (at project root)")
         return
     
     with open(arc56_path) as f:

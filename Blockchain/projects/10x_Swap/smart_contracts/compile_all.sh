@@ -6,7 +6,8 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ARTIFACTS_DIR="$SCRIPT_DIR/artifacts"
+# Use root-level artifacts directory (go up to Algorand_prototype-v0.0.1)
+ARTIFACTS_DIR="$SCRIPT_DIR/../../../artifacts"
 
 echo "=================================================="
 echo "  Compiling Algorand Smart Contracts"

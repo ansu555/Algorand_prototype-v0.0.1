@@ -105,10 +105,11 @@ def deploy_pact_adapter():
     print()
     print("📝 Deploying PactPoolAdapter contract...")
     
-    # Load compiled artifacts from the main artifacts directory
-    # Path: smart_contracts/artifacts/multihop_swap/
+    # Load compiled artifacts from the root-level artifacts directory
+    # Path: Algorand_prototype-v0.0.1/artifacts/multihop_swap/
     current_dir = Path(__file__).parent
-    artifacts_dir = current_dir.parent / "artifacts" / "multihop_swap"
+    # Go up: multihop_swap -> smart_contracts -> 10x_Swap -> projects -> Blockchain -> Algorand_prototype-v0.0.1
+    artifacts_dir = current_dir.parent.parent.parent.parent.parent / "artifacts" / "multihop_swap"
     approval_file = artifacts_dir / "PactPoolAdapter.approval.teal"
     clear_file = artifacts_dir / "PactPoolAdapter.clear.teal"
     arc56_file = artifacts_dir / "PactPoolAdapter.arc56.json"
