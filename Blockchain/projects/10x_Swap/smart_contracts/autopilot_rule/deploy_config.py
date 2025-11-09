@@ -98,13 +98,21 @@ def deploy(
 # If run directly
 if __name__ == "__main__":
     import json
+    import base64
     from algosdk import account, mnemonic
     from algosdk.v2client.algod import AlgodClient
+    import algosdk.transaction
+    import algosdk.logic
     
-    # Load environment variables
+    # Load environment variables from project root
     import os
     from dotenv import load_dotenv
-    load_dotenv()
+    from pathlib import Path
+    
+    # Load from project root .env
+    # Path: autopilot_rule -> smart_contracts -> 10x_Swap -> projects -> Blockchain -> Algorand_prototype-v0.0.1
+    env_path = Path(__file__).parent.parent.parent.parent.parent.parent / ".env"
+    load_dotenv(env_path)
     
     # Connect to Algorand node
     algod_token = os.getenv("ALGOD_TOKEN", "a" * 64)
@@ -113,9 +121,9 @@ if __name__ == "__main__":
     algod = AlgodClient(algod_token, algod_server)
     
     # Load deployer account
-    deployer_mnemonic = os.getenv("DEPLOYER_MNEMONIC")
+    deployer_mnemonic = os.getenv("ALGORAND_MNEMONIC")
     if not deployer_mnemonic:
-        raise ValueError("DEPLOYER_MNEMONIC not set in .env")
+        raise ValueError("ALGORAND_MNEMONIC not set in .env")
     
     deployer_private_key = mnemonic.to_private_key(deployer_mnemonic)
     deployer_address = account.address_from_private_key(deployer_private_key)
@@ -128,7 +136,7 @@ if __name__ == "__main__":
     # Load application spec from root artifacts folder
     # Path: Algorand_prototype-v0.0.1/artifacts/autopilot_rule/
     # Go up: autopilot_rule -> smart_contracts -> 10x_Swap -> projects -> Blockchain -> Algorand_prototype-v0.0.1
-    spec_path = Path(__file__).parent.parent.parent.parent.parent / "artifacts" / "autopilot_rule" / "AutoPilotRuleContract.arc56.json"
+    spec_path = Path(__file__).parent.parent.parent.parent.parent.parent / "artifacts" / "autopilot_rule" / "AutoPilotRuleContract.arc56.json"
     
     if not spec_path.exists():
         raise FileNotFoundError(f"App spec not found: {spec_path}\n   Please compile the contract first using: algokit compile py contract.py")
@@ -136,12 +144,97 @@ if __name__ == "__main__":
     with open(spec_path) as f:
         app_spec_dict = json.load(f)
     
-    app_spec = algokit_utils.ApplicationSpecification.from_json(app_spec_dict)
+    # Load approval and clear programs
+    approval_path = spec_path.parent / "AutoPilotRuleContract.approval.teal"
+    clear_path = spec_path.parent / "AutoPilotRuleContract.clear.teal"
     
-    # Deploy
-    deploy(
-        algod_client=algod,
-        indexer_client=None,  # Not needed for deployment
-        app_spec=app_spec,
-        deployer=deployer_account,
+    with open(approval_path) as f:
+        approval_teal = f.read()
+    with open(clear_path) as f:
+        clear_teal = f.read()
+    
+    # Compile programs
+    approval_result = algod.compile(approval_teal)
+    clear_result = algod.compile(clear_teal)
+    
+    approval_program = base64.b64decode(approval_result["result"])
+    clear_program = base64.b64decode(clear_result["result"])
+    
+    # Get suggested parameters
+    params = algod.suggested_params()
+    
+    # Define state schema (from contract)
+    global_schema = algosdk.transaction.StateSchema(
+        num_uints=4,  # rule_counter, total_executions, protocol_fee_bps, is_paused
+        num_byte_slices=1  # protocol_treasury
     )
+    local_schema = algosdk.transaction.StateSchema(num_uints=0, num_byte_slices=0)
+    
+    # Create application
+    txn = algosdk.transaction.ApplicationCreateTxn(
+        sender=deployer_address,
+        sp=params,
+        on_complete=algosdk.transaction.OnComplete.NoOpOC,
+        approval_program=approval_program,
+        clear_program=clear_program,
+        global_schema=global_schema,
+        local_schema=local_schema,
+        extra_pages=3,  # For larger contract
+    )
+    
+    # Sign and send
+    signed_txn = txn.sign(deployer_private_key)
+    tx_id = algod.send_transaction(signed_txn)
+    print(f"Transaction sent: {tx_id}")
+    
+    # Wait for confirmation
+    result = algosdk.transaction.wait_for_confirmation(algod, tx_id, 4)
+    app_id = result["application-index"]
+    
+    print(f"\n✅ AutoPilot Rule Contract deployed!")
+    print(f"   App ID: {app_id}")
+    print(f"   Transaction: {tx_id}")
+    
+    # Calculate app address
+    app_address = algosdk.logic.get_application_address(app_id)
+    print(f"   App Address: {app_address}")
+    
+    # Fund the contract
+    print(f"\n💰 Funding contract with 2 ALGO...")
+    funding_txn = algosdk.transaction.PaymentTxn(
+        sender=deployer_address,
+        sp=algod.suggested_params(),
+        receiver=app_address,
+        amt=2_000_000,  # 2 ALGO for box storage and inner transactions
+    )
+    signed_funding = funding_txn.sign(deployer_private_key)
+    funding_tx_id = algod.send_transaction(signed_funding)
+    algosdk.transaction.wait_for_confirmation(algod, funding_tx_id, 4)
+    print(f"   Funded! Transaction: {funding_tx_id}")
+    
+    # Save deployment info
+    deployment_info = {
+        "app_id": app_id,
+        "app_address": app_address,
+        "transaction_id": tx_id,
+        "funding_transaction_id": funding_tx_id,
+        "deployer": deployer_address,
+        "network": algod_server,
+        "timestamp": result.get("confirmed-round-time", 0)
+    }
+    
+    # Save to files
+    id_file = Path(__file__).parent / "deployed_app_id.txt"
+    id_file.write_text(f"{app_id}\n")
+    
+    json_file = Path(__file__).parent / "deployed_autopilot.json"
+    with open(json_file, "w") as f:
+        json.dump(deployment_info, f, indent=2)
+    
+    print(f"\n📝 Deployment info saved:")
+    print(f"   - {id_file}")
+    print(f"   - {json_file}")
+    print(f"\n🔗 View on AlgoExplorer:")
+    print(f"   https://testnet.algoexplorer.io/application/{app_id}")
+    print(f"\n✅ Deployment complete!")
+
