@@ -91,7 +91,7 @@ export function SettingsModal({ open, onOpenChange, slippage, onSlippageChange }
                       disabled={autoSlippage}
                       className={cn(
                         "flex-1 h-[40px] px-4 rounded-xl font-medium transition-colors",
-                        customSlippage === preset && !autoSlippage && "bg-accent text-accent-foreground",
+                        customSlippage === preset && !autoSlippage ? "text-red-500" : "text-foreground",
                         autoSlippage && "opacity-50 cursor-not-allowed"
                       )}
                       onClick={() => handleSlippageChange(preset)}
