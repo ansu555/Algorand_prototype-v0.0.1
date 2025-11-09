@@ -109,7 +109,7 @@ export function AssetSelector({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-2 bg-background border-2 border-border rounded-lg shadow-lg max-h-[400px] overflow-hidden">
+        <div className="absolute z-50 w-full min-w-[320px] mt-2 bg-background border-2 border-border rounded-lg shadow-lg max-h-[400px] overflow-hidden">
           {/* Search Input */}
           <div className="sticky top-0 bg-background border-b border-border p-3">
             <div className="relative">
@@ -134,7 +134,7 @@ export function AssetSelector({
           </div>
 
           {/* Asset List */}
-          <div className="overflow-y-auto max-h-[320px]">
+          <div className="overflow-y-auto max-h-[320px] pb-4">
             {searchLoading ? (
               <div className="p-4 text-center text-muted-foreground">
                 Searching...
@@ -150,7 +150,7 @@ export function AssetSelector({
                   onClick={() => handleSelect(asset)}
                   className={`
                     w-full flex items-center gap-3 px-4 py-3
-                    hover:bg-muted transition-colors
+                    hover:bg-muted transition-colors text-left
                     ${selected?.id === asset.id ? 'bg-primary/10' : ''}
                   `}
                 >
@@ -164,9 +164,9 @@ export function AssetSelector({
                       }}
                     />
                   )}
-                  <div className="flex-1 flex flex-col items-start min-w-0">
+                  <div className="flex-1 flex flex-col items-start min-w-0 gap-0.5">
                     <div className="flex items-center gap-2 w-full">
-                      <span className="font-semibold text-foreground truncate">
+                      <span className="font-semibold text-base text-foreground">
                         {asset.unitName}
                       </span>
                       {asset.verified && (
@@ -177,7 +177,7 @@ export function AssetSelector({
                       {asset.name}
                     </span>
                   </div>
-                  <div className="flex-shrink-0 text-xs text-muted-foreground">
+                  <div className="flex-shrink-0 text-xs text-muted-foreground ml-2">
                     ID: {asset.id}
                   </div>
                 </button>

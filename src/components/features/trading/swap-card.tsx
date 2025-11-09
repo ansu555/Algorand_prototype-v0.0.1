@@ -282,7 +282,7 @@ export function SwapCard({ onPairChange }: SwapCardProps) {
 
   return (
     <>
-      <Card className="w-full rounded-xl border border-border shadow-lg bg-card">
+      <Card className="w-full rounded-xl border border-border shadow-lg bg-card relative z-10">
         <CardContent className="p-3 space-y-3.5">
           {/* Tab Buttons */}
           <div className="flex items-center p-1 bg-muted/30 rounded-md h-[42px] relative">

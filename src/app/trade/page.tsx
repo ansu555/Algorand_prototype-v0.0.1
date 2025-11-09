@@ -108,12 +108,12 @@ export default function TradePage() {
             )}
 
             <div className={cn(
-              "mx-auto w-full max-w-md transition-all",
+              "mx-auto w-full max-w-md transition-all relative",
               showChart && "lg:order-2 lg:ml-auto lg:max-w-sm"
             )}>
               <SwapCard onPairChange={handlePairChange} />
               <div className="mt-4 flex justify-center lg:justify-end">
-                <Button variant="outline" onClick={handleToggleChart} className="rounded-full border border-border/70 bg-background/80 backdrop-blur">
+                <Button variant="outline" onClick={handleToggleChart} className="rounded-full border border-border/70 bg-background/80 backdrop-blur relative z-0">
                   {showChart ? "Hide Pool Chart" : "Show Pool Chart"}
                 </Button>
               </div>
