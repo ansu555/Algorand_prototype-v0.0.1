@@ -1,10 +1,10 @@
 'use client'
 
-import React, { createContext, useContext, ReactNode } from 'react'
+import React, { createContext, useContext, ReactNode, useMemo } from 'react'
+import algosdk from 'algosdk'
 import { 
   WalletId, 
-  type WalletAccount, 
-  type WalletState 
+  type WalletAccount
 } from '@txnlab/use-wallet'
 import { 
   useWallet, 
@@ -12,6 +12,8 @@ import {
 } from '@txnlab/use-wallet-react'
 import { WalletManager } from '@txnlab/use-wallet'
 import { walletManagerConfig } from '@/lib/txnlab-wallet-config'
+import type { WalletSigner } from '@/lib/dex/types'
+import type { SignerTransaction } from '@tinymanorg/tinyman-js-sdk'
 
 interface TxnLabWalletContextType {
   // Connection state
@@ -26,7 +28,14 @@ interface TxnLabWalletContextType {
   setActiveAccount: (account: WalletAccount) => void
   
   // Transaction signing
-  signTransactions: (txns: any[], indexesToSign?: number[]) => Promise<(Uint8Array | null)[]>
+  signTransactions: (
+    txns: algosdk.Transaction[] | Uint8Array[],
+    indexesToSign?: number[]
+  ) => Promise<(Uint8Array | null)[]>
+  transactionSigner?: (
+    txnGroup: algosdk.Transaction[],
+    indexesToSign: number[]
+  ) => Promise<Uint8Array[]>
   
   // Additional properties from useWallet
   wallets: any[]
@@ -59,6 +68,7 @@ function TxnLabWalletProviderInternal({ children }: TxnLabWalletProviderProps) {
       disconnect: async () => {},
       setActiveAccount: () => {},
       signTransactions: async () => [],
+  transactionSigner: undefined,
       wallets: [],
       isReady: false,
       algodClient: null,
@@ -82,7 +92,8 @@ function TxnLabWalletProviderInternal({ children }: TxnLabWalletProviderProps) {
     activeWalletAddresses,
     activeAccount,
     activeAddress,
-    signTransactions
+    signTransactions,
+    transactionSigner
   } = useWallet()
 
   // Helper functions to maintain compatibility
@@ -129,6 +140,7 @@ function TxnLabWalletProviderInternal({ children }: TxnLabWalletProviderProps) {
     disconnect,
     setActiveAccount: setActiveAccountHandler,
     signTransactions,
+  transactionSigner,
     wallets,
     isReady,
     algodClient,
@@ -166,6 +178,97 @@ export function useTxnLabWallet(): TxnLabWalletContextType {
   return context
 }
 
+export function useWalletSigner(): WalletSigner | null {
+  const { activeAccount, signTransactions, transactionSigner } = useTxnLabWallet()
+  const address = activeAccount?.address
+
+  return useMemo(() => {
+    if (!address) {
+      return null
+    }
+
+    const signWithWallet = async (
+      transactions: algosdk.Transaction[],
+      indexesToSign?: number[]
+    ): Promise<Uint8Array[]> => {
+      if (transactions.length === 0) {
+        return []
+      }
+
+      const indexes = indexesToSign ?? transactions.map((_, idx) => idx)
+
+      if (indexes.length === 0) {
+        return []
+      }
+
+      if (transactionSigner) {
+        return transactionSigner(transactions, indexes)
+      }
+
+      const encodedGroup = transactions.map((txn) => algosdk.encodeUnsignedTransaction(txn))
+      const signed = await signTransactions(encodedGroup, indexes)
+
+      if (signed.length !== indexes.length) {
+        throw new Error(
+          `Wallet returned ${signed.length} signatures, expected ${indexes.length}`
+        )
+      }
+
+      return signed.map((payload, idx) => {
+        if (!payload) {
+          throw new Error(`Wallet declined to sign transaction at index ${indexes[idx]}`)
+        }
+        return payload
+      })
+    }
+
+    const walletSigner: WalletSigner = {
+      address,
+      signTransactions: (transactions) => signWithWallet(transactions),
+      signTinymanTransactions: async (txGroupList: SignerTransaction[][]) => {
+        const allSigned: Uint8Array[] = []
+
+        for (const group of txGroupList) {
+          const txns = group.map((item) => item.txn)
+          const indexesToSign: number[] = []
+
+          group.forEach((item, idx) => {
+            const signers = item.signers
+            const requiresSignature =
+              !signers ||
+              signers.length === 0 ||
+              signers.includes(address)
+
+            if (requiresSignature) {
+              indexesToSign.push(idx)
+            }
+          })
+
+          const signedSubset = await signWithWallet(txns, indexesToSign)
+          const signatureMap = new Map<number, Uint8Array>()
+
+          indexesToSign.forEach((index, subsetIdx) => {
+            signatureMap.set(index, signedSubset[subsetIdx])
+          })
+
+          group.forEach((item, idx) => {
+            const signedPayload = signatureMap.get(idx)
+            if (signedPayload) {
+              allSigned.push(signedPayload)
+            } else {
+              allSigned.push(algosdk.encodeUnsignedTransaction(item.txn))
+            }
+          })
+        }
+
+        return allSigned
+      }
+    }
+
+    return walletSigner
+  }, [address, signTransactions, transactionSigner])
+}
+
 // Convenience hooks
 export function useWalletConnection() {
   const { isConnected, activeAccount, activeWallet, accounts, wallets } = useTxnLabWallet()
@@ -182,11 +285,13 @@ export function useWalletConnection() {
 
 export function useWalletActions() {
   const { connect, disconnect, setActiveAccount, signTransactions } = useTxnLabWallet()
+  const walletSigner = useWalletSigner()
   
   return {
     connect,
     disconnect,
     setActiveAccount,
-    signTransactions
+    signTransactions,
+    walletSigner
   }
 }
