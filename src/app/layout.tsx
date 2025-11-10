@@ -1,7 +1,7 @@
 import './globals.css'
 import { Inter as FontSans } from 'next/font/google'
 import { Fira_Code as FontMono } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/react'
+import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Providers as ExistingProviders } from '@/components/layout/providers'
 import { ReduxProvider } from '@/components/shared/redux-provider'
