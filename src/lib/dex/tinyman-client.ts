@@ -4,6 +4,19 @@
  */
 
 import algosdk from 'algosdk';
+// Tinyman SDK types are published via declaration files only, so we import both
+// runtime modules and types explicitly to satisfy TypeScript.
+import {
+  poolUtils,
+  Swap,
+  SwapQuoteType,
+  SwapType,
+} from '@tinymanorg/tinyman-js-sdk';
+import type {
+  InitiatorSigner,
+  SignerTransaction,
+  SupportedNetwork,
+} from '@tinymanorg/tinyman-js-sdk';
 import {
   IDexClient,
   PoolInfo,
@@ -12,6 +25,7 @@ import {
   SwapResult,
   Asset,
   SwapRoute,
+  WalletSigner,
 } from './types';
 import {
   calculateAmountOut,
@@ -273,20 +287,92 @@ export class TinymanV2Client implements IDexClient {
    */
   async executeSwap(
     quote: SwapQuote,
-    signerAddress: string
+    signer: WalletSigner
   ): Promise<SwapResult> {
-    // TODO: Implement actual swap execution using Tinyman SDK
-    // For now, this is a placeholder that shows the structure
-    
-    throw new Error(
-      'Tinyman swap execution not yet implemented. Please integrate @tinymanorg/tinyman-js-sdk'
-    );
+    if (!quote?.route?.pools?.length || quote.route.hops !== 1) {
+      throw new Error('Tinyman executor currently supports single-hop routes only');
+    }
+    const signerAddress = signer.address;
 
-    // When implemented, it should:
-    // 1. Import Swap module from @tinymanorg/tinyman-js-sdk
-    // 2. Generate swap transactions
-    // 3. Sign and submit transactions
-    // 4. Return SwapResult with txId and details
+    const assetPath = quote.route.path;
+    if (!assetPath || assetPath.length < 2) {
+      throw new Error('Invalid Tinyman route: missing asset path');
+    }
+
+    const assetIn = assetPath[0];
+    const assetOut = assetPath[assetPath.length - 1];
+
+    await this.ensureAssetOptIn(signerAddress, assetOut.id);
+
+    const tinymanNetwork = this.network as SupportedNetwork;
+    const pool = await poolUtils.v2.getPoolInfo({
+      client: this.algodClient,
+      network: tinymanNetwork,
+      asset1ID: Number(assetIn.id),
+      asset2ID: Number(assetOut.id),
+    });
+
+    if (!pool) {
+      throw new Error('Tinyman pool could not be resolved for the selected route');
+    }
+
+    const assetInDecimals = assetIn.decimals ?? (await this.getAssetInfo(assetIn.id)).decimals;
+    const assetOutDecimals = assetOut.decimals ?? (await this.getAssetInfo(assetOut.id)).decimals;
+
+    const directQuote = Swap.v2.getFixedInputDirectSwapQuote({
+      pool,
+      amount: quote.amountIn,
+      assetIn: { id: assetIn.id, decimals: assetInDecimals },
+      assetOut: { id: assetOut.id, decimals: assetOutDecimals },
+    });
+
+    const slippageFraction = this.calculateSlippageFraction(quote);
+
+    const swapQuote = {
+      type: SwapQuoteType.Direct,
+      data: {
+        pool,
+        quote: directQuote,
+      },
+    } as const;
+
+    const txGroup = await Swap.v2.generateTxns({
+      client: this.algodClient,
+      network: tinymanNetwork,
+      quote: swapQuote,
+      swapType: SwapType.FixedInput,
+      slippage: slippageFraction,
+      initiatorAddr: signerAddress,
+    });
+
+    const signedTxns = await Swap.v2.signTxns({
+      txGroup,
+      initiatorSigner: this.buildInitiatorSigner(signer),
+    });
+
+    const execution = await Swap.v2.execute({
+      client: this.algodClient,
+      quote: swapQuote,
+      txGroup,
+      signedTxns,
+    });
+
+    const amountOut = execution.assetOut?.amount ?? quote.amountOut;
+
+    return {
+      txId: execution.txnID,
+      confirmedRound: execution.round,
+      amountOut,
+      route: quote.route,
+      details: {
+        dex: this.name,
+        poolAddress: pool.account.address().toString(),
+        validatorAppId: pool.validatorAppID,
+        slippageFraction,
+        estimatedAmountOut: quote.amountOut,
+        minimumAmountOut: quote.minimumAmountOut,
+      },
+    };
   }
 
   /**
@@ -329,5 +415,76 @@ export class TinymanV2Client implements IDexClient {
   clearCache(): void {
     this.poolCache.clear();
     this.cacheExpiry = 0;
+  }
+
+  private calculateSlippageFraction(quote: SwapQuote): number {
+    if (quote.amountOut === 0n) {
+      return 0.005; // default 0.5%
+    }
+
+    const diff = Number(quote.amountOut - quote.minimumAmountOut);
+    const base = Number(quote.amountOut);
+
+    if (!isFinite(diff) || !isFinite(base) || base <= 0) {
+      return 0.005;
+    }
+
+    const fraction = diff / base;
+    return Math.min(Math.max(fraction, 0), 0.2); // cap at 20%
+  }
+
+  private async ensureAssetOptIn(address: string, assetId: number): Promise<void> {
+    if (assetId === 0) {
+      return;
+    }
+
+    const accountInfo = await this.algodClient.accountInformation(address).do();
+    const hasAsset = (accountInfo.assets || []).some(
+      (asset: any) => Number(asset.assetId ?? asset['asset-id']) === assetId
+    );
+
+    if (!hasAsset) {
+      throw new Error(`Account ${address} must opt-in to asset ${assetId} before executing Tinyman swap`);
+    }
+  }
+
+  private buildInitiatorSigner(signer: WalletSigner): InitiatorSigner {
+    if (signer.signTinymanTransactions) {
+      return signer.signTinymanTransactions;
+    }
+
+    return async (txGroupList: SignerTransaction[][]) => {
+      const results: Uint8Array[] = [];
+      const toSign: { txn: algosdk.Transaction; index: number }[] = [];
+
+      for (const group of txGroupList) {
+        for (const item of group) {
+          const index = results.length;
+          const requiresSignature =
+            !item.signers ||
+            item.signers.length === 0 ||
+            item.signers.includes(signer.address);
+
+          if (requiresSignature) {
+            toSign.push({ txn: item.txn, index });
+            results.push(new Uint8Array());
+          } else {
+            results.push(algosdk.encodeUnsignedTransaction(item.txn));
+          }
+        }
+      }
+
+      if (toSign.length > 0) {
+        const signedPayloads = await signer.signTransactions(
+          toSign.map((entry) => entry.txn)
+        );
+
+        toSign.forEach((entry, idx) => {
+          results[entry.index] = signedPayloads[idx];
+        });
+      }
+
+      return results;
+    };
   }
 }

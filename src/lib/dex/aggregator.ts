@@ -16,6 +16,7 @@ import {
   Asset,
   PoolInfo,
   SwapRoute,
+  WalletSigner,
 } from './types';
 
 export interface AggregatorQuote extends SwapQuote {
@@ -325,7 +326,7 @@ export class MultiDexAggregator {
    */
   async executeSwap(
     aggregatorQuote: AggregatorQuote,
-    signerAddress: string
+    signer: WalletSigner
   ): Promise<SwapResult> {
     const client = this.clients.get(aggregatorQuote.dexName);
     
@@ -337,7 +338,7 @@ export class MultiDexAggregator {
       console.log(`\n🚀 Executing swap on ${aggregatorQuote.dexName.toUpperCase()}...`);
     }
     
-    const result = await client.executeSwap(aggregatorQuote, signerAddress);
+  const result = await client.executeSwap(aggregatorQuote, signer);
     
     if (this.config.enableLogging) {
       console.log(`✅ Swap completed!`);

@@ -1,3 +1,6 @@
+import type algosdk from 'algosdk';
+import type { SignerTransaction } from '@tinymanorg/tinyman-js-sdk';
+
 /**
  * DEX Integration Types
  * Common interfaces for multi-DEX routing and aggregation
@@ -60,6 +63,14 @@ export interface QuoteRequest {
   maxHops?: number; // Default 3
 }
 
+export interface WalletSigner {
+  address: string;
+  signTransactions(transactions: algosdk.Transaction[]): Promise<Uint8Array[]>;
+  signTinymanTransactions?: (
+    txGroups: SignerTransaction[][],
+  ) => Promise<Uint8Array[]>;
+}
+
 /**
  * Generic DEX Client Interface
  * All DEX implementations must conform to this interface
@@ -86,7 +97,7 @@ export interface IDexClient {
   /**
    * Execute the swap
    */
-  executeSwap(quote: SwapQuote, signerAddress: string): Promise<SwapResult>;
+  executeSwap(quote: SwapQuote, signer: WalletSigner): Promise<SwapResult>;
   
   /**
    * Check if pool exists for asset pair

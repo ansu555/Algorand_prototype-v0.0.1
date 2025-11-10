@@ -1,10 +1,16 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { RouteDisplay, type QuoteResponse, type RouteQuote } from '@/components/shared/route-display'
+import { useWalletSigner } from '@/components/providers/txnlab-wallet-provider'
+import algosdk from 'algosdk'
+import { parseUnits } from 'viem'
+import { createMultiDexAggregator, type AggregatorQuote } from '@/lib/dex/aggregator'
+import type { QuoteRequest, Asset, PoolInfo } from '@/lib/dex/types'
+import { resolveTokenBySymbol } from '@/lib/tokens'
 
 // Algorand-focused token list (testnet): ALGO and USDC
 
@@ -21,40 +27,96 @@ export const SwapInterface: React.FC = () => {
   const [selectedRouteId, setSelectedRouteId] = useState<string>()
   const [error, setError] = useState<string | null>(null)
 
-  const fetchQuote = useCallback(async () => {
-    if (!tokenIn || !tokenOut || !amount || parseFloat(amount) <= 0) return
+  const walletSigner = useWalletSigner()
 
+  const algodClient = useMemo(
+    () => new algosdk.Algodv2('', 'https://testnet-api.algonode.cloud', ''),
+    []
+  )
+
+  const aggregator = useMemo(
+    () => createMultiDexAggregator(algodClient, 'testnet', { enableLogging: false }),
+    [algodClient]
+  )
+
+  const buildQuoteRequest = useCallback((): {
+    request: QuoteRequest
+    tokenInSymbol: string
+    tokenOutSymbol: string
+  } => {
+    if (!amount || parseFloat(amount) <= 0) {
+      throw new Error('Amount must be greater than zero')
+    }
+
+    const tokenInInfo = resolveTokenBySymbol(tokenIn)
+    const tokenOutInfo = resolveTokenBySymbol(tokenOut)
+
+    if (!tokenInInfo || !tokenOutInfo) {
+      throw new Error('Unsupported token selection')
+    }
+
+    const amountIn = parseUnits(amount, tokenInInfo.decimals)
+    if (amountIn <= 0n) {
+      throw new Error('Amount must be greater than zero')
+    }
+
+    return {
+      request: {
+        assetIn: tokenInInfo.address,
+        assetOut: tokenOutInfo.address,
+        amountIn,
+        slippageTolerance: slippage,
+      },
+      tokenInSymbol: tokenInInfo.symbol,
+      tokenOutSymbol: tokenOutInfo.symbol,
+    }
+  }, [amount, slippage, tokenIn, tokenOut])
+
+  const toRouteQuote = useCallback((aggQuote: AggregatorQuote): RouteQuote => {
+    const tokenSymbols = aggQuote.route.path.map((asset: Asset) =>
+      asset.symbol || asset.unitName || `ASA-${asset.id}`
+    )
+
+    return {
+      routeId: aggQuote.dexName,
+      tokenSymbols,
+      poolIds: aggQuote.route.pools.map((pool: PoolInfo) => pool.poolId),
+      amountOut: aggQuote.amountOut.toString(),
+      minOut: aggQuote.minimumAmountOut.toString(),
+      priceImpactBps: Math.round((aggQuote.priceImpact ?? 0) * 10000),
+      estimatedGas: 0,
+      kind: aggQuote.route.hops > 1 ? 'MULTI_HOP' : 'DIRECT',
+    }
+  }, [])
+
+  const fetchQuote = useCallback(async () => {
     setIsLoading(true)
     setError(null)
-    try {
-      // Server-side quote (Algorand)
-      const response = await fetch('/api/swap/quote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tokenIn,
-          tokenOut,
-          amount,
-          slippage,
-          maxRoutes: 5
-        })
-      })
 
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch quote')
+    try {
+      const { request, tokenInSymbol, tokenOutSymbol } = buildQuoteRequest()
+  const aggQuote = await aggregator.getBestQuote(request)
+
+      const route = toRouteQuote(aggQuote)
+      const formatted: QuoteResponse = {
+        tokenIn: tokenInSymbol,
+        tokenOut: tokenOutSymbol,
+        amountIn: amount,
+        slippageBps: slippage,
+        routes: [route],
+        bestRoute: route,
+        timestamp: Date.now(),
       }
 
-      setQuote(data)
-      setSelectedRouteId(undefined) // Reset selection
+      setQuote(formatted)
+      setSelectedRouteId(route.routeId)
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message ?? 'Failed to fetch quote')
       setQuote(null)
     } finally {
       setIsLoading(false)
     }
-  }, [tokenIn, tokenOut, amount, slippage])
+  }, [aggregator, amount, buildQuoteRequest, slippage, toRouteQuote])
 
   const handleRouteSelect = useCallback((routeId: string, route: RouteQuote) => {
     setSelectedRouteId(routeId)
@@ -64,45 +126,40 @@ export const SwapInterface: React.FC = () => {
     executeSwap(routeId, route)
   }, [])
 
-  const executeSwap = async (routeId: string, route: RouteQuote) => {
-    if (!tokenIn || !tokenOut || !amount || parseFloat(amount) <= 0) {
-      setError('Invalid swap parameters')
+  const executeSwap = async (_routeId: string, _route: RouteQuote) => {
+    if (!walletSigner) {
+      setError('Connect your wallet before executing a swap')
       return
     }
 
     setIsExecuting(true)
     setError(null)
-    
+
     try {
-      const response = await fetch('/api/swap/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tokenIn,
-          tokenOut,
-          amount,
-          slippage,
-          routeId,
-          wait: true // Wait for transaction confirmation
-        })
-      })
+      const { request } = buildQuoteRequest()
+  const freshQuote = await aggregator.getBestQuote(request)
 
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Swap execution failed')
+      const result = await aggregator.executeSwap(freshQuote, walletSigner)
+
+      alert(
+        `Swap executed successfully!\nTx Hash: ${result.txId}\nOutput: ${Number(result.amountOut) / 1_000_000} ${tokenOut}`
+      )
+
+      const route = toRouteQuote(freshQuote)
+      const updatedQuote: QuoteResponse = {
+        tokenIn,
+        tokenOut,
+        amountIn: amount,
+        slippageBps: slippage,
+        routes: [route],
+        bestRoute: route,
+        timestamp: Date.now(),
       }
-
-      // Show success message
-      alert(`Swap executed successfully!\nTx Hash: ${data.txHash}\nOutput: ${route.amountOut} ${tokenOut}`)
-      
-      // Reset form
-      setAmount('1')
-      setQuote(null)
-      setSelectedRouteId(undefined)
-      
+      setQuote(updatedQuote)
+      setSelectedRouteId(route.routeId)
     } catch (err: any) {
-      setError(err.message)
+      console.error('Swap execution failed:', err)
+      setError(err.message ?? 'Swap execution failed')
     } finally {
       setIsExecuting(false)
     }

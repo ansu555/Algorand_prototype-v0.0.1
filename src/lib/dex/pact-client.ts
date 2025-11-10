@@ -6,7 +6,17 @@
  */
 
 import algosdk from 'algosdk';
-import { IDexClient, PoolInfo, SwapQuote, Asset, QuoteRequest, SwapResult, SwapRoute } from './types';
+import { PactClient as PactSdkClient } from '@pactfi/pactsdk';
+import {
+  IDexClient,
+  PoolInfo,
+  SwapQuote,
+  Asset,
+  QuoteRequest,
+  SwapResult,
+  SwapRoute,
+  WalletSigner,
+} from './types';
 import { calculateAmountOut, calculatePriceImpact, applySlippage } from './utils';
 
 // Pact API response types
@@ -47,6 +57,7 @@ export class PactClient implements IDexClient {
   
   private readonly apiUrl: string;
   private readonly algodClient: algosdk.Algodv2;
+  private pactSdkClient: PactSdkClient | null = null;
 
   constructor(algodClient: algosdk.Algodv2, network: 'mainnet' | 'testnet' = 'mainnet') {
     this.algodClient = algodClient;
@@ -163,9 +174,104 @@ export class PactClient implements IDexClient {
    */
   async executeSwap(
     quote: SwapQuote,
-    signerAddress: string
+    signer: WalletSigner
   ): Promise<SwapResult> {
-    throw new Error('Pact swap execution requires @pactfi/pactsdk integration');
+    if (!quote?.route?.pools?.length || quote.route.hops !== 1) {
+      throw new Error('Pact executor currently supports single-hop routes only');
+    }
+    const signerAddress = signer.address;
+
+    const assetPath = quote.route.path;
+    if (!assetPath || assetPath.length < 2) {
+      throw new Error('Invalid Pact route: missing asset path');
+    }
+
+    const assetIn = assetPath[0];
+    const assetOut = assetPath[assetPath.length - 1];
+
+  await this.ensureAssetOptIn(signerAddress, assetOut.id);
+
+    const pactSdk = this.getPactSdkClient();
+
+    const primaryPool = quote.route.pools[0];
+    let pool = null;
+
+    if (primaryPool?.appId) {
+      pool = await pactSdk.fetchPoolById(primaryPool.appId);
+    } else {
+      const pools = await pactSdk.fetchPoolsByAssets(assetIn.id, assetOut.id);
+      pool = pools[0] ?? null;
+    }
+
+    if (!pool) {
+      throw new Error('Pact pool could not be resolved for the selected route');
+    }
+
+    await pool.updateState();
+
+    const depositAsset = pool.primaryAsset.index === assetIn.id ? pool.primaryAsset
+      : pool.secondaryAsset.index === assetIn.id ? pool.secondaryAsset
+      : null;
+
+    if (!depositAsset) {
+      throw new Error('Input asset does not belong to the resolved Pact pool');
+    }
+
+    if (quote.amountIn > BigInt(Number.MAX_SAFE_INTEGER)) {
+      throw new Error('Swap amount exceeds Pact SDK numeric limits');
+    }
+
+    const slippageFraction = this.calculateSlippageFraction(quote);
+    const slippagePct = slippageFraction * 100;
+
+    const swap = pool.prepareSwap({
+      asset: depositAsset,
+      amount: Number(quote.amountIn),
+      slippagePct,
+    });
+
+    const txGroup = await swap.prepareTxGroup(signerAddress);
+    const fromObj = (algosdk.Transaction as any).from_obj_for_encoding;
+
+    if (typeof fromObj !== 'function') {
+      throw new Error('algosdk.Transaction.from_obj_for_encoding is not available in current SDK version');
+    }
+
+    const walletTransactions = txGroup.transactions.map((txn: any) => {
+      if (typeof txn.get_obj_for_encoding === 'function') {
+        return fromObj.call(algosdk.Transaction, txn.get_obj_for_encoding());
+      }
+
+      return fromObj.call(algosdk.Transaction, txn);
+    });
+
+    const signedGroup = await signer.signTransactions(walletTransactions);
+
+    const sendResult = await this.algodClient.sendRawTransaction(signedGroup).do();
+    const txId = ((sendResult as any).txId ?? (sendResult as any).txid) as string;
+
+    const confirmation = await algosdk.waitForConfirmation(this.algodClient, txId, 6);
+    const confirmedRound = (confirmation.confirmedRound ?? (confirmation as any)['confirmed-round']) as
+      | number
+      | undefined;
+    const amountOut =
+  this.extractAmountOutFromConfirmation(confirmation, assetOut.id, signerAddress) ??
+      BigInt(Math.round(swap.effect.amountReceived));
+
+    return {
+      txId,
+      confirmedRound,
+      amountOut,
+      route: quote.route,
+      details: {
+        dex: this.name,
+        poolAppId: pool.appId,
+        poolEscrowAddress: pool.getEscrowAddress(),
+        slippagePct,
+        estimatedAmountOut: BigInt(Math.round(swap.effect.amountReceived)),
+        minimumAmountOut: BigInt(Math.round(swap.effect.minimumAmountReceived)),
+      },
+    };
   }
 
   /**
@@ -251,5 +357,82 @@ export class PactClient implements IDexClient {
       // Silently skip invalid pools
       return null;
     }
+  }
+
+  private async ensureAssetOptIn(address: string, assetId: number): Promise<void> {
+    if (assetId === 0) {
+      return;
+    }
+
+    const accountInfo = await this.algodClient.accountInformation(address).do();
+    const hasAsset = (accountInfo.assets || []).some(
+      (asset: any) => Number(asset.assetId ?? asset['asset-id']) === assetId
+    );
+
+    if (!hasAsset) {
+      throw new Error(`Account ${address} must opt-in to asset ${assetId} before executing Pact swap`);
+    }
+  }
+
+  private calculateSlippageFraction(quote: SwapQuote): number {
+    if (quote.amountOut === 0n) {
+      return 0.005;
+    }
+
+    const diff = Number(quote.amountOut - quote.minimumAmountOut);
+    const base = Number(quote.amountOut);
+
+    if (!isFinite(diff) || !isFinite(base) || base <= 0) {
+      return 0.005;
+    }
+
+    const fraction = diff / base;
+    return Math.min(Math.max(fraction, 0), 0.2);
+  }
+
+  private extractAmountOutFromConfirmation(
+    confirmation: any,
+    assetOutId: number,
+    receiver: string
+  ): bigint | null {
+    const inner = confirmation['inner-txns'] || [];
+
+    for (const innerTxn of inner) {
+      const txn = innerTxn.txn || {};
+
+      if (assetOutId === 0 && txn['payment-transaction']) {
+        const pay = txn['payment-transaction'];
+        if (pay.receiver === receiver) {
+          return BigInt(pay.amount ?? 0);
+        }
+      }
+
+      if (assetOutId !== 0 && txn['asset-transfer-transaction']) {
+        const transfer = txn['asset-transfer-transaction'];
+        if (
+          transfer.receiver === receiver &&
+          Number(transfer['asset-id']) === assetOutId
+        ) {
+          return BigInt(transfer.amount ?? 0);
+        }
+      }
+
+      if (innerTxn['inner-txns']) {
+        const nested = this.extractAmountOutFromConfirmation(innerTxn, assetOutId, receiver);
+        if (nested !== null) {
+          return nested;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  private getPactSdkClient(): PactSdkClient {
+    if (!this.pactSdkClient) {
+      this.pactSdkClient = new PactSdkClient(this.algodClient as any, { network: this.network });
+    }
+
+    return this.pactSdkClient;
   }
 }
