@@ -138,7 +138,7 @@ export default function PoolPage() {
               )}
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              {/* Network Toggle */}
+              {/* Network Toggle (Mainnet visible but disabled) */}
               <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
                 <button
                   onClick={() => setNetwork('testnet')}
@@ -151,14 +151,16 @@ export default function PoolPage() {
                 >
                   Testnet
                 </button>
+
+                
+
+                {/* Show Mainnet button but make it visibly disabled to avoid API calls */}
                 <button
-                  onClick={() => setNetwork('mainnet')}
-                  disabled={loading}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                    network === 'mainnet'
-                      ? 'bg-white dark:bg-[#171717] shadow-sm text-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                  disabled={true}
+                  //onClick={() => setNetwork('mainnet')}
+                  title="Mainnet is currently disabled"
+                  aria-disabled="true"
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foreground`}
                 >
                   Mainnet
                 </button>
