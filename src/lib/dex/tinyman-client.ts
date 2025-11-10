@@ -57,13 +57,27 @@ interface TinymanPool {
   is_verified: boolean;
 }
 
+type TinymanPoolsResponse =
+  | TinymanPool[]
+  | {
+      results?: TinymanPool[];
+      next?: string | null;
+    };
+
+interface HttpResponse {
+  ok: boolean;
+  status: number;
+  statusText: string;
+  json(): Promise<TinymanPoolsResponse>;
+}
+
 export class TinymanV2Client implements IDexClient {
   readonly name = 'tinyman' as const;
   readonly network: 'mainnet' | 'testnet';
   private algodClient: algosdk.Algodv2;
   private poolCache: Map<string, PoolInfo> = new Map();
   private cacheExpiry: number = 0;
-  private readonly cacheTTL = 30000; // 30 seconds
+  private readonly cacheTTL = 300000; // 5 minutes (to avoid rate limits)
   private readonly apiBaseUrl: string;
   private readonly validatorAppId: number;
 
@@ -85,6 +99,7 @@ export class TinymanV2Client implements IDexClient {
 
   /**
    * Fetch all pools from Tinyman Analytics API
+   * Note: Tinyman API has rate limits, so we fetch with delays
    */
   async fetchPools(): Promise<PoolInfo[]> {
     try {
@@ -97,23 +112,58 @@ export class TinymanV2Client implements IDexClient {
 
       console.log(`Fetching Tinyman V2 pools from ${this.network}...`);
 
-      const response = await fetch(`${this.apiBaseUrl}/pools/`, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const aggregatedPools: TinymanPool[] = [];
+      let nextUrl: string | null = `${this.apiBaseUrl}/pools/`;
+      let page = 1;
+      const maxPages = 10; // Limit to first 10 pages to avoid rate limits (100 pools)
 
-      if (!response.ok) {
-        throw new Error(`Tinyman API error: ${response.statusText}`);
+      // Paginate through pools with rate limiting
+      while (nextUrl && page <= maxPages) {
+        console.log(`  • Fetching Tinyman page ${page}...`);
+        
+        const response = (await fetch(nextUrl, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })) as HttpResponse;
+
+        if (!response.ok) {
+          if (response.status === 429) {
+            console.warn(`⚠️ Rate limit hit at page ${page}, stopping pagination`);
+            break;
+          }
+          throw new Error(`Tinyman API error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const pageResults: TinymanPool[] = Array.isArray(data)
+          ? data
+          : (data.results as TinymanPool[]) || [];
+
+        aggregatedPools.push(...pageResults);
+
+        // Check for next page
+        const next = Array.isArray(data) ? null : data.next;
+        if (next && page < maxPages) {
+          nextUrl = next.startsWith('http') ? next : `${this.apiBaseUrl}${next}`;
+          page += 1;
+          
+          // Add delay to avoid rate limiting (100ms between requests)
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } else {
+          nextUrl = null;
+        }
       }
 
-      const data = await response.json();
-      const pools: TinymanPool[] = data.results || data || [];
+      if (page > maxPages) {
+        console.log(`  ℹ️ Stopped at page ${maxPages} to avoid rate limits`);
+      }
 
       // Convert to PoolInfo format
       const poolInfos: PoolInfo[] = [];
+      const freshCache = new Map<string, PoolInfo>();
 
-      for (const pool of pools) {
+      for (const pool of aggregatedPools) {
         try {
           // Skip pools with invalid data
           if (!pool.asset_1?.id || !pool.asset_2?.id) {
@@ -155,13 +205,14 @@ export class TinymanV2Client implements IDexClient {
           };
 
           const key = getPoolKey(asset1Id, asset2Id);
-          this.poolCache.set(key, poolInfo);
+          freshCache.set(key, poolInfo);
           poolInfos.push(poolInfo);
         } catch (error) {
           console.warn(`Failed to process pool ${pool.address}:`, error);
         }
       }
 
+      this.poolCache = freshCache;
       this.cacheExpiry = now + this.cacheTTL;
       console.log(`✅ Fetched ${poolInfos.length} Tinyman V2 pools`);
       

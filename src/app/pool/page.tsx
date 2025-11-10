@@ -31,18 +31,19 @@ export default function PoolPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [tab, setTab] = useState("all")
   const [sortBy, setSortBy] = useState("tvl_desc")
+  const [network, setNetwork] = useState<'testnet' | 'mainnet'>('testnet')
   const [allPools, setAllPools] = useState<Pool[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch pools on mount
+  // Fetch pools when network changes
   useEffect(() => {
     async function fetchPools() {
       try {
         setLoading(true)
         setError(null)
         
-        const response = await fetch('/api/pools/all')
+        const response = await fetch(`/api/pools/all?network=${network}`)
         const data = await response.json()
         
         if (!data.success) {
@@ -89,7 +90,7 @@ export default function PoolPage() {
     }
 
     fetchPools()
-  }, [])
+  }, [network])
 
   const pools = useMemo(() => {
     let filtered = allPools
@@ -132,11 +133,36 @@ export default function PoolPage() {
               </p>
               {!loading && !error && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  {allPools.length} pools from multiple DEXs (Tinyman, Pact)
+                  {allPools.length} pools on {network} (Tinyman{network === 'mainnet' ? ', Pact' : ''})
                 </p>
               )}
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
+              {/* Network Toggle */}
+              <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+                <button
+                  onClick={() => setNetwork('testnet')}
+                  disabled={loading}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    network === 'testnet'
+                      ? 'bg-white dark:bg-[#171717] shadow-sm text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Testnet
+                </button>
+                <button
+                  onClick={() => setNetwork('mainnet')}
+                  disabled={loading}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    network === 'mainnet'
+                      ? 'bg-white dark:bg-[#171717] shadow-sm text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Mainnet
+                </button>
+              </div>
               <div className="relative w-full sm:w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
