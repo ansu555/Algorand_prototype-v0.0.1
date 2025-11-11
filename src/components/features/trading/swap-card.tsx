@@ -98,6 +98,10 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
         const outputAmount = data.outputAmount / Math.pow(10, toToken.decimals)
         setToAmount(outputAmount.toFixed(toToken.decimals))
         setRouteData(data)
+        
+        // Debug log to see the route structure
+        console.log('🔍 Route data received:', JSON.stringify(data, null, 2))
+        console.log('🔍 Route pools:', data.route?.pools)
       } else {
         setToAmount('0')
         toast({
@@ -264,12 +268,21 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
             minimumReceived: routeData.minimumReceived,
             slippage: parseFloat(slippage),
             route: routeData.route,
-            routePath: Array.isArray(routeData.route) ? routeData.route.map((r: any) => ({
-              dex: r.dex,
-              poolId: r.poolId,
-              fromAsset: r.fromAsset,
-              toAsset: r.toAsset,
-            })) : [],
+            // Extract pool info from route.pools array
+            poolAddress: (routeData.route?.pools && routeData.route.pools.length > 0) 
+              ? routeData.route.pools[0].poolAddress 
+              : undefined,
+            poolId: (routeData.route?.pools && routeData.route.pools.length > 0)
+              ? routeData.route.pools[0].poolId
+              : undefined,
+            routePath: (routeData.route?.pools && Array.isArray(routeData.route.pools)) 
+              ? routeData.route.pools.map((p: any) => ({
+                  dex: p.dexName,
+                  poolId: p.poolId,
+                  poolAddress: p.poolAddress,
+                  appId: p.appId,
+                }))
+              : [],
             priceImpact: routeData.priceImpact,
             expectedPricePerUnit: routeData.outputAmount / amountInBaseUnits,
             timestamp: new Date().toISOString(),

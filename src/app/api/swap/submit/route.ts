@@ -56,7 +56,10 @@ export async function POST(request: NextRequest) {
       
       console.log('💾 Attempting to store swap in database...')
       console.log('Owner address:', ownerAddress)
-      console.log('Meta data:', meta)
+      console.log('Meta data:', JSON.stringify(meta, null, 2))
+      console.log('Pool address from meta:', meta?.poolAddress)
+      console.log('Pool ID from meta:', meta?.poolId)
+      console.log('Route path:', meta?.routePath)
       
       if (ownerAddress && meta) {
         // Store complete swap metadata
