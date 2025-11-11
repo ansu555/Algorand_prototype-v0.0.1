@@ -202,9 +202,9 @@ export default function PortfolioPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Portfolio & Agent Dashboard</h1>
-        <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+        <h1 className="text-xl sm:text-2xl font-semibold">Portfolio & Agent Dashboard</h1>
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <RuleBuilderModal
             trigger={
               <Button 
@@ -326,16 +326,16 @@ export default function PortfolioPage() {
                                 <DialogTrigger asChild>
                                   <Button size="sm" variant="ghost" className="h-8">
                                     <Eye className="h-3 w-3 mr-1" />
-                                    Details
+                                    <span className="hidden sm:inline">Details</span>
                                   </Button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-4xl">
+                                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                                   <DialogHeader>
                                     <DialogTitle>Rule Details</DialogTitle>
                                   </DialogHeader>
                                   
                                   {/* Compact 2-column layout */}
-                                  <div className="grid grid-cols-2 gap-4">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {/* Left Column */}
                                     <div className="space-y-3">
                                       {/* Type & Status */}

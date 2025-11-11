@@ -223,20 +223,20 @@ export default function PoolPage() {
           ) : (
             <Tabs value={tab} onValueChange={setTab} className="w-full">
               {/* Tabs with controls aligned horizontally */}
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <TabsList>
-                  <TabsTrigger value="all">All Pools ({pools.length})</TabsTrigger>
-                  <TabsTrigger value="mine">My Positions</TabsTrigger>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 flex-wrap">
+                <TabsList className="w-full sm:w-auto">
+                  <TabsTrigger value="all" className="flex-1 sm:flex-none">All Pools ({pools.length})</TabsTrigger>
+                  <TabsTrigger value="mine" className="flex-1 sm:flex-none">My Positions</TabsTrigger>
                 </TabsList>
                 
                 {/* Right side controls - Network, Sort, Create Position */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
                   {/* Network Toggle */}
                   <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
                     <button
                       onClick={() => setNetwork('testnet')}
                       disabled={loading}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
                         network === 'testnet'
                           ? 'bg-white dark:bg-[#171717] shadow-sm text-foreground'
                           : 'text-muted-foreground hover:text-foreground'
@@ -248,7 +248,7 @@ export default function PoolPage() {
                       disabled={true}
                       title="Mainnet is currently disabled"
                       aria-disabled="true"
-                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foreground`}
+                      className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foreground`}
                     >
                       Mainnet
                     </button>
@@ -256,7 +256,7 @@ export default function PoolPage() {
                   
                   {/* Sort dropdown */}
                   <Select value={sortBy} onValueChange={setSortBy} disabled={loading}>
-                    <SelectTrigger className="w-[160px]">
+                    <SelectTrigger className="w-[140px] sm:w-[160px]">
                       <SelectValue placeholder="Sort by" />
                     </SelectTrigger>
                     <SelectContent>

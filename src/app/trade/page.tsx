@@ -120,27 +120,27 @@ export default function TradePage() {
               showChart && "lg:order-2 lg:ml-auto"
             )}>
               <SwapCard onPairChange={handlePairChange} />
-              <div className="mt-4 flex justify-center gap-2">
-                <Button variant="outline" onClick={handleToggleChart} className="rounded-full border border-border/70 bg-background/80 backdrop-blur relative z-0">
+              <div className="mt-4 flex flex-col sm:flex-row justify-center gap-2">
+                <Button variant="outline" onClick={handleToggleChart} className="rounded-full border border-border/70 bg-background/80 backdrop-blur relative z-0 w-full sm:w-auto">
                   {showChart ? "Hide Pool Chart" : "Show Pool Chart"}
                 </Button>
-                <Button variant="outline" onClick={handleToggleSwapHistory} className="rounded-full border border-border/70 bg-background/80 backdrop-blur relative z-0">
+                <Button variant="outline" onClick={handleToggleSwapHistory} className="rounded-full border border-border/70 bg-background/80 backdrop-blur relative z-0 w-full sm:w-auto">
                   {showSwapHistory ? "Hide Swap History" : "Show Swap History"}
                 </Button>
               </div>
 
               {/* Token Information Boxes */}
               {selectedPair.from && selectedPair.to && (
-                <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Box 1 - Selling Token Info */}
                   <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="flex items-start gap-2 sm:gap-3 mb-3">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-xs sm:text-sm flex-shrink-0">
                           {selectedPair.from.unitName?.substring(0, 2) || 'T1'}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-foreground font-bold text-lg mb-0.5 truncate">
+                          <div className="text-foreground font-bold text-base sm:text-lg mb-0.5 truncate">
                             ${selectedPair.from.id === 0 ? '164.50' : '0.99991'}
                           </div>
                           <div className="text-xs text-muted-foreground truncate">
@@ -180,13 +180,13 @@ export default function TradePage() {
 
                   {/* Box 2 - Buying Token Info */}
                   <Card>
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="flex items-start gap-2 sm:gap-3 mb-3">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-white font-bold text-xs sm:text-sm flex-shrink-0">
                           {selectedPair.to.unitName?.substring(0, 2) || 'T2'}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-foreground font-bold text-lg mb-0.5 truncate">
+                          <div className="text-foreground font-bold text-base sm:text-lg mb-0.5 truncate">
                             ${selectedPair.to.id === 0 ? '164.50' : '0.99991'}
                           </div>
                           <div className="text-xs text-muted-foreground truncate">
