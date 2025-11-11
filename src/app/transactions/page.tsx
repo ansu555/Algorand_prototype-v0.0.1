@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useMemo } from "react"
 import BackgroundPaths from "@/components/shared/animated-background"
+import { SearchBar } from "@/components/shared/search-bar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
-import { Search, Loader2, ArrowUpDown } from "lucide-react"
+import { Loader2, ArrowUpDown } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 
 type TransactionType = 'swap' | 'send' | 'receive' | 'stake' | 'unstake' | 'add_liquidity' | 'remove_liquidity'
@@ -29,7 +29,6 @@ type Transaction = {
 }
 
 export default function TransactionsPage() {
-  const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState("time_desc")
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [loading, setLoading] = useState(false)
@@ -153,18 +152,7 @@ export default function TransactionsPage() {
       filtered = filtered.filter(tx => tx.type === typeFilter)
     }
 
-    // Filter by search
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase()
-      filtered = filtered.filter(tx => 
-        tx.fromTokenSymbol.toLowerCase().includes(q) ||
-        tx.toTokenSymbol.toLowerCase().includes(q) ||
-        tx.walletAddress.toLowerCase().includes(q) ||
-        tx.txHash.toLowerCase().includes(q)
-      )
-    }
-
-    // Sort
+    // Sort transactions
     const sorted = [...filtered]
     sorted.sort((a, b) => {
       switch (sortBy) {
@@ -182,7 +170,7 @@ export default function TransactionsPage() {
     })
 
     return sorted
-  }, [transactions, typeFilter, searchQuery, sortBy])
+  }, [transactions, typeFilter, sortBy])
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -190,34 +178,24 @@ export default function TransactionsPage() {
       <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-2">
         <div className="w-full space-y-2">
           {/* Search Bar */}
-          <div className="w-full flex justify-center">
-            <div className="relative w-full max-w-lg">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                placeholder="Search transactions, tokens, wallet..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12 text-base bg-white dark:bg-[#171717] border-2 focus-visible:ring-red-600 dark:focus-visible:ring-[#F3C623]"
-                disabled={loading}
-              />
-            </div>
-          </div>
+          <SearchBar />
 
-          {/* Header and Filters */}
-          <div className="flex items-end justify-between gap-4 flex-wrap">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Transaction History</h1>
-              <p className="text-sm text-muted-foreground">
-                View all your transaction history across the platform.
-              </p>
-              {!loading && (
-                <p className="text-xs text-muted-foreground">
-                  {filteredTransactions.length} transactions
-                </p>
-              )}
-            </div>
+          <Card>
+            <CardHeader>
+              <div className="flex items-end justify-between gap-4 flex-wrap">
+                <div>
+                  <CardTitle className="text-2xl font-bold tracking-tight">Transaction History</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    View all your transaction history across the platform.
+                  </p>
+                  {!loading && (
+                    <p className="text-xs text-muted-foreground">
+                      {filteredTransactions.length} transactions
+                    </p>
+                  )}
+                </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
               {/* Type Filter */}
               <Select value={typeFilter} onValueChange={setTypeFilter} disabled={loading}>
                 <SelectTrigger className="w-[120px] sm:w-[140px]">
@@ -247,7 +225,9 @@ export default function TransactionsPage() {
               </Select>
             </div>
           </div>
+        </CardHeader>
 
+        <CardContent>
           {/* Statistics Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* 1D Volume */}
@@ -405,6 +385,8 @@ export default function TransactionsPage() {
               </Table>
             </div>
           )}
+        </CardContent>
+      </Card>
         </div>
       </main>
     </div>

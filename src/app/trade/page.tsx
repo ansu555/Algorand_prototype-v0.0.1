@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import BackgroundPaths from "@/components/shared/animated-background"
 import { SwapCard } from "@/components/features/trading/swap-card"
-import { Input } from "@/components/ui/input"
-import { Search } from "lucide-react"
+import { SearchBar } from "@/components/shared/search-bar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -14,7 +13,6 @@ import { PoolLiquidityChart, type SerializedPoolInfo } from "@/components/featur
 import { formatDistanceToNow } from "date-fns"
 
 export default function TradePage() {
-  const [searchQuery, setSearchQuery] = useState("")
   const [showChart, setShowChart] = useState(false)
   const [showSwapHistory, setShowSwapHistory] = useState(false)
   const [selectedPair, setSelectedPair] = useState<{ from: AssetInfo | null; to: AssetInfo | null }>({ from: null, to: null })
@@ -90,16 +88,7 @@ export default function TradePage() {
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className={cn("mx-auto space-y-6 transition-all", showChart ? "max-w-6xl" : "max-w-4xl") }>
           {/* Search Bar */}
-          <div className="relative max-w-md mx-auto">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search tokens, pools..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 h-10 text-sm bg-white dark:bg-[#171717] border-2 focus-visible:ring-primary dark:focus-visible:ring-[#F3C623]"
-            />
-          </div>
+          <SearchBar />
 
           <div className={cn("flex flex-col gap-6 lg:gap-8 transition-all", showChart ? "lg:flex-row" : "lg:items-center") }>
             {showChart && (
