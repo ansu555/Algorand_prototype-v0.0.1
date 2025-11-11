@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import BackgroundPaths from "@/components/shared/animated-background"
 import { SwapCard } from "@/components/features/trading/swap-card"
 import { Input } from "@/components/ui/input"
@@ -30,6 +30,49 @@ export default function TradePage() {
   const [swapsLoading, setSwapsLoading] = useState(false)
   const [swapsError, setSwapsError] = useState<string | null>(null)
   const [swapRefreshTrigger, setSwapRefreshTrigger] = useState(0)
+
+  // Calculate real token metrics from pool reserves
+  const tokenMetrics = useMemo(() => {
+    if (!selectedPair.from || !selectedPair.to || !pools) {
+      return null
+    }
+
+    const matchingPool = pools.find((pool) => {
+      const ids = [pool.asset1.id, pool.asset2.id]
+      return ids.includes(selectedPair.from!.id) && ids.includes(selectedPair.to!.id)
+    })
+
+    if (!matchingPool) return null
+
+    const normalizeReserve = (raw: string, decimals: number) => {
+      if (!raw) return 0
+      const value = Number(raw)
+      return Number.isFinite(value) ? value / Math.pow(10, decimals) : 0
+    }
+
+    // Determine which asset is which in the pool
+    const fromIsAsset1 = matchingPool.asset1.id === selectedPair.from.id
+    const fromReserve = normalizeReserve(
+      fromIsAsset1 ? matchingPool.reserve1 : matchingPool.reserve2,
+      selectedPair.from.decimals
+    )
+    const toReserve = normalizeReserve(
+      fromIsAsset1 ? matchingPool.reserve2 : matchingPool.reserve1,
+      selectedPair.to.decimals
+    )
+
+    // Calculate exchange rates (price of one token in terms of the other)
+    const fromPriceInTo = toReserve > 0 ? fromReserve / toReserve : 0
+    const toPriceInFrom = fromReserve > 0 ? toReserve / fromReserve : 0
+
+    return {
+      fromReserve,
+      toReserve,
+      fromPriceInTo,
+      toPriceInFrom,
+      pool: matchingPool,
+    }
+  }, [selectedPair.from, selectedPair.to, pools])
 
   const fetchPools = useCallback(async () => {
     setPoolsLoading(true)
@@ -298,42 +341,52 @@ export default function TradePage() {
                   {/* Box 1 - Selling Token Info */}
                   <Card>
                     <CardContent className="p-3">
-                                            <div className="flex items-start gap-2 mb-2">
+                      <div className="flex items-start gap-2 mb-2">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
                           {selectedPair.from.unitName?.substring(0, 2) || 'T1'}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-foreground font-bold text-base mb-0.5 truncate">
-                            ${selectedPair.from.id === 0 ? '164.50' : '0.99991'}
+                            {tokenMetrics ? (
+                              `${tokenMetrics.fromPriceInTo.toFixed(6)} ${selectedPair.to.unitName || selectedPair.to.name}`
+                            ) : (
+                              '—'
+                            )}
                           </div>
                           <div className="text-xs text-muted-foreground truncate">
                             {selectedPair.from.unitName || selectedPair.from.name}
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className={selectedPair.from.id === 0 ? "text-red-500 text-xs font-semibold" : "text-green-500 text-xs font-semibold"}>
-                            {selectedPair.from.id === 0 ? '-2.28%' : '0%'}
+                          <div className="text-muted-foreground text-xs font-semibold">
+                            {tokenMetrics ? `${tokenMetrics.fromReserve.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}
                           </div>
+                          <div className="text-xs text-muted-foreground/70">Reserve</div>
                         </div>
                       </div>
                       
-                      {/* Mini Chart */}
-                      <div className="h-10 mb-2 flex items-end gap-0.5">
-                      
-                      {/* Mini Chart */}
+                      {/* Mini Chart - simple reserve distribution visual */}
                       <div className="h-12 mb-3 flex items-end gap-0.5">
-                        {Array.from({ length: 40 }).map((_, i) => {
-                          const height = Math.random() * 60 + 20;
-                          const color = selectedPair.from?.id === 0 ? 'bg-red-500/60' : 'bg-green-500/60';
-                          return (
-                            <div
-                              key={i}
-                              className={`flex-1 ${color} rounded-sm`}
-                              style={{ height: `${height}%` }}
-                            />
-                          );
-                        })}
-                      </div>
+                        {tokenMetrics ? (
+                          Array.from({ length: 40 }).map((_, i) => {
+                            // Create a simple visual based on reserve ratio
+                            const ratio = tokenMetrics.fromReserve / (tokenMetrics.fromReserve + tokenMetrics.toReserve)
+                            const baseHeight = ratio * 100
+                            const variance = (Math.sin(i * 0.3) * 15) + (Math.cos(i * 0.5) * 10)
+                            const height = Math.max(20, Math.min(80, baseHeight + variance))
+                            return (
+                              <div
+                                key={i}
+                                className="flex-1 bg-purple-500/60 rounded-sm"
+                                style={{ height: `${height}%` }}
+                              />
+                            )
+                          })
+                        ) : (
+                          Array.from({ length: 40 }).map((_, i) => (
+                            <div key={i} className="flex-1 bg-muted/40 rounded-sm" style={{ height: '30%' }} />
+                          ))
+                        )}
                       </div>
 
                       <button className="text-muted-foreground hover:text-primary dark:hover:text-[#F3C623] text-xs flex items-center gap-1 transition-colors">
@@ -354,32 +407,45 @@ export default function TradePage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-foreground font-bold text-base mb-0.5 truncate">
-                            ${selectedPair.to.id === 0 ? '164.50' : '0.99991'}
+                            {tokenMetrics ? (
+                              `${tokenMetrics.toPriceInFrom.toFixed(6)} ${selectedPair.from.unitName || selectedPair.from.name}`
+                            ) : (
+                              '—'
+                            )}
                           </div>
                           <div className="text-xs text-muted-foreground truncate">
                             {selectedPair.to.unitName || selectedPair.to.name}
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className={selectedPair.to.id === 0 ? "text-red-500 text-xs font-semibold" : "text-green-500 text-xs font-semibold"}>
-                            {selectedPair.to.id === 0 ? '-2.28%' : '0%'}
+                          <div className="text-muted-foreground text-xs font-semibold">
+                            {tokenMetrics ? `${tokenMetrics.toReserve.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}
                           </div>
+                          <div className="text-xs text-muted-foreground/70">Reserve</div>
                         </div>
                       </div>
                       
-                      {/* Mini Chart */}
-                      <div className="h-10 mb-2 flex items-end gap-0.5">
-                        {Array.from({ length: 40 }).map((_, i) => {
-                          const height = Math.random() * 60 + 20;
-                          const color = selectedPair.to?.id === 0 ? 'bg-red-500/60' : 'bg-green-500/60';
-                          return (
-                            <div
-                              key={i}
-                              className={`flex-1 ${color} rounded-sm`}
-                              style={{ height: `${height}%` }}
-                            />
-                          );
-                        })}
+                      {/* Mini Chart - simple reserve distribution visual */}
+                      <div className="h-12 mb-3 flex items-end gap-0.5">
+                        {tokenMetrics ? (
+                          Array.from({ length: 40 }).map((_, i) => {
+                            const ratio = tokenMetrics.toReserve / (tokenMetrics.fromReserve + tokenMetrics.toReserve)
+                            const baseHeight = ratio * 100
+                            const variance = (Math.sin(i * 0.4) * 12) + (Math.cos(i * 0.6) * 8)
+                            const height = Math.max(20, Math.min(80, baseHeight + variance))
+                            return (
+                              <div
+                                key={i}
+                                className="flex-1 bg-cyan-500/60 rounded-sm"
+                                style={{ height: `${height}%` }}
+                              />
+                            )
+                          })
+                        ) : (
+                          Array.from({ length: 40 }).map((_, i) => (
+                            <div key={i} className="flex-1 bg-muted/40 rounded-sm" style={{ height: '30%' }} />
+                          ))
+                        )}
                       </div>
 
                       <button className="text-muted-foreground hover:text-primary dark:hover:text-[#F3C623] text-xs flex items-center gap-1 transition-colors">
