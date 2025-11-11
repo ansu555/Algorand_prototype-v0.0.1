@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import type { AssetInfo } from "@/hooks/use-tradeable-assets"
 import { PoolLiquidityChart, type SerializedPoolInfo } from "@/components/features/trading/pool-liquidity-chart"
 import { formatDistanceToNow } from "date-fns"
+import { useWalletConnection } from '@/components/providers/txnlab-wallet-provider'
 
 export default function TradePage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -22,6 +23,13 @@ export default function TradePage() {
   const [poolsLoading, setPoolsLoading] = useState(false)
   const [poolsError, setPoolsError] = useState<string | null>(null)
   const hasFetchedPools = useRef(false)
+  const { isConnected, activeAccount } = useWalletConnection()
+
+  // Swap history state (per-wallet)
+  const [swaps, setSwaps] = useState<any[] | null>(null)
+  const [swapsLoading, setSwapsLoading] = useState(false)
+  const [swapsError, setSwapsError] = useState<string | null>(null)
+  const [swapRefreshTrigger, setSwapRefreshTrigger] = useState(0)
 
   const fetchPools = useCallback(async () => {
     setPoolsLoading(true)
@@ -71,6 +79,39 @@ export default function TradePage() {
     setShowChart((prev) => !prev)
   }, [])
 
+  // Fetch swaps for the connected wallet when swap history is shown
+  useEffect(() => {
+    async function loadSwaps() {
+      if (!showSwapHistory) return
+      if (!isConnected || !activeAccount?.address) {
+        setSwaps(null)
+        setSwapsError('Connect your wallet to view swap history')
+        return
+      }
+
+      console.log('🔄 Fetching swap history for:', activeAccount.address)
+      setSwapsLoading(true)
+      setSwapsError(null)
+      try {
+        const res = await fetch(`/api/swaps?address=${encodeURIComponent(activeAccount.address)}`)
+        if (!res.ok) throw new Error('Failed to fetch swaps')
+        const json = await res.json()
+        console.log('📥 Swap history response:', json)
+        if (!json?.success) throw new Error(json?.error || 'Failed to load swaps')
+        setSwaps(json.data || [])
+        console.log('✅ Loaded', json.data?.length || 0, 'swaps')
+      } catch (err: any) {
+        console.error('❌ Failed to load swaps:', err)
+        setSwapsError(err?.message || 'Failed to load swap history')
+        setSwaps(null)
+      } finally {
+        setSwapsLoading(false)
+      }
+    }
+
+    loadSwaps()
+  }, [showSwapHistory, isConnected, activeAccount?.address, swapRefreshTrigger])
+
   const handleToggleSwapHistory = useCallback(() => {
     setShowSwapHistory((prev) => !prev)
   }, [])
@@ -119,7 +160,10 @@ export default function TradePage() {
               "mx-auto w-full max-w-lg transition-all relative",
               showChart && "lg:order-2 lg:ml-auto"
             )}>
-              <SwapCard onPairChange={handlePairChange} />
+              <SwapCard 
+                onPairChange={handlePairChange} 
+                onSwapSuccess={() => setSwapRefreshTrigger(prev => prev + 1)}
+              />
               <div className="mt-4 flex flex-row justify-start gap-2">
                 <Button variant="outline" size="sm" onClick={handleToggleChart} className="rounded-full border border-border/70 bg-background/80 backdrop-blur relative z-0 text-xs px-3 py-1 h-8">
                   {showChart ? "Hide Chart" : "Show Chart"}
@@ -233,8 +277,17 @@ export default function TradePage() {
               {/* Swap History Section */}
               {showSwapHistory && (
                 <Card className="mt-4">
-                  <CardHeader>
+                  <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="text-lg">Your Swap History</CardTitle>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setSwapRefreshTrigger(prev => prev + 1)}
+                      disabled={swapsLoading}
+                      className="text-xs"
+                    >
+                      {swapsLoading ? 'Refreshing...' : 'Refresh'}
+                    </Button>
                   </CardHeader>
                   <CardContent>
                     <div className="overflow-x-auto">
@@ -245,42 +298,93 @@ export default function TradePage() {
                             <TableHead>From</TableHead>
                             <TableHead>To</TableHead>
                             <TableHead className="text-right">Amount</TableHead>
+                            <TableHead className="text-right">Received</TableHead>
+                            <TableHead>Route</TableHead>
+                            <TableHead>Slippage</TableHead>
                             <TableHead>Status</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {/* Mock swap history data */}
-                          {[
-                            { id: 1, time: new Date(Date.now() - 5 * 60 * 1000), from: 'ALGO', to: 'USDC', amount: '100', status: 'Completed' },
-                            { id: 2, time: new Date(Date.now() - 30 * 60 * 1000), from: 'USDC', to: 'ALGO', amount: '50', status: 'Completed' },
-                            { id: 3, time: new Date(Date.now() - 2 * 60 * 60 * 1000), from: 'ALGO', to: 'USDC', amount: '200', status: 'Completed' },
-                            { id: 4, time: new Date(Date.now() - 5 * 60 * 60 * 1000), from: 'USDC', to: 'ALGO', amount: '150', status: 'Completed' },
-                            { id: 5, time: new Date(Date.now() - 24 * 60 * 60 * 1000), from: 'ALGO', to: 'USDC', amount: '75', status: 'Completed' },
-                          ].map((swap) => (
-                            <TableRow key={swap.id}>
-                              <TableCell className="text-sm">
-                                {formatDistanceToNow(swap.time, { addSuffix: true })}
-                              </TableCell>
-                              <TableCell className="font-medium">{swap.from}</TableCell>
-                              <TableCell className="font-medium">{swap.to}</TableCell>
-                              <TableCell className="text-right font-mono">{swap.amount}</TableCell>
-                              <TableCell>
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                  {swap.status}
-                                </span>
-                              </TableCell>
+                          {swapsLoading ? (
+                            <TableRow>
+                              <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-4">Loading swap history…</TableCell>
                             </TableRow>
-                          ))}
+                          ) : swapsError ? (
+                            <TableRow>
+                              <TableCell colSpan={8} className="text-center text-sm text-destructive py-4">{swapsError}</TableCell>
+                            </TableRow>
+                          ) : !swaps || swaps.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-4">No swaps found for this wallet.</TableCell>
+                            </TableRow>
+                          ) : (
+                            swaps.map((s: any) => {
+                              const d = s.details || {}
+                              return (
+                                <TableRow key={s.id} className="hover:bg-muted/50">
+                                  <TableCell className="text-sm">
+                                    {formatDistanceToNow(new Date(s.createdAt), { addSuffix: true })}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{d.fromAssetUnitName || d.fromAssetName || `#${d.fromAssetId}`}</span>
+                                      <span className="text-xs text-muted-foreground">{d.fromAmount || '—'}</span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{d.toAssetUnitName || d.toAssetName || `#${d.toAssetId}`}</span>
+                                      <span className="text-xs text-muted-foreground">{d.toAmount || '—'}</span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-right font-mono">
+                                    {d.fromAmount ? `${d.fromAmount} ${d.fromAssetUnitName || ''}` : '—'}
+                                  </TableCell>
+                                  <TableCell className="text-right font-mono">
+                                    {d.toAmount ? `~${d.toAmount} ${d.toAssetUnitName || ''}` : '—'}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="text-xs">
+                                      {d.routePath && d.routePath.length > 0 ? (
+                                        <div className="flex flex-col gap-0.5">
+                                          {d.routePath.map((r: any, idx: number) => (
+                                            <span key={idx} className="text-muted-foreground">
+                                              {r.dex || 'DEX'}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <span className="text-muted-foreground">Direct</span>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-sm">
+                                    {d.slippage ? `${d.slippage}%` : '—'}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex flex-col gap-1">
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 w-fit">
+                                        {s.status}
+                                      </span>
+                                      {d.txId && (
+                                        <a 
+                                          href={`https://testnet.algoexplorer.io/tx/${d.txId}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-xs text-blue-500 hover:underline"
+                                        >
+                                          View Tx
+                                        </a>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              )
+                            })
+                          )}
                         </TableBody>
                       </Table>
                     </div>
-                    {/* Empty state message */}
-                    {false && (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <p>No swap history found.</p>
-                        <p className="text-sm mt-2">Your completed swaps will appear here.</p>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               )}
