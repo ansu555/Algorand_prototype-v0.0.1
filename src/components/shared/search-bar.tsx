@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import type { PoolInfo } from "@/lib/dex/types"
 import { useAssetSearch, useTradeableAssets } from "@/hooks/use-tradeable-assets"
+import { useRouter } from "next/navigation"
 
 export function SearchBar() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -13,6 +14,7 @@ export function SearchBar() {
   const [searchTab, setSearchTab] = useState<"all" | "tokens" | "pools">("all")
   const searchRef = useRef<HTMLDivElement>(null)
   const [network] = useState<'testnet' | 'mainnet'>('testnet')
+  const router = useRouter()
 
   // Tokens
   const { assets: tradeableAssets, loading: assetsLoading, error: assetsError } = useTradeableAssets()
@@ -23,10 +25,34 @@ export function SearchBar() {
   const [poolsLoading, setPoolsLoading] = useState(false)
   const [poolsError, setPoolsError] = useState<string | null>(null)
 
-  // Fetch pools when search opens the first time (to avoid unnecessary work)
+  // Fetch or hydrate pools when search opens the first time (with client-side cache)
   useEffect(() => {
     if (!searchFocused || pools.length > 0 || poolsLoading) return
     let cancelled = false
+    const CACHE_KEY = `pools_cache_${network}`
+    const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes, keep in sync with server TTL
+
+    const hydrateFromCache = () => {
+      try {
+        if (typeof window === 'undefined') return false
+        const cached = window.localStorage.getItem(CACHE_KEY)
+        if (!cached) return false
+        const parsed = JSON.parse(cached) as { timestamp: number; pools: any[] }
+        if (!parsed?.timestamp || !Array.isArray(parsed.pools)) return false
+        if (Date.now() - parsed.timestamp > CACHE_TTL_MS) return false
+        const typed: PoolInfo[] = parsed.pools.map((p: any) => ({
+          ...p,
+          reserve1: BigInt(p.reserve1),
+          reserve2: BigInt(p.reserve2),
+          totalLiquidity: BigInt(p.totalLiquidity),
+        }))
+        if (!cancelled) setPools(typed)
+        return true
+      } catch {
+        return false
+      }
+    }
+
     const fetchPools = async () => {
       try {
         setPoolsLoading(true)
@@ -34,7 +60,7 @@ export function SearchBar() {
         const res = await fetch(`/api/pools/all?network=${network}`)
         const json = await res.json()
         if (!json.success) throw new Error(json.error || 'Failed to fetch pools')
-        // Convert string reserves back to bigint-compatible numbers only if needed by UI; keep as-is for now
+        // Convert string reserves back to bigint-compatible numbers for typing
         const parsed: PoolInfo[] = json.pools.map((p: any) => ({
           ...p,
           reserve1: BigInt(p.reserve1),
@@ -42,13 +68,25 @@ export function SearchBar() {
           totalLiquidity: BigInt(p.totalLiquidity),
         }))
         if (!cancelled) setPools(parsed)
+        // Store lightweight cache in localStorage (keep server-serialized strings)
+        try {
+          if (typeof window !== 'undefined') {
+            window.localStorage.setItem(CACHE_KEY, JSON.stringify({
+              timestamp: Date.now(),
+              pools: json.pools,
+            }))
+          }
+        } catch {}
       } catch (e: any) {
         if (!cancelled) setPoolsError(e.message || 'Failed to fetch pools')
       } finally {
         if (!cancelled) setPoolsLoading(false)
       }
     }
-    fetchPools()
+    // 1) Try cache first
+    const hydrated = hydrateFromCache()
+    // 2) Fallback to network if no fresh cache
+    if (!hydrated) fetchPools()
     return () => {
       cancelled = true
     }
@@ -131,10 +169,13 @@ export function SearchBar() {
 
   const handleSelect = (entry: { type: 'token' | 'pool'; item: any }) => {
     if (entry.type === 'token') {
-      // TODO: integrate navigation or callbacks as needed
-      console.log('Selected token', entry.item)
+      // Navigate to token details page (route can be implemented later)
+      const id = entry.item?.id
+      if (id != null) router.push(`/token/${id}`)
     } else {
-      console.log('Selected pool', entry.item)
+      // Navigate to pool page which already exists at /pool/[id]
+      const pid = entry.item?.poolId || entry.item?.id
+      if (pid) router.push(`/pool/${pid}`)
     }
     setSearchFocused(false)
   }
