@@ -351,18 +351,20 @@ export function SwapCard({ onPairChange }: SwapCardProps) {
               Limit
             </button>
             <button
-              onClick={() => setActiveTab('buy')}
+            disabled={true}
+              //onClick={() => setActiveTab('buy')}
               className={cn(
-                "relative z-10 px-0 py-2 text-sm font-medium rounded-full transition-colors duration-200 min-w-[72px] justify-center",
+                "relative z-10 px-0 py-2 text-sm font-medium rounded-full transition-colors duration-200 min-w-[72px] justify-center transition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foreground",
                 activeTab === 'buy' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
               Buy
             </button>
             <button
-              onClick={() => setActiveTab('sell')}
+            disabled={true}
+             // onClick={() => setActiveTab('sell')}
               className={cn(
-                "relative z-10 px-0 py-2 text-sm font-medium rounded-full transition-colors duration-200 min-w-[72px] justify-center",
+                "relative z-10 px-0 py-2 text-sm font-medium rounded-full transition-colors duration-200 min-w-[72px] justify-center transition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foregroundtransition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foreground",
                 activeTab === 'sell' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >

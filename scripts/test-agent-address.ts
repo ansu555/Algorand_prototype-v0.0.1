@@ -3,7 +3,7 @@
 import { config } from 'dotenv'
 config({ path: '.env.local' })
 
-import { getAgent } from '../lib/agent'
+import { getAgent } from '../src/lib/agent'
 
 async function testAgentAddress() {
   try {
