@@ -91,7 +91,7 @@ export function SettingsModal({ open, onOpenChange, slippage, onSlippageChange }
                       disabled={autoSlippage}
                       className={cn(
                         "flex-1 h-[40px] px-4 rounded-xl font-medium transition-colors",
-                        customSlippage === preset && !autoSlippage && "bg-accent text-accent-foreground",
+                        customSlippage === preset && !autoSlippage ? "text-red-500" : "text-foreground",
                         autoSlippage && "opacity-50 cursor-not-allowed"
                       )}
                       onClick={() => handleSlippageChange(preset)}
@@ -102,10 +102,10 @@ export function SettingsModal({ open, onOpenChange, slippage, onSlippageChange }
                 </div>
 
                 {/* Divider */}
-                <div className="h-[36px] w-[1px] bg-gray-900/5 dark:bg-slate-200/5"></div>
+                <div className="h-[36px] w-[1px] bg-gray-900/30 dark:bg-slate-200/30"></div>
 
                 {/* Custom Input */}
-                <div className="flex items-center w-[120px]">
+                <div className="flex items-center w-[120px] bg-muted/30 rounded-lg px-1">
                   <Input
                     type="number"
                     value={customSlippage}
