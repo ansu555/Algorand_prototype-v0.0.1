@@ -14,6 +14,9 @@ import { SellPanel } from "./sellpanel"
 import { AssetSelector } from "./asset-selector"
 import { useTradeableAssets, AssetInfo } from "@/hooks/use-tradeable-assets"
 import { useToast } from "@/hooks/use-toast"
+import RuleBuilderModal from "@/components/features/rules/rule-builder-modal"
+import { describeRule } from "@/lib/shared/rules"
+import { createRule } from "@/features/agent/api/client"
 
 type SwapCardProps = {
   onPairChange?: (from: AssetInfo | null, to: AssetInfo | null) => void
@@ -112,6 +115,37 @@ export function SwapCard({ onPairChange }: SwapCardProps) {
       })
     } finally {
       setQuoteLoading(false)
+    }
+  }
+
+  // Save rule function for Auto-Pilot
+  const saveRule = async (rule: any) => {
+    try {
+      const type = rule.strategy === 'DCA' ? 'dca' : rule.strategy === 'REBALANCE' ? 'rebalance' : 'rotate'
+      const payload = {
+        ownerAddress: activeAccount?.address || "0x0000000000000000000000000000000000000000",
+        type,
+        targets: rule.coins || [],
+        rotateTopN: rule.rotateTopN,
+        maxSpendUSD: rule.maxSpendUsd,
+        maxSlippage: rule.maxSlippagePercent,
+        cooldownMinutes: rule.cooldownMinutes,
+        triggerType: rule.triggerType,
+        dropPercent: rule.dropPercent,
+        trendWindow: rule.trendWindow,
+        trendThreshold: rule.trendThreshold,
+        momentumLookback: rule.momentumLookback,
+        momentumThreshold: rule.momentumThreshold,
+        status: 'active',
+      }
+      await createRule(payload)
+    } catch (e) {
+      console.error(e)
+      toast({ 
+        title: "Failed to save rule", 
+        description: "Please try again.", 
+        variant: "destructive" 
+      })
     }
   }
 
@@ -336,6 +370,33 @@ export function SwapCard({ onPairChange }: SwapCardProps) {
             >
               Sell
             </button>
+
+            {/* Auto-Pilot Button */}
+            <RuleBuilderModal
+              trigger={
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 relative z-10 text-xs px-2 group overflow-hidden transition-all duration-300 hover:scale-105 border border-red-500 dark:border-red-400"
+                >
+                  <span className="relative z-10 transition-colors duration-300 text-red-600 dark:text-red-400 group-hover:text-white dark:group-hover:text-black">
+                    Auto-Pilot
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-red-600 dark:from-red-500 dark:to-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+                </Button>
+              }
+              availableCoins={[
+                { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
+                { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
+              ]}
+              onPreview={(rule) => {
+                toast({ title: "Preview", description: describeRule(rule) })
+              }}
+              onSave={(rule) => {
+                saveRule(rule)
+                toast({ title: "Rule saved", description: describeRule(rule) })
+              }}
+            />
 
             {/* Settings Button moved inside tab bar */}
             <Button

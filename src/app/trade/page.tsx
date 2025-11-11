@@ -109,7 +109,7 @@ export default function TradePage() {
 
             <div className={cn(
               "mx-auto w-full max-w-md transition-all relative",
-              showChart && "lg:order-2 lg:ml-auto lg:max-w-sm"
+              showChart && "lg:order-2 lg:ml-auto"
             )}>
               <SwapCard onPairChange={handlePairChange} />
               <div className="mt-4 flex justify-center lg:justify-end">
