@@ -86,17 +86,6 @@ export default function PoolPage() {
             currentPrice = reserve1Num / reserve0Num // price of asset1 in terms of asset2
           }
 
-          // Calculate TVL in USD (simplified - assuming reserve values are already in USD equivalent)
-          // For a real implementation, we'd need to fetch USD prices for each asset
-          let tvlUSD: number | undefined
-          if (reserve1 && reserve2) {
-            // This is a placeholder - in production, multiply by actual USD prices
-            const r1Value = Number(reserve1) / (10 ** poolInfo.asset1.decimals)
-            const r2Value = Number(reserve2) / (10 ** poolInfo.asset2.decimals)
-            // For now, use a rough estimate (this needs real price data)
-            tvlUSD = (r1Value + r2Value) * 50 // Placeholder multiplier
-          }
-
           // Determine protocol version based on DEX
           let protocol = 'v2' // Default
           if (poolInfo.dexName === 'tinyman') {
@@ -123,8 +112,8 @@ export default function PoolPage() {
             reserve1: reserve2,
             poolAddress: poolInfo.poolAddress,
             currentPrice,
-            // Use market data if available, otherwise use calculated/default values
-            tvlUSD: poolMarketData?.tvlUSD || tvlUSD,
+            // Use market data if available
+            tvlUSD: poolMarketData?.tvlUSD,
             volume1dUSD: poolMarketData?.volume1dUSD,
             volume30dUSD: poolMarketData?.volume30dUSD,
             volume24hUSD: poolMarketData?.volume24hUSD,
@@ -202,13 +191,18 @@ export default function PoolPage() {
               </p>
               {!loading && !error && (
                 <p className="text-xs text-muted-foreground">
-                  {allPools.length} pools on {network} (Tinyman{network === 'mainnet' ? ', Pact' : ''})
+                  {allPools.length} pools on {network} (Tinyman{network === 'mainnet' ? ', Pact' : ''}).
+                  {network === 'testnet' && (
+                    <span className="block mt-1">
+                      ⓘ Some values show "—" because testnet doesn't provide market data (TVL, volume, APR).
+                    </span>
+                  )}
                 </p>
               )}
             </div>
           </div>
 
-          {error && (
+          {error && ( 
             <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950 p-4">
               <p className="text-sm text-red-800 dark:text-red-200">
                 ⚠️ Error loading pools: {error}
