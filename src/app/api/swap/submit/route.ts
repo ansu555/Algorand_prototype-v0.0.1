@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import algosdk from 'algosdk'
 import { getAlgodClient } from '@/lib/algorand'
+import { createLog } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,6 +47,71 @@ export async function POST(request: NextRequest) {
 
     const confirmedRound = confirmedTxn.confirmedRound
     console.log('✅ Transaction confirmed in round:', confirmedRound)
+    
+    // Store comprehensive swap data in database for per-wallet history
+    try {
+      const bodyJson = body || {}
+      const ownerAddress = bodyJson.ownerAddress
+      const meta = bodyJson.meta
+      
+      console.log('💾 Attempting to store swap in database...')
+      console.log('Owner address:', ownerAddress)
+      console.log('Meta data:', meta)
+      
+      if (ownerAddress && meta) {
+        // Store complete swap metadata
+        const logEntry = {
+          id: (globalThis as any).crypto?.randomUUID ? (globalThis as any).crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+          ownerAddress: String(ownerAddress).toLowerCase(),
+          action: 'swap',
+          details: {
+            // Transaction details
+            txId,
+            confirmedRound: Number(confirmedRound),
+            
+            // From asset details
+            fromAssetId: meta.fromAssetId,
+            fromAssetName: meta.fromAssetName,
+            fromAssetUnitName: meta.fromAssetUnitName,
+            fromAssetDecimals: meta.fromAssetDecimals,
+            fromAmount: meta.fromAmount,
+            fromAmountBaseUnits: meta.fromAmountBaseUnits,
+            
+            // To asset details
+            toAssetId: meta.toAssetId,
+            toAssetName: meta.toAssetName,
+            toAssetUnitName: meta.toAssetUnitName,
+            toAssetDecimals: meta.toAssetDecimals,
+            toAmount: meta.toAmount,
+            toAmountEstimated: meta.toAmountEstimated,
+            
+            // Swap parameters
+            minimumReceived: meta.minimumReceived,
+            slippage: meta.slippage,
+            
+            // Route information
+            route: meta.route,
+            routePath: meta.routePath,
+            priceImpact: meta.priceImpact,
+            expectedPricePerUnit: meta.expectedPricePerUnit,
+            
+            // Metadata
+            swapTimestamp: meta.timestamp,
+            network: 'testnet', // or get from env
+          },
+          status: 'confirmed',
+          createdAt: new Date().toISOString()
+        }
+        
+        console.log('💾 Saving log entry:', JSON.stringify(logEntry, null, 2))
+        await createLog(logEntry)
+        console.log('✅ Swap saved to database successfully!')
+      } else {
+        console.warn('⚠️ Missing ownerAddress or meta, skipping database save')
+      }
+    } catch (e) {
+      console.error('❌ Error creating swap log:', e)
+    }
 
     return NextResponse.json({
       success: true,

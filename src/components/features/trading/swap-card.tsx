@@ -20,9 +20,10 @@ import { createRule } from "@/features/agent/api/client"
 
 type SwapCardProps = {
   onPairChange?: (from: AssetInfo | null, to: AssetInfo | null) => void
+  onSwapSuccess?: () => void
 }
 
-export function SwapCard({ onPairChange }: SwapCardProps) {
+export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
   const { activeAccount } = useWalletConnection()
   const { signTransactions } = useWalletActions()
   const { assets, loading: assetsLoading } = useTradeableAssets()
@@ -244,7 +245,36 @@ export function SwapCard({ onPairChange }: SwapCardProps) {
       const submitRes = await fetch('/api/swap/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signedTxns: signedTxnsBase64 })
+        body: JSON.stringify({
+          signedTxns: signedTxnsBase64,
+          ownerAddress: activeAccount?.address,
+          meta: {
+            fromAssetId: fromToken.id,
+            fromAssetName: fromToken.name,
+            fromAssetUnitName: fromToken.unitName,
+            fromAssetDecimals: fromToken.decimals,
+            toAssetId: toToken.id,
+            toAssetName: toToken.name,
+            toAssetUnitName: toToken.unitName,
+            toAssetDecimals: toToken.decimals,
+            fromAmount: fromAmount,
+            fromAmountBaseUnits: amountInBaseUnits,
+            toAmount: toAmount,
+            toAmountEstimated: routeData.outputAmount,
+            minimumReceived: routeData.minimumReceived,
+            slippage: parseFloat(slippage),
+            route: routeData.route,
+            routePath: Array.isArray(routeData.route) ? routeData.route.map((r: any) => ({
+              dex: r.dex,
+              poolId: r.poolId,
+              fromAsset: r.fromAsset,
+              toAsset: r.toAsset,
+            })) : [],
+            priceImpact: routeData.priceImpact,
+            expectedPricePerUnit: routeData.outputAmount / amountInBaseUnits,
+            timestamp: new Date().toISOString(),
+          }
+        })
       })
 
       if (!submitRes.ok) {
@@ -284,6 +314,9 @@ export function SwapCard({ onPairChange }: SwapCardProps) {
       setFromAmount('')
       setToAmount('')
       setRouteData(null)
+
+      // Trigger swap history refresh
+      onSwapSuccess?.()
 
       console.log('✅ REAL SWAP COMPLETED!')
       console.log('Transaction ID:', txId)

@@ -18,6 +18,8 @@ type Pool = {
   token1: string
   token0Logo?: string // Logo URL for token0
   token1Logo?: string // Logo URL for token1
+  token0Decimals?: number // Decimals for token0
+  token1Decimals?: number // Decimals for token1
   protocol?: string // Protocol version (v1, v2, v3, v4)
   feeTier: number // in basis points (30 = 0.3%)
   tvlUSD?: number // Total Value Locked in USD
@@ -86,17 +88,6 @@ export default function PoolPage() {
             currentPrice = reserve1Num / reserve0Num // price of asset1 in terms of asset2
           }
 
-          // Calculate TVL in USD (simplified - assuming reserve values are already in USD equivalent)
-          // For a real implementation, we'd need to fetch USD prices for each asset
-          let tvlUSD: number | undefined
-          if (reserve1 && reserve2) {
-            // This is a placeholder - in production, multiply by actual USD prices
-            const r1Value = Number(reserve1) / (10 ** poolInfo.asset1.decimals)
-            const r2Value = Number(reserve2) / (10 ** poolInfo.asset2.decimals)
-            // For now, use a rough estimate (this needs real price data)
-            tvlUSD = (r1Value + r2Value) * 50 // Placeholder multiplier
-          }
-
           // Determine protocol version based on DEX
           let protocol = 'v2' // Default
           if (poolInfo.dexName === 'tinyman') {
@@ -116,6 +107,8 @@ export default function PoolPage() {
             token1: poolInfo.asset2.symbol,
             token0Logo: poolInfo.asset1.logoUrl || poolInfo.asset1.logo, // Support both logoUrl and logo properties
             token1Logo: poolInfo.asset2.logoUrl || poolInfo.asset2.logo,
+            token0Decimals: poolInfo.asset1.decimals,
+            token1Decimals: poolInfo.asset2.decimals,
             protocol,
             feeTier: poolInfo.fee, // Already in basis points
             dex: poolInfo.dexName,
@@ -123,8 +116,8 @@ export default function PoolPage() {
             reserve1: reserve2,
             poolAddress: poolInfo.poolAddress,
             currentPrice,
-            // Use market data if available, otherwise use calculated/default values
-            tvlUSD: poolMarketData?.tvlUSD || tvlUSD,
+            // Use market data if available
+            tvlUSD: poolMarketData?.tvlUSD,
             volume1dUSD: poolMarketData?.volume1dUSD,
             volume30dUSD: poolMarketData?.volume30dUSD,
             volume24hUSD: poolMarketData?.volume24hUSD,
@@ -202,13 +195,18 @@ export default function PoolPage() {
               </p>
               {!loading && !error && (
                 <p className="text-xs text-muted-foreground">
-                  {allPools.length} pools on {network} (Tinyman{network === 'mainnet' ? ', Pact' : ''})
+                  {allPools.length} pools on {network} (Tinyman{network === 'mainnet' ? ', Pact' : ''}).
+                  {network === 'testnet' && (
+                    <span className="block mt-1">
+                      ⓘ Some values show "—" because testnet doesn't provide market data (TVL, volume, APR).
+                    </span>
+                  )}
                 </p>
               )}
             </div>
           </div>
 
-          {error && (
+          {error && ( 
             <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950 p-4">
               <p className="text-sm text-red-800 dark:text-red-200">
                 ⚠️ Error loading pools: {error}
@@ -224,20 +222,20 @@ export default function PoolPage() {
           ) : (
             <Tabs value={tab} onValueChange={setTab} className="w-full">
               {/* Tabs with controls aligned horizontally */}
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <TabsList>
-                  <TabsTrigger value="all">All Pools ({pools.length})</TabsTrigger>
-                  <TabsTrigger value="mine">My Positions</TabsTrigger>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 flex-wrap">
+                <TabsList className="w-full sm:w-auto">
+                  <TabsTrigger value="all" className="flex-1 sm:flex-none">All Pools ({pools.length})</TabsTrigger>
+                  <TabsTrigger value="mine" className="flex-1 sm:flex-none">My Positions</TabsTrigger>
                 </TabsList>
                 
                 {/* Right side controls - Network, Sort, Create Position */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
                   {/* Network Toggle */}
                   <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
                     <button
                       onClick={() => setNetwork('testnet')}
                       disabled={loading}
-                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
                         network === 'testnet'
                           ? 'bg-white dark:bg-[#171717] shadow-sm text-foreground'
                           : 'text-muted-foreground hover:text-foreground'
@@ -249,7 +247,7 @@ export default function PoolPage() {
                       disabled={true}
                       title="Mainnet is currently disabled"
                       aria-disabled="true"
-                      className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foreground`}
+                      className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foreground`}
                     >
                       Mainnet
                     </button>
@@ -257,7 +255,7 @@ export default function PoolPage() {
                   
                   {/* Sort dropdown */}
                   <Select value={sortBy} onValueChange={setSortBy} disabled={loading}>
-                    <SelectTrigger className="w-[160px]">
+                    <SelectTrigger className="w-[140px] sm:w-[160px]">
                       <SelectValue placeholder="Sort by" />
                     </SelectTrigger>
                     <SelectContent>
@@ -497,10 +495,10 @@ function formatVolumeTVLRatio(volume?: number, tvl?: number) {
 }
 
 function formatReserves(p: Pool) {
-  if (p.reserve0 && p.reserve1) {
-    // Format reserves in a compact way
-    const r0 = Number(p.reserve0) / 1e6 // Assume 6 decimals
-    const r1 = Number(p.reserve1) / 1e6
+  if (p.reserve0 && p.reserve1 && p.token0Decimals != null && p.token1Decimals != null) {
+    // Format reserves using actual token decimals
+    const r0 = Number(p.reserve0) / Math.pow(10, p.token0Decimals)
+    const r1 = Number(p.reserve1) / Math.pow(10, p.token1Decimals)
     
     if (r0 < 1000 && r1 < 1000) {
       return `${r0.toFixed(2)} / ${r1.toFixed(2)}`

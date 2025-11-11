@@ -115,7 +115,7 @@ export class TinymanV2Client implements IDexClient {
       const aggregatedPools: TinymanPool[] = [];
       let nextUrl: string | null = `${this.apiBaseUrl}/pools/`;
       let page = 1;
-      const maxPages = 10; // Limit to first 10 pages to avoid rate limits (100 pools)
+      const maxPages = 2; // Limit to first 2 pages to avoid rate limits (20 pools)
 
       // Paginate through pools with rate limiting
       while (nextUrl && page <= maxPages) {

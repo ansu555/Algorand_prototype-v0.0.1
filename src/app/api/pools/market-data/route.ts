@@ -78,9 +78,10 @@ async function fetchMarketData(network: 'testnet' | 'mainnet'): Promise<Record<s
   const marketData: Record<string, PoolMarketData> = {};
 
   try {
-    // For testnet, we'll use mock data since most analytics APIs only support mainnet
+    // For testnet, return empty data since most analytics APIs only support mainnet
     if (network === 'testnet') {
-      return generateMockMarketData();
+      console.log('Testnet does not have external market data sources - returning empty data');
+      return {};
     }
 
     // Try to fetch from Vestige Analytics API (mainnet only)
@@ -104,15 +105,10 @@ async function fetchMarketData(network: 'testnet' | 'mainnet'): Promise<Record<s
       console.warn('DeFiLlama API fetch failed:', err);
     }
 
-    // If no external data available, generate estimates
-    if (Object.keys(marketData).length === 0) {
-      return generateMockMarketData();
-    }
-
     return marketData;
   } catch (error) {
     console.error('Error in fetchMarketData:', error);
-    return generateMockMarketData();
+    return {};
   }
 }
 
@@ -189,38 +185,4 @@ async function fetchFromDeFiLlama(): Promise<Record<string, PoolMarketData>> {
   }
 
   return marketData;
-}
-
-function generateMockMarketData(): Record<string, PoolMarketData> {
-  // Generate realistic-looking mock data for testing/development
-  const mockData: Record<string, PoolMarketData> = {};
-  
-  // Generate data for common pool pairs
-  const mockPools = [
-    { id: 'tinyman-algo-usdc', baseTVL: 500000 },
-    { id: 'tinyman-algo-usdt', baseTVL: 300000 },
-    { id: 'pact-algo-usdc', baseTVL: 200000 },
-    { id: 'tinyman-usdc-usdt', baseTVL: 150000 },
-  ];
-
-  for (const pool of mockPools) {
-    const tvl = pool.baseTVL * (0.8 + Math.random() * 0.4); // ±20% variance
-    const volume1d = tvl * (0.1 + Math.random() * 0.3); // 10-40% of TVL
-    const volume30d = volume1d * (25 + Math.random() * 10); // ~30 days
-    const poolAPR = 0.5 + Math.random() * 15; // 0.5-15.5%
-    const rewardAPR = Math.random() > 0.7 ? Math.random() * 5 : undefined; // 30% chance of rewards
-
-    mockData[pool.id] = {
-      poolId: pool.id,
-      tvlUSD: tvl,
-      volume24hUSD: volume1d,
-      volume1dUSD: volume1d,
-      volume30dUSD: volume30d,
-      poolAPR,
-      rewardAPR,
-      fees24hUSD: volume1d * 0.003, // Assuming 0.3% fee
-    };
-  }
-
-  return mockData;
 }

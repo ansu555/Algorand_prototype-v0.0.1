@@ -217,10 +217,10 @@ export default function TransactionsPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {/* Type Filter */}
               <Select value={typeFilter} onValueChange={setTypeFilter} disabled={loading}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-[120px] sm:w-[140px]">
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -235,7 +235,7 @@ export default function TransactionsPage() {
 
               {/* Sort */}
               <Select value={sortBy} onValueChange={setSortBy} disabled={loading}>
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className="w-[140px] sm:w-[160px]">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
@@ -253,11 +253,11 @@ export default function TransactionsPage() {
             {/* 1D Volume */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">1D volume</CardTitle>
+                <CardTitle className="text-base sm:text-lg">1D volume</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-mono">$3.15B</div>
-                <div className="text-sm text-red-500 flex items-center gap-1">
+                <div className="text-2xl sm:text-3xl font-bold font-mono">$3.15B</div>
+                <div className="text-xs sm:text-sm text-red-500 flex items-center gap-1">
                   <span>▼</span>
                   <span>27.21% today</span>
                 </div>
@@ -267,11 +267,11 @@ export default function TransactionsPage() {
             {/* Total Uniswap TVL */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Total Uniswap TVL</CardTitle>
+                <CardTitle className="text-base sm:text-lg">Total Uniswap TVL</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-mono">$3.93B</div>
-                <div className="text-sm text-red-500 flex items-center gap-1">
+                <div className="text-2xl sm:text-3xl font-bold font-mono">$3.93B</div>
+                <div className="text-xs sm:text-sm text-red-500 flex items-center gap-1">
                   <span>▼</span>
                   <span>1.9% today</span>
                 </div>
@@ -281,11 +281,11 @@ export default function TransactionsPage() {
             {/* v2 TVL */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">v2 TVL</CardTitle>
+                <CardTitle className="text-base sm:text-lg">v2 TVL</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-mono">$1.59B</div>
-                <div className="text-sm text-green-500 flex items-center gap-1">
+                <div className="text-2xl sm:text-3xl font-bold font-mono">$1.59B</div>
+                <div className="text-xs sm:text-sm text-green-500 flex items-center gap-1">
                   <span>▲</span>
                   <span>0.74% today</span>
                 </div>
@@ -295,11 +295,11 @@ export default function TransactionsPage() {
             {/* v3 TVL */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">v3 TVL</CardTitle>
+                <CardTitle className="text-base sm:text-lg">v3 TVL</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-mono">$1.59B</div>
-                <div className="text-sm text-red-500 flex items-center gap-1">
+                <div className="text-2xl sm:text-3xl font-bold font-mono">$1.59B</div>
+                <div className="text-xs sm:text-sm text-red-500 flex items-center gap-1">
                   <span>▼</span>
                   <span>3.77% today</span>
                 </div>
@@ -309,11 +309,11 @@ export default function TransactionsPage() {
             {/* v4 TVL */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">v4 TVL</CardTitle>
+                <CardTitle className="text-base sm:text-lg">v4 TVL</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold font-mono">$751.90M</div>
-                <div className="text-sm text-red-500 flex items-center gap-1">
+                <div className="text-2xl sm:text-3xl font-bold font-mono">$751.90M</div>
+                <div className="text-xs sm:text-sm text-red-500 flex items-center gap-1">
                   <span>▼</span>
                   <span>3.24% today</span>
                 </div>
