@@ -36,7 +36,7 @@ export function SearchBar() {
   }, [])
 
   return (
-    <div className="relative max-w-md mx-auto" ref={searchRef}>
+    <div className="relative max-w-md mx-auto z-[100]" ref={searchRef}>
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 pointer-events-none" />
         <Input
@@ -54,7 +54,7 @@ export function SearchBar() {
 
       {/* Search Dropdown */}
       {searchFocused && (
-        <div className="absolute top-full mt-2 w-full bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl z-50 overflow-hidden">
+        <div className="absolute top-full mt-2 w-full bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl z-[9999] overflow-hidden">
           {/* Header with tabs and close button */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
             <div className="flex gap-3">

@@ -175,14 +175,12 @@ export default function TransactionsPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <BackgroundPaths />
-      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-2">
-        <div className="w-full space-y-2">
-          {/* Search Bar */}
-          <SearchBar />
-
+      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-6">
+        <div className="w-full space-y-6">
+          {/* Transaction History Card with Search */}
           <Card>
             <CardHeader>
-              <div className="flex items-end justify-between gap-4 flex-wrap">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <CardTitle className="text-2xl font-bold tracking-tight">Transaction History</CardTitle>
                   <p className="text-sm text-muted-foreground">
@@ -194,44 +192,48 @@ export default function TransactionsPage() {
                     </p>
                   )}
                 </div>
-
                 <div className="flex flex-wrap items-center gap-2">
-              {/* Type Filter */}
-              <Select value={typeFilter} onValueChange={setTypeFilter} disabled={loading}>
-                <SelectTrigger className="w-[120px] sm:w-[140px]">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="swap">Swap</SelectItem>
-                  <SelectItem value="send">Send</SelectItem>
-                  <SelectItem value="receive">Receive</SelectItem>
-                  <SelectItem value="stake">Stake</SelectItem>
-                  <SelectItem value="add_liquidity">Add Liquidity</SelectItem>
-                </SelectContent>
-              </Select>
+                  {/* Search Bar */}
+                  <div className="w-full sm:w-auto sm:min-w-[300px] lg:min-w-[400px]">
+                    <SearchBar />
+                  </div>
+                  
+                  {/* Type Filter */}
+                  <Select value={typeFilter} onValueChange={setTypeFilter} disabled={loading}>
+                    <SelectTrigger className="w-[120px] sm:w-[140px]">
+                      <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="swap">Swap</SelectItem>
+                      <SelectItem value="send">Send</SelectItem>
+                      <SelectItem value="receive">Receive</SelectItem>
+                      <SelectItem value="stake">Stake</SelectItem>
+                      <SelectItem value="add_liquidity">Add Liquidity</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-              {/* Sort */}
-              <Select value={sortBy} onValueChange={setSortBy} disabled={loading}>
-                <SelectTrigger className="w-[140px] sm:w-[160px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="time_desc">Time: New → Old</SelectItem>
-                  <SelectItem value="time_asc">Time: Old → New</SelectItem>
-                  <SelectItem value="usd_desc">USD: High → Low</SelectItem>
-                  <SelectItem value="usd_asc">USD: Low → High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardHeader>
+                  {/* Sort */}
+                  <Select value={sortBy} onValueChange={setSortBy} disabled={loading}>
+                    <SelectTrigger className="w-[140px] sm:w-[160px]">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="time_desc">Time: New → Old</SelectItem>
+                      <SelectItem value="time_asc">Time: Old → New</SelectItem>
+                      <SelectItem value="usd_desc">USD: High → Low</SelectItem>
+                      <SelectItem value="usd_asc">USD: Low → High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardHeader>
 
-        <CardContent>
-          {/* Statistics Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* 1D Volume */}
-            <Card>
+            <CardContent className="space-y-6">
+              {/* Statistics Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                {/* 1D Volume */}
+                <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base sm:text-lg">1D volume</CardTitle>
               </CardHeader>
@@ -244,10 +246,10 @@ export default function TransactionsPage() {
               </CardContent>
             </Card>
 
-            {/* Total Uniswap TVL */}
+            {/* Total 10xSwap TVL */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base sm:text-lg">Total Uniswap TVL</CardTitle>
+                <CardTitle className="text-base sm:text-lg">Total 10xSwap TVL</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl sm:text-3xl font-bold font-mono">$3.93B</div>
@@ -300,15 +302,19 @@ export default function TransactionsPage() {
               </CardContent>
             </Card>
           </div>
+            </CardContent>
+          </Card>
 
           {/* Transactions Table */}
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-red-600 dark:text-[#F3C623]" />
-              <span className="ml-2 text-sm text-muted-foreground">Loading transactions...</span>
-            </div>
-          ) : (
-            <div className="w-full overflow-x-auto">
+          <Card className="relative z-0">
+            <CardContent className="pt-6">
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-red-600 dark:text-[#F3C623]" />
+                  <span className="ml-2 text-sm text-muted-foreground">Loading transactions...</span>
+                </div>
+              ) : (
+                <div className="w-full overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="text-red-600 dark:text-red-400">
@@ -385,8 +391,8 @@ export default function TransactionsPage() {
               </Table>
             </div>
           )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>
