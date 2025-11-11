@@ -3,7 +3,7 @@
 import { config } from 'dotenv'
 config({ path: '.env.local' })
 
-import { buildAlgorandAgent } from '../lib/algorand'
+import { buildAlgorandAgent } from '../src/lib/algorand'
 
 async function testAlgorandIntegration() {
   try {
