@@ -36,7 +36,7 @@ export function SearchBar() {
   }, [])
 
   return (
-    <div className="relative max-w-md mx-auto z-[100]" ref={searchRef}>
+    <div className="relative max-w-md mx-auto z-auto" ref={searchRef}>
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 pointer-events-none" />
         <Input
@@ -45,11 +45,11 @@ export function SearchBar() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onFocus={() => setSearchFocused(true)}
-          className="w-full pl-12 pr-14 h-12 text-sm bg-gray-900/5 dark:bg-gray-900/50 border border-gray-200/50 dark:border-gray-700/50 rounded-full focus-visible:ring-2 focus-visible:ring-primary dark:focus-visible:ring-[#F3C623] focus-visible:border-transparent placeholder:text-gray-400 dark:placeholder:text-gray-500"
+          className="flex w-full rounded-md border-input px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-10 h-12 text-base bg-white dark:bg-[#171717] border-2 focus-visible:ring-red-600 dark:focus-visible:ring-[#F3C623]"
         />
-        <div className="absolute right-4 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-gray-200/50 dark:bg-gray-700/50 border border-gray-300/50 dark:border-gray-600/50">
+        {/* <div className="absolute right-4 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-gray-200/50 dark:bg-gray-700/50 border border-gray-300/50 dark:border-gray-600/50">
           <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">/</span>
-        </div>
+        </div> */}
       </div>
 
       {/* Search Dropdown */}
