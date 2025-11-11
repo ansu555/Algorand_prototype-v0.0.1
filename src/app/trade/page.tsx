@@ -142,40 +142,159 @@ export default function TradePage() {
             />
           </div>
 
-          <div className={cn("flex flex-col gap-6 lg:gap-8 transition-all", showChart ? "lg:flex-row" : "lg:items-center") }>
+          <div className={cn("flex flex-col gap-6 lg:gap-8 transition-all", showChart ? "lg:flex-row lg:items-start" : "lg:items-center") }>
             {showChart && (
-              <div className="lg:flex-1 lg:order-1">
-                <PoolLiquidityChart
-                  fromAsset={selectedPair.from}
-                  toAsset={selectedPair.to}
-                  pools={pools}
-                  loading={poolsLoading}
-                  error={poolsError}
-                  onRetry={handleRetryPools}
-                />
+              <div className="lg:flex-1 lg:order-1 flex flex-col gap-4">
+                {/* Use min-height so the chart card can expand naturally without overlapping the history card below. */}
+                <div className="lg:min-h-[317px]">
+                  <PoolLiquidityChart
+                    fromAsset={selectedPair.from}
+                    toAsset={selectedPair.to}
+                    pools={pools}
+                    loading={poolsLoading}
+                    error={poolsError}
+                    onRetry={handleRetryPools}
+                  />
+                </div>
+
+                {/* Swap History Section (left under chart) */}
+                {showSwapHistory && (
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <CardTitle className="text-lg">Your Swap History</CardTitle>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setSwapRefreshTrigger(prev => prev + 1)}
+                        disabled={swapsLoading}
+                        className="text-xs"
+                      >
+                        {swapsLoading ? 'Refreshing...' : 'Refresh'}
+                      </Button>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Time</TableHead>
+                              <TableHead>From</TableHead>
+                              <TableHead>To</TableHead>
+                              <TableHead className="text-right">Amount</TableHead>
+                              <TableHead className="text-right">Received</TableHead>
+                              <TableHead>Route</TableHead>
+                              <TableHead>Slippage</TableHead>
+                              <TableHead>Status</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {swapsLoading ? (
+                              <TableRow>
+                                <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-4">Loading swap history…</TableCell>
+                              </TableRow>
+                            ) : swapsError ? (
+                              <TableRow>
+                                <TableCell colSpan={8} className="text-center text-sm text-destructive py-4">{swapsError}</TableCell>
+                              </TableRow>
+                            ) : !swaps || swaps.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-4">No swaps found for this wallet.</TableCell>
+                              </TableRow>
+                            ) : (
+                              swaps.map((s: any) => {
+                                const d = s.details || {}
+                                return (
+                                  <TableRow key={s.id} className="hover:bg-muted/50">
+                                    <TableCell className="text-sm">
+                                      {formatDistanceToNow(new Date(s.createdAt), { addSuffix: true })}
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">{d.fromAssetUnitName || d.fromAssetName || `#${d.fromAssetId}`}</span>
+                                        <span className="text-xs text-muted-foreground">{d.fromAmount || '—'}</span>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">{d.toAssetUnitName || d.toAssetName || `#${d.toAssetId}`}</span>
+                                        <span className="text-xs text-muted-foreground">{d.toAmount || '—'}</span>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-right font-mono">
+                                      {d.fromAmount ? `${d.fromAmount} ${d.fromAssetUnitName || ''}` : '—'}
+                                    </TableCell>
+                                    <TableCell className="text-right font-mono">
+                                      {d.toAmount ? `~${d.toAmount} ${d.toAssetUnitName || ''}` : '—'}
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="text-xs">
+                                        {d.routePath && d.routePath.length > 0 ? (
+                                          <div className="flex flex-col gap-0.5">
+                                            {d.routePath.map((r: any, idx: number) => (
+                                              <span key={idx} className="text-muted-foreground">
+                                                {r.dex || 'DEX'}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <span className="text-muted-foreground">Direct</span>
+                                        )}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-sm">
+                                      {d.slippage ? `${d.slippage}%` : '—'}
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="flex flex-col gap-1">
+                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 w-fit">
+                                          {s.status}
+                                        </span>
+                                        {d.txId && (
+                                          <a 
+                                            href={`https://testnet.algoexplorer.io/tx/${d.txId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs text-blue-500 hover:underline"
+                                          >
+                                            View Tx
+                                          </a>
+                                        )}
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                )
+                              })
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             )}
 
             <div className={cn(
-              "mx-auto w-full max-w-lg transition-all relative",
+              "mx-auto w-full max-w-lg transition-all relative flex flex-col gap-6",
               showChart && "lg:order-2 lg:ml-auto"
             )}>
-              <SwapCard 
-                onPairChange={handlePairChange} 
-                onSwapSuccess={() => setSwapRefreshTrigger(prev => prev + 1)}
-              />
-              <div className="mt-4 flex flex-row justify-start gap-2">
-                <Button variant="outline" size="sm" onClick={handleToggleChart} className="rounded-full border border-border/70 bg-background/80 backdrop-blur relative z-0 text-xs px-3 py-1 h-8">
-                  {showChart ? "Hide Chart" : "Show Chart"}
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleToggleSwapHistory} className="rounded-full border border-border/70 bg-background/80 backdrop-blur relative z-0 text-xs px-3 py-1 h-8">
-                  {showSwapHistory ? "Hide History" : "Show History"}
-                </Button>
-              </div>
+              <div>
+                <SwapCard 
+                  onPairChange={handlePairChange} 
+                  onSwapSuccess={() => setSwapRefreshTrigger(prev => prev + 1)}
+                />
+                <div className="mt-4 flex flex-row justify-start gap-2">
+                  <Button variant="outline" size="sm" onClick={handleToggleChart} className="rounded-full border border-border/70 bg-background/80 backdrop-blur relative z-0 text-xs px-3 py-1 h-8">
+                    {showChart ? "Hide Chart" : "Show Chart"}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleToggleSwapHistory} className="rounded-full border border-border/70 bg-background/80 backdrop-blur relative z-0 text-xs px-3 py-1 h-8">
+                    {showSwapHistory ? "Hide History" : "Show History"}
+                  </Button>
+                </div>
 
-              {/* Token Information Boxes */}
-              {selectedPair.from && selectedPair.to && (
-                <div className="mt-4 grid grid-cols-2 gap-3">
+                {/* Token Information Boxes */}
+                {selectedPair.from && selectedPair.to && (
+                  <div className="mt-4 grid grid-cols-2 gap-3">
                   {/* Box 1 - Selling Token Info */}
                   <Card>
                     <CardContent className="p-3">
@@ -273,9 +392,10 @@ export default function TradePage() {
                   </Card>
                 </div>
               )}
+              </div>
 
-              {/* Swap History Section */}
-              {showSwapHistory && (
+              {/* Swap History Section (right) - only when chart hidden */}
+              {showSwapHistory && !showChart && (
                 <Card className="mt-4">
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="text-lg">Your Swap History</CardTitle>
