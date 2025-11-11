@@ -8,141 +8,88 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
 import { Loader2, ArrowUpDown } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-
-type TransactionType = 'swap' | 'send' | 'receive' | 'stake' | 'unstake' | 'add_liquidity' | 'remove_liquidity'
+import { Button } from "@/components/ui/button"
 
 type Transaction = {
   id: string
-  time: Date
-  type: TransactionType
-  fromToken: string
-  fromTokenSymbol: string
-  fromTokenLogo?: string
-  toToken: string
-  toTokenSymbol: string
-  toTokenLogo?: string
-  usdAmount: number
-  fromAmount: number
-  toAmount: number
-  walletAddress: string
-  txHash: string
+  createdAt: string
+  status: string
+  action: string
+  txId: string
+  ownerAddress: string
+  fromAssetId: number
+  toAssetId: number
+  fromAssetName: string
+  toAssetName: string
+  fromAssetUnitName: string
+  toAssetUnitName: string
+  fromAmount: string
+  toAmount: string
+  slippage: string
+  routePath: any[]
+  poolAddress?: string
+  confirmedRound?: number
 }
 
 export default function TransactionsPage() {
   const [sortBy, setSortBy] = useState("time_desc")
-  const [typeFilter, setTypeFilter] = useState<string>("all")
   const [loading, setLoading] = useState(false)
   const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
+  const [stats, setStats] = useState<{ total: number; last1d: number; last30d: number } | null>(null)
 
-  // Mock data - replace with actual API call
+  // Fetch real transactions from all users
   useEffect(() => {
-    setLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      const mockTransactions: Transaction[] = [
-        {
-          id: '1',
-          time: new Date(Date.now() - 31 * 1000),
-          type: 'swap',
-          fromToken: 'ETH',
-          fromTokenSymbol: 'ETH',
-          toToken: 'USDT',
-          toTokenSymbol: 'USDT',
-          usdAmount: 0.00000602,
-          fromAmount: 0.01,
-          toAmount: 0.01,
-          walletAddress: '0x1e4b...d241',
-          txHash: '0x1e4b...d241',
-        },
-        {
-          id: '2',
-          time: new Date(Date.now() - 31 * 1000),
-          type: 'swap',
-          fromToken: 'GONE',
-          fromTokenSymbol: 'GONE',
-          toToken: 'ETH',
-          toTokenSymbol: 'ETH',
-          usdAmount: 0.00000606,
-          fromAmount: 1.00,
-          toAmount: 0.01,
-          walletAddress: '0x1e4b...d241',
-          txHash: '0x1e4b...d241',
-        },
-        {
-          id: '3',
-          time: new Date(Date.now() - 31 * 1000),
-          type: 'swap',
-          fromToken: 'ETH',
-          fromTokenSymbol: 'ETH',
-          toToken: 'SKELLY',
-          toTokenSymbol: 'SKELLY',
-          usdAmount: 440.15,
-          fromAmount: 0.12,
-          toAmount: 54.7,
-          walletAddress: '0x1499...908D',
-          txHash: '0x1499...908D',
-        },
-        {
-          id: '4',
-          time: new Date(Date.now() - 31 * 1000),
-          type: 'swap',
-          fromToken: 'ETH',
-          fromTokenSymbol: 'ETH',
-          toToken: 'SKELLY',
-          toTokenSymbol: 'SKELLY',
-          usdAmount: 926.67,
-          fromAmount: 0.26,
-          toAmount: 113.9,
-          walletAddress: '0xc820...6619',
-          txHash: '0xc820...6619',
-        },
-        {
-          id: '5',
-          time: new Date(Date.now() - 31 * 1000),
-          type: 'swap',
-          fromToken: 'LILPEPE',
-          fromTokenSymbol: 'LILPEPE',
-          toToken: 'ETH',
-          toTokenSymbol: 'ETH',
-          usdAmount: 3876.12,
-          fromAmount: 516.7,
-          toAmount: 1.10,
-          walletAddress: '0xFceA...C11b',
-          txHash: '0xFceA...C11b',
-        },
-        {
-          id: '6',
-          time: new Date(Date.now() - 31 * 1000),
-          type: 'swap',
-          fromToken: 'QF',
-          fromTokenSymbol: 'QF',
-          toToken: 'ETH',
-          toTokenSymbol: 'ETH',
-          usdAmount: 552.07,
-          fromAmount: 470.85,
-          toAmount: 0.15,
-          walletAddress: '0x422a...4abb',
-          txHash: '0x422a...4abb',
-        },
-        {
-          id: '7',
-          time: new Date(Date.now() - 31 * 1000),
-          type: 'swap',
-          fromToken: 'MUSE',
-          fromTokenSymbol: 'MUSE',
-          toToken: 'ETH',
-          toTokenSymbol: 'ETH',
-          usdAmount: 497.67,
-          fromAmount: 81.32,
-          toAmount: 0.14,
-          walletAddress: '0x5462...9FeB',
-          txHash: '0x5462...9FeB',
-        },
-      ]
-      setTransactions(mockTransactions)
-      setLoading(false)
-    }, 500)
+    async function fetchTransactions() {
+      setLoading(true)
+      try {
+        const response = await fetch('/api/transactions/all?limit=100')
+        if (!response.ok) throw new Error('Failed to fetch transactions')
+        
+        const json = await response.json()
+        if (!json.success) throw new Error(json.error || 'Failed to load transactions')
+        
+        setTransactions(json.data || [])
+        if (json.stats) {
+          setStats(json.stats)
+        } else {
+          // derive on client if not provided
+          const now = Date.now()
+          const day = 24 * 60 * 60 * 1000
+          const total = (json.data || []).length
+          const last1d = (json.data || []).filter((t: any) => now - new Date(t.createdAt).getTime() <= day).length
+          const last30d = (json.data || []).filter((t: any) => now - new Date(t.createdAt).getTime() <= 30 * day).length
+          setStats({ total, last1d, last30d })
+        }
+        console.log('✅ Loaded', json.data?.length || 0, 'global transactions')
+        console.log('🔍 Sample transaction data:', json.data?.[0])
+        console.log('🔍 Pool addresses:', json.data?.map((t: any) => ({
+          id: t.id,
+          poolAddress: t.poolAddress,
+          routePath: t.routePath,
+          poolId: t.routePath?.[0]?.poolId
+        })))
+      } catch (error: any) {
+        console.error('❌ Error loading transactions:', error)
+        setTransactions([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchTransactions()
   }, [])
+
+  // Copy address to clipboard
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedAddress(text)
+      setTimeout(() => setCopiedAddress(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+    }
+  }
 
   const filteredTransactions = useMemo(() => {
     let filtered = transactions
@@ -157,13 +104,9 @@ export default function TransactionsPage() {
     sorted.sort((a, b) => {
       switch (sortBy) {
         case "time_desc":
-          return b.time.getTime() - a.time.getTime()
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         case "time_asc":
-          return a.time.getTime() - b.time.getTime()
-        case "usd_desc":
-          return b.usdAmount - a.usdAmount
-        case "usd_asc":
-          return a.usdAmount - b.usdAmount
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
         default:
           return 0
       }
@@ -252,55 +195,35 @@ export default function TransactionsPage() {
                 <CardTitle className="text-base sm:text-lg">Total 10xSwap TVL</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl sm:text-3xl font-bold font-mono">$3.93B</div>
-                <div className="text-xs sm:text-sm text-red-500 flex items-center gap-1">
-                  <span>▼</span>
-                  <span>1.9% today</span>
-                </div>
+                <div className="text-2xl sm:text-3xl font-bold font-mono">{stats?.total ?? 0}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">All-time on this site</div>
               </CardContent>
             </Card>
-
-            {/* v2 TVL */}
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base sm:text-lg">v2 TVL</CardTitle>
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardTitle className="text-base sm:text-lg">1D Transactions</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl sm:text-3xl font-bold font-mono">$1.59B</div>
-                <div className="text-xs sm:text-sm text-green-500 flex items-center gap-1">
-                  <span>▲</span>
-                  <span>0.74% today</span>
-                </div>
+                <div className="text-2xl sm:text-3xl font-bold font-mono">{stats?.last1d ?? 0}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Last 24 hours</div>
               </CardContent>
             </Card>
-
-            {/* v3 TVL */}
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base sm:text-lg">v3 TVL</CardTitle>
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                <CardTitle className="text-base sm:text-lg">30D Transactions</CardTitle>
+                <CalendarClock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl sm:text-3xl font-bold font-mono">$1.59B</div>
-                <div className="text-xs sm:text-sm text-red-500 flex items-center gap-1">
-                  <span>▼</span>
-                  <span>3.77% today</span>
-                </div>
+                <div className="text-2xl sm:text-3xl font-bold font-mono">{stats?.last30d ?? 0}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Last 30 days</div>
               </CardContent>
             </Card>
+          </div>
 
-            {/* v4 TVL */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base sm:text-lg">v4 TVL</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl sm:text-3xl font-bold font-mono">$751.90M</div>
-                <div className="text-xs sm:text-sm text-red-500 flex items-center gap-1">
-                  <span>▼</span>
-                  <span>3.24% today</span>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Top-of-table summary and note */}
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+            <span className="ml-auto text-muted-foreground">Note: Testnet - USD value not available</span>
           </div>
             </CardContent>
           </Card>
@@ -325,10 +248,10 @@ export default function TransactionsPage() {
                       </div>
                     </TableHead>
                     <TableHead className="text-left">Type</TableHead>
-                    <TableHead className="text-right">USD</TableHead>
-                    <TableHead className="text-right">Token amount</TableHead>
-                    <TableHead className="text-right">Token amount</TableHead>
+                    <TableHead className="text-right">Token Amount</TableHead>
+                    <TableHead className="text-center">Pool Address</TableHead>
                     <TableHead className="text-right">Wallet</TableHead>
+                    <TableHead className="text-center">Explorer</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -339,53 +262,109 @@ export default function TransactionsPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredTransactions.map((tx) => (
-                      <TableRow key={tx.id}>
-                        <TableCell className="text-left text-muted-foreground">
-                          {formatDistanceToNow(tx.time, { addSuffix: false })}
-                        </TableCell>
-                        <TableCell className="text-left">
-                          <div className="flex items-center gap-2">
-                            <span className="text-muted-foreground">Swap</span>
-                            <span className="font-medium">{tx.fromTokenSymbol}</span>
-                            <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs">
-                              {tx.fromTokenSymbol.charAt(0)}
+                    filteredTransactions.map((tx) => {
+                      const fromSymbol = tx.fromAssetUnitName || tx.fromAssetName || `#${tx.fromAssetId}`
+                      const toSymbol = tx.toAssetUnitName || tx.toAssetName || `#${tx.toAssetId}`
+                      
+                      // Derive pool address with fallbacks
+                      const poolAddr = tx.poolAddress || 
+                                      (Array.isArray(tx.routePath) && tx.routePath.length > 0 && tx.routePath[0]?.poolId) || 
+                                      (Array.isArray(tx.routePath) && tx.routePath.length > 0 && tx.routePath[0]?.poolAddress) ||
+                                      null
+                      
+                      return (
+                        <TableRow key={tx.id} className="hover:bg-muted/30">
+                          {/* Time */}
+                          <TableCell className="text-left text-muted-foreground text-sm">
+                            {formatDistanceToNow(new Date(tx.createdAt), { addSuffix: true })}
+                          </TableCell>
+
+                          {/* Type - with spacing */}
+                          <TableCell className="text-left">
+                            <div className="flex items-center gap-3">
+                              <span className="text-muted-foreground text-sm">{tx.action ? String(tx.action).toUpperCase().replace(/_/g, ' ') : 'EVENT'}</span>
+                              <span className="font-medium">{fromSymbol} → {toSymbol}</span>
                             </div>
-                            <span className="text-muted-foreground">for</span>
-                            <span className="font-medium">{tx.toTokenSymbol}</span>
-                            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">
-                              {tx.toTokenSymbol.charAt(0)}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          ${tx.usdAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <span className={tx.fromAmount < 1 ? 'text-muted-foreground' : ''}>
-                              {tx.fromAmount < 0.01 ? '<0.01' : tx.fromAmount.toLocaleString()} {tx.fromTokenSymbol}
+                          </TableCell>
+
+                          {/* Token Amount - consolidated */}
+                          <TableCell className="text-right font-mono text-sm">
+                            <span className="font-medium">
+                              {tx.fromAmount || '—'} → {tx.toAmount || '—'}
                             </span>
-                            <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs">
-                              {tx.fromTokenSymbol.charAt(0)}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <span className={tx.toAmount < 1 ? 'text-muted-foreground' : ''}>
-                              {tx.toAmount < 0.01 ? '<0.01' : tx.toAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })} {tx.toTokenSymbol}
-                            </span>
-                            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">
-                              {tx.toTokenSymbol.charAt(0)}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-sm text-muted-foreground">
-                          {tx.walletAddress}
-                        </TableCell>
-                      </TableRow>
-                    ))
+                          </TableCell>
+
+                          {/* Pool Address - copy icon */}
+                          <TableCell className="text-center">
+                            {poolAddr ? (
+                              <div className="flex items-center justify-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyToClipboard(String(poolAddr))}
+                                  className="h-8 w-8 p-0 flex-shrink-0"
+                                  title={`Copy: ${String(poolAddr)}`}
+                                >
+                                  {copiedAddress === poolAddr ? (
+                                    <Check className="h-4 w-4 text-green-500" />
+                                  ) : (
+                                    <Copy className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                                  )}
+                                </Button>
+                                <span className="font-mono text-xs text-muted-foreground">
+                                  {String(poolAddr).slice(0, 6)}...{String(poolAddr).slice(-6)}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">—</span>
+                            )}
+                          </TableCell>
+
+                          {/* Wallet */}
+                          <TableCell className="text-center">
+                            {tx.ownerAddress ? (
+                              <div className="flex items-center justify-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyToClipboard(tx.ownerAddress)}
+                                  className="h-8 w-8 p-0 flex-shrink-0"
+                                  title={`Copy: ${tx.ownerAddress}`}
+                                >
+                                  {copiedAddress === tx.ownerAddress ? (
+                                    <Check className="h-4 w-4 text-green-500" />
+                                  ) : (
+                                    <Copy className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                                  )}
+                                </Button>
+                                <span className="font-mono text-xs text-muted-foreground">
+                                  {tx.ownerAddress.slice(0, 6)}...{tx.ownerAddress.slice(-6)}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">—</span>
+                            )}
+                          </TableCell>
+
+                          {/* Explorer Link */}
+                          <TableCell className="text-center">
+                            {tx.txId ? (
+                              <a
+                                href={`https://testnet.algoexplorer.io/tx/${tx.txId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-muted transition-colors"
+                                title="View on AlgoExplorer"
+                              >
+                                <ExternalLink className="h-4 w-4 text-blue-500 hover:text-blue-600" />
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">—</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
                   )}
                 </TableBody>
               </Table>

@@ -20,9 +20,10 @@ import { createRule } from "@/features/agent/api/client"
 
 type SwapCardProps = {
   onPairChange?: (from: AssetInfo | null, to: AssetInfo | null) => void
+  onSwapSuccess?: () => void
 }
 
-export function SwapCard({ onPairChange }: SwapCardProps) {
+export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
   const { activeAccount } = useWalletConnection()
   const { signTransactions } = useWalletActions()
   const { assets, loading: assetsLoading } = useTradeableAssets()
@@ -97,6 +98,10 @@ export function SwapCard({ onPairChange }: SwapCardProps) {
         const outputAmount = data.outputAmount / Math.pow(10, toToken.decimals)
         setToAmount(outputAmount.toFixed(toToken.decimals))
         setRouteData(data)
+        
+        // Debug log to see the route structure
+        console.log('🔍 Route data received:', JSON.stringify(data, null, 2))
+        console.log('🔍 Route pools:', data.route?.pools)
       } else {
         setToAmount('0')
         toast({
@@ -244,7 +249,45 @@ export function SwapCard({ onPairChange }: SwapCardProps) {
       const submitRes = await fetch('/api/swap/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signedTxns: signedTxnsBase64 })
+        body: JSON.stringify({
+          signedTxns: signedTxnsBase64,
+          ownerAddress: activeAccount?.address,
+          meta: {
+            fromAssetId: fromToken.id,
+            fromAssetName: fromToken.name,
+            fromAssetUnitName: fromToken.unitName,
+            fromAssetDecimals: fromToken.decimals,
+            toAssetId: toToken.id,
+            toAssetName: toToken.name,
+            toAssetUnitName: toToken.unitName,
+            toAssetDecimals: toToken.decimals,
+            fromAmount: fromAmount,
+            fromAmountBaseUnits: amountInBaseUnits,
+            toAmount: toAmount,
+            toAmountEstimated: routeData.outputAmount,
+            minimumReceived: routeData.minimumReceived,
+            slippage: parseFloat(slippage),
+            route: routeData.route,
+            // Extract pool info from route.pools array
+            poolAddress: (routeData.route?.pools && routeData.route.pools.length > 0) 
+              ? routeData.route.pools[0].poolAddress 
+              : undefined,
+            poolId: (routeData.route?.pools && routeData.route.pools.length > 0)
+              ? routeData.route.pools[0].poolId
+              : undefined,
+            routePath: (routeData.route?.pools && Array.isArray(routeData.route.pools)) 
+              ? routeData.route.pools.map((p: any) => ({
+                  dex: p.dexName,
+                  poolId: p.poolId,
+                  poolAddress: p.poolAddress,
+                  appId: p.appId,
+                }))
+              : [],
+            priceImpact: routeData.priceImpact,
+            expectedPricePerUnit: routeData.outputAmount / amountInBaseUnits,
+            timestamp: new Date().toISOString(),
+          }
+        })
       })
 
       if (!submitRes.ok) {
@@ -284,6 +327,9 @@ export function SwapCard({ onPairChange }: SwapCardProps) {
       setFromAmount('')
       setToAmount('')
       setRouteData(null)
+
+      // Trigger swap history refresh
+      onSwapSuccess?.()
 
       console.log('✅ REAL SWAP COMPLETED!')
       console.log('Transaction ID:', txId)
