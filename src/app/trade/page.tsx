@@ -116,49 +116,52 @@ export default function TradePage() {
             )}
 
             <div className={cn(
-              "mx-auto w-full max-w-md transition-all relative",
+              "mx-auto w-full max-w-lg transition-all relative",
               showChart && "lg:order-2 lg:ml-auto"
             )}>
               <SwapCard onPairChange={handlePairChange} />
-              <div className="mt-4 flex flex-col sm:flex-row justify-center gap-2">
-                <Button variant="outline" onClick={handleToggleChart} className="rounded-full border border-border/70 bg-background/80 backdrop-blur relative z-0 w-full sm:w-auto">
-                  {showChart ? "Hide Pool Chart" : "Show Pool Chart"}
+              <div className="mt-4 flex flex-row justify-start gap-2">
+                <Button variant="outline" size="sm" onClick={handleToggleChart} className="rounded-full border border-border/70 bg-background/80 backdrop-blur relative z-0 text-xs px-3 py-1 h-8">
+                  {showChart ? "Hide Chart" : "Show Chart"}
                 </Button>
-                <Button variant="outline" onClick={handleToggleSwapHistory} className="rounded-full border border-border/70 bg-background/80 backdrop-blur relative z-0 w-full sm:w-auto">
-                  {showSwapHistory ? "Hide Swap History" : "Show Swap History"}
+                <Button variant="outline" size="sm" onClick={handleToggleSwapHistory} className="rounded-full border border-border/70 bg-background/80 backdrop-blur relative z-0 text-xs px-3 py-1 h-8">
+                  {showSwapHistory ? "Hide History" : "Show History"}
                 </Button>
               </div>
 
               {/* Token Information Boxes */}
               {selectedPair.from && selectedPair.to && (
-                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="mt-4 grid grid-cols-2 gap-3">
                   {/* Box 1 - Selling Token Info */}
                   <Card>
-                    <CardContent className="p-3 sm:p-4">
-                      <div className="flex items-start gap-2 sm:gap-3 mb-3">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-xs sm:text-sm flex-shrink-0">
+                    <CardContent className="p-3">
+                                            <div className="flex items-start gap-2 mb-2">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
                           {selectedPair.from.unitName?.substring(0, 2) || 'T1'}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-foreground font-bold text-base sm:text-lg mb-0.5 truncate">
+                          <div className="text-foreground font-bold text-base mb-0.5 truncate">
                             ${selectedPair.from.id === 0 ? '164.50' : '0.99991'}
                           </div>
                           <div className="text-xs text-muted-foreground truncate">
-                            {selectedPair.from.unitName || selectedPair.from.name}...{selectedPair.from.id}
+                            {selectedPair.from.unitName || selectedPair.from.name}
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className={selectedPair.from.id === 0 ? "text-red-500 text-sm font-semibold" : "text-green-500 text-sm font-semibold"}>
+                          <div className={selectedPair.from.id === 0 ? "text-red-500 text-xs font-semibold" : "text-green-500 text-xs font-semibold"}>
                             {selectedPair.from.id === 0 ? '-2.28%' : '0%'}
                           </div>
                         </div>
                       </div>
                       
                       {/* Mini Chart */}
-                      <div className="h-16 mb-3 flex items-end gap-0.5">
+                      <div className="h-10 mb-2 flex items-end gap-0.5">
+                      
+                      {/* Mini Chart */}
+                      <div className="h-12 mb-3 flex items-end gap-0.5">
                         {Array.from({ length: 40 }).map((_, i) => {
                           const height = Math.random() * 60 + 20;
-                          const color = selectedPair.from.id === 0 ? 'bg-red-500/60' : 'bg-green-500/60';
+                          const color = selectedPair.from?.id === 0 ? 'bg-red-500/60' : 'bg-green-500/60';
                           return (
                             <div
                               key={i}
@@ -167,6 +170,7 @@ export default function TradePage() {
                             />
                           );
                         })}
+                      </div>
                       </div>
 
                       <button className="text-muted-foreground hover:text-primary dark:hover:text-[#F3C623] text-xs flex items-center gap-1 transition-colors">
@@ -180,31 +184,31 @@ export default function TradePage() {
 
                   {/* Box 2 - Buying Token Info */}
                   <Card>
-                    <CardContent className="p-3 sm:p-4">
-                      <div className="flex items-start gap-2 sm:gap-3 mb-3">
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-white font-bold text-xs sm:text-sm flex-shrink-0">
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-2 mb-2">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
                           {selectedPair.to.unitName?.substring(0, 2) || 'T2'}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-foreground font-bold text-base sm:text-lg mb-0.5 truncate">
+                          <div className="text-foreground font-bold text-base mb-0.5 truncate">
                             ${selectedPair.to.id === 0 ? '164.50' : '0.99991'}
                           </div>
                           <div className="text-xs text-muted-foreground truncate">
-                            {selectedPair.to.unitName || selectedPair.to.name}...{selectedPair.to.id}
+                            {selectedPair.to.unitName || selectedPair.to.name}
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className={selectedPair.to.id === 0 ? "text-red-500 text-sm font-semibold" : "text-green-500 text-sm font-semibold"}>
+                          <div className={selectedPair.to.id === 0 ? "text-red-500 text-xs font-semibold" : "text-green-500 text-xs font-semibold"}>
                             {selectedPair.to.id === 0 ? '-2.28%' : '0%'}
                           </div>
                         </div>
                       </div>
                       
                       {/* Mini Chart */}
-                      <div className="h-16 mb-3 flex items-end gap-0.5">
+                      <div className="h-10 mb-2 flex items-end gap-0.5">
                         {Array.from({ length: 40 }).map((_, i) => {
                           const height = Math.random() * 60 + 20;
-                          const color = selectedPair.to.id === 0 ? 'bg-red-500/60' : 'bg-green-500/60';
+                          const color = selectedPair.to?.id === 0 ? 'bg-red-500/60' : 'bg-green-500/60';
                           return (
                             <div
                               key={i}
