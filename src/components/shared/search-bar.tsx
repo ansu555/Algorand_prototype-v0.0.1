@@ -25,12 +25,75 @@ export function SearchBar() {
   const [poolsLoading, setPoolsLoading] = useState(false)
   const [poolsError, setPoolsError] = useState<string | null>(null)
 
+  // Shared pool fetching logic (extracted for reuse)
+  const fetchPoolsRef = useRef<() => Promise<void>>()
+  
+  useEffect(() => {
+    const CACHE_KEY = `pools_cache_${network}`
+    const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes, keep in sync with server TTL
+
+    const hydrateFromCache = () => {
+      try {
+        if (typeof window === 'undefined') return false
+        const cached = window.localStorage.getItem(CACHE_KEY)
+        if (!cached) return false
+        const parsed = JSON.parse(cached) as { timestamp: number; pools: any[] }
+        if (!parsed?.timestamp || !Array.isArray(parsed.pools)) return false
+        if (Date.now() - parsed.timestamp > CACHE_TTL_MS) return false
+        const typed: PoolInfo[] = parsed.pools.map((p: any) => ({
+          ...p,
+          reserve1: BigInt(p.reserve1),
+          reserve2: BigInt(p.reserve2),
+          totalLiquidity: BigInt(p.totalLiquidity),
+        }))
+        setPools(typed)
+        return true
+      } catch {
+        return false
+      }
+    }
+
+    const fetchPools = async () => {
+      if (poolsLoading) return // Prevent duplicate requests
+      try {
+        setPoolsLoading(true)
+        setPoolsError(null)
+        const res = await fetch(`/api/pools/all?network=${network}`)
+        const json = await res.json()
+        if (!json.success) throw new Error(json.error || 'Failed to fetch pools')
+        // Convert string reserves back to bigint-compatible numbers for typing
+        const parsed: PoolInfo[] = json.pools.map((p: any) => ({
+          ...p,
+          reserve1: BigInt(p.reserve1),
+          reserve2: BigInt(p.reserve2),
+          totalLiquidity: BigInt(p.totalLiquidity),
+        }))
+        setPools(parsed)
+        // Store lightweight cache in localStorage (keep server-serialized strings)
+        try {
+          if (typeof window !== 'undefined') {
+            window.localStorage.setItem(CACHE_KEY, JSON.stringify({
+              timestamp: Date.now(),
+              pools: json.pools,
+            }))
+          }
+        } catch {}
+      } catch (e: any) {
+        setPoolsError(e.message || 'Failed to fetch pools')
+      } finally {
+        setPoolsLoading(false)
+      }
+    }
+
+    fetchPoolsRef.current = fetchPools
+  }, [network, poolsLoading])
+
   // Fetch or hydrate pools when search opens the first time (with client-side cache)
   useEffect(() => {
     if (!searchFocused || pools.length > 0 || poolsLoading) return
     let cancelled = false
     const CACHE_KEY = `pools_cache_${network}`
-    const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes, keep in sync with server TTL
+    const CACHE_TTL_MS = 5 * 60 * 1000
 
     const hydrateFromCache = () => {
       try {
@@ -53,44 +116,30 @@ export function SearchBar() {
       }
     }
 
-    const fetchPools = async () => {
-      try {
-        setPoolsLoading(true)
-        setPoolsError(null)
-        const res = await fetch(`/api/pools/all?network=${network}`)
-        const json = await res.json()
-        if (!json.success) throw new Error(json.error || 'Failed to fetch pools')
-        // Convert string reserves back to bigint-compatible numbers for typing
-        const parsed: PoolInfo[] = json.pools.map((p: any) => ({
-          ...p,
-          reserve1: BigInt(p.reserve1),
-          reserve2: BigInt(p.reserve2),
-          totalLiquidity: BigInt(p.totalLiquidity),
-        }))
-        if (!cancelled) setPools(parsed)
-        // Store lightweight cache in localStorage (keep server-serialized strings)
-        try {
-          if (typeof window !== 'undefined') {
-            window.localStorage.setItem(CACHE_KEY, JSON.stringify({
-              timestamp: Date.now(),
-              pools: json.pools,
-            }))
-          }
-        } catch {}
-      } catch (e: any) {
-        if (!cancelled) setPoolsError(e.message || 'Failed to fetch pools')
-      } finally {
-        if (!cancelled) setPoolsLoading(false)
-      }
-    }
     // 1) Try cache first
     const hydrated = hydrateFromCache()
     // 2) Fallback to network if no fresh cache
-    if (!hydrated) fetchPools()
+    if (!hydrated && fetchPoolsRef.current) {
+      fetchPoolsRef.current()
+    }
     return () => {
       cancelled = true
     }
   }, [searchFocused, pools.length, poolsLoading, network])
+
+  // Smart pool fetching: Detect "/" in search query to trigger pool fetch
+  useEffect(() => {
+    // If user types "/" and pools not loaded, fetch immediately
+    if (searchQuery.includes('/') && pools.length === 0 && !poolsLoading) {
+      if (fetchPoolsRef.current) {
+        fetchPoolsRef.current()
+      }
+      // Auto-switch to pools tab for better UX
+      if (searchTab === 'all' || searchTab === 'tokens') {
+        setSearchTab('pools')
+      }
+    }
+  }, [searchQuery, pools.length, poolsLoading, searchTab])
 
   // Close search dropdown when clicking outside
   useEffect(() => {
@@ -330,7 +379,7 @@ export function SearchBar() {
                         )}
                       >
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-xs text-white">
-                          {a1.symbol}/{a2.symbol}
+                          {/* Empty circle - clean icon */}
                         </div>
                         <div className="flex-1 text-left">
                           <div className="flex items-center gap-2">
