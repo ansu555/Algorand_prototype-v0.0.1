@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import BackgroundPaths from "@/components/shared/animated-background"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -289,11 +290,14 @@ export default function PoolPage() {
 }
 
 function PoolTable({ pools, emptyLabel = "No pools found." }: { pools: Pool[]; emptyLabel?: string }) {
+  const router = useRouter()
+  
   if (!pools.length) {
     return (
       <div className="text-center text-sm text-muted-foreground py-10">{emptyLabel}</div>
     )
   }
+  
   return (
     <div className="w-full overflow-x-auto">
       <Table>
@@ -312,12 +316,15 @@ function PoolTable({ pools, emptyLabel = "No pools found." }: { pools: Pool[]; e
           <TableHead className="text-center">1D vol/TVL</TableHead>
           <TableHead className="text-center">Reserves</TableHead>
           <TableHead className="text-center">Current Price</TableHead>
-          <TableHead className="text-center">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {pools.map((p, index) => (
-          <TableRow key={p.id}>
+          <TableRow 
+            key={p.id} 
+            className="cursor-pointer hover:bg-muted/50 transition-colors"
+            onClick={() => router.push(`/pool/${p.id}`)}
+          >
             <TableCell className="text-center text-muted-foreground">
               {index + 1}
             </TableCell>
@@ -410,11 +417,6 @@ function PoolTable({ pools, emptyLabel = "No pools found." }: { pools: Pool[]; e
             </TableCell>
             <TableCell className="text-muted-foreground text-center">
               {formatPrice(p)}
-            </TableCell>
-            <TableCell className="text-center">
-              <Button asChild size="sm" variant="outline">
-                <Link href={`/pool/${p.id}`}>View</Link>
-              </Button>
             </TableCell>
           </TableRow>
         ))}
