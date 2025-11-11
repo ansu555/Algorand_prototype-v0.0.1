@@ -7,11 +7,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { useToast } from "@/components/ui/use-toast"
-import { formatTrigger, type Rule } from "@/lib/shared/rules"
+import { formatTrigger, type Rule, describeRule } from "@/lib/shared/rules"
 import { forceRunPoller, useAgentData } from "@/features/agent/hooks/useAgentData"
-import { deleteRule as apiDeleteRule } from "@/features/agent/api/client"
+import { deleteRule as apiDeleteRule, createRule } from "@/features/agent/api/client"
 import { ChevronDown, ChevronUp, Play, Trash2, Eye } from "lucide-react"
 import { useWalletConnection } from '@/components/providers/txnlab-wallet-provider'
+import RuleBuilderModal from "@/components/features/rules/rule-builder-modal"
 
 export default function PortfolioPage() {
   const { activeAccount } = useWalletConnection()
@@ -111,6 +112,38 @@ export default function PortfolioPage() {
     refresh()
   }
 
+  // Save rule function for Auto-Pilot
+  async function saveRule(rule: any) {
+    try {
+      const type = rule.strategy === 'DCA' ? 'dca' : rule.strategy === 'REBALANCE' ? 'rebalance' : 'rotate'
+      const payload = {
+        ownerAddress: address || "0x0000000000000000000000000000000000000000",
+        type,
+        targets: rule.coins || [],
+        rotateTopN: rule.rotateTopN,
+        maxSpendUSD: rule.maxSpendUsd,
+        maxSlippage: rule.maxSlippagePercent,
+        cooldownMinutes: rule.cooldownMinutes,
+        triggerType: rule.triggerType,
+        dropPercent: rule.dropPercent,
+        trendWindow: rule.trendWindow,
+        trendThreshold: rule.trendThreshold,
+        momentumLookback: rule.momentumLookback,
+        momentumThreshold: rule.momentumThreshold,
+        status: 'active',
+      }
+      await createRule(payload)
+      refresh()
+    } catch (e) {
+      console.error(e)
+      toast({ 
+        title: "Failed to save rule", 
+        description: "Please try again.", 
+        variant: "destructive" 
+      })
+    }
+  }
+
   async function executeNow(rule: Rule) {
     try {
       const res = await fetch('/api/agent/execute', {
@@ -172,6 +205,31 @@ export default function PortfolioPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Portfolio & Agent Dashboard</h1>
         <div className="flex gap-2">
+          <RuleBuilderModal
+            trigger={
+              <Button 
+                variant="outline"
+                size="default"
+                className="group relative overflow-hidden transition-all duration-300 hover:scale-105 border border-red-500 dark:border-red-400"
+              >
+                <span className="relative z-10 transition-colors duration-300 text-red-600 dark:text-red-400 group-hover:text-white dark:group-hover:text-black">
+                  Auto-Pilot
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-red-600 dark:from-red-500 dark:to-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+              </Button>
+            }
+            availableCoins={[
+              { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
+              { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
+            ]}
+            onPreview={(rule) => {
+              toast({ title: "Preview", description: describeRule(rule) })
+            }}
+            onSave={(rule) => {
+              saveRule(rule)
+              toast({ title: "Rule saved", description: describeRule(rule) })
+            }}
+          />
           <Button variant="outline" onClick={() => address && refresh()} disabled={loading || !address}>
             Refresh
           </Button>
