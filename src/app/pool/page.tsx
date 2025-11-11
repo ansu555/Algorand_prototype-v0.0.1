@@ -18,6 +18,8 @@ type Pool = {
   token1: string
   token0Logo?: string // Logo URL for token0
   token1Logo?: string // Logo URL for token1
+  token0Decimals?: number // Decimals for token0
+  token1Decimals?: number // Decimals for token1
   protocol?: string // Protocol version (v1, v2, v3, v4)
   feeTier: number // in basis points (30 = 0.3%)
   tvlUSD?: number // Total Value Locked in USD
@@ -105,6 +107,8 @@ export default function PoolPage() {
             token1: poolInfo.asset2.symbol,
             token0Logo: poolInfo.asset1.logoUrl || poolInfo.asset1.logo, // Support both logoUrl and logo properties
             token1Logo: poolInfo.asset2.logoUrl || poolInfo.asset2.logo,
+            token0Decimals: poolInfo.asset1.decimals,
+            token1Decimals: poolInfo.asset2.decimals,
             protocol,
             feeTier: poolInfo.fee, // Already in basis points
             dex: poolInfo.dexName,
@@ -491,10 +495,10 @@ function formatVolumeTVLRatio(volume?: number, tvl?: number) {
 }
 
 function formatReserves(p: Pool) {
-  if (p.reserve0 && p.reserve1) {
-    // Format reserves in a compact way
-    const r0 = Number(p.reserve0) / 1e6 // Assume 6 decimals
-    const r1 = Number(p.reserve1) / 1e6
+  if (p.reserve0 && p.reserve1 && p.token0Decimals != null && p.token1Decimals != null) {
+    // Format reserves using actual token decimals
+    const r0 = Number(p.reserve0) / Math.pow(10, p.token0Decimals)
+    const r1 = Number(p.reserve1) / Math.pow(10, p.token1Decimals)
     
     if (r0 < 1000 && r1 < 1000) {
       return `${r0.toFixed(2)} / ${r1.toFixed(2)}`
