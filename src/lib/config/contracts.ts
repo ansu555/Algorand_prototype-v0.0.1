@@ -54,8 +54,8 @@ export function getContractConfig(network: 'mainnet' | 'testnet'): ContractConfi
         },
       },
       autopilotRule: {
-        appId: 749361072,
-        address: 'QHYMQJWOQ7MNWYXHQEDLXLWHPDMLP5A65BLYECZ47RCGZ2YZSYERYRI244',
+        appId: 749504577,
+        address: 'WOITU4VP4564VECHTHXWCCNFHW33A5ONV74ZYZWQHLMV6WMBBG5LIEOZIE',
       },
     };
   }
@@ -85,8 +85,19 @@ export function getContractConfig(network: 'mainnet' | 'testnet'): ContractConfi
  * Get the current network from environment
  */
 export function getCurrentNetwork(): 'mainnet' | 'testnet' {
+  // Check explicit network variable first (browser + server)
+  const networkEnv = process.env.NEXT_PUBLIC_ALGORAND_NETWORK || process.env.ALGORAND_NETWORK;
+  if (networkEnv === 'testnet' || networkEnv === 'mainnet') {
+    return networkEnv;
+  }
+  
+  // Fallback: infer from algod server URL
   const algodServer = process.env.NEXT_PUBLIC_ALGOD_SERVER || process.env.ALGOD_SERVER || '';
-  return algodServer.includes('testnet') ? 'testnet' : 'mainnet';
+  if (algodServer.includes('testnet')) return 'testnet';
+  if (algodServer.includes('mainnet')) return 'mainnet';
+  
+  // Default to testnet for safety
+  return 'testnet';
 }
 
 /**

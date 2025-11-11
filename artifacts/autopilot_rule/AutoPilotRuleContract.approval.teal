@@ -7,34 +7,34 @@ main:
     bytecblock 0x151f7c75 "rule_counter" "total_executions" "is_paused" "protocol_fee_bps" "protocol_treasury"
     txn ApplicationID
     bnz main_after_if_else@2
-    // contract.py:99
+    // smart_contracts/autopilot_rule/contract.py:99
     // self.rule_counter = UInt64(0)
     bytec_1 // "rule_counter"
     intc_1 // 0
     app_global_put
-    // contract.py:100
+    // smart_contracts/autopilot_rule/contract.py:100
     // self.total_executions = UInt64(0)
     bytec_2 // "total_executions"
     intc_1 // 0
     app_global_put
-    // contract.py:101
+    // smart_contracts/autopilot_rule/contract.py:101
     // self.protocol_fee_bps = UInt64(10)  # 0.1% protocol fee
     bytec 4 // "protocol_fee_bps"
     pushint 10 // 10
     app_global_put
-    // contract.py:102
+    // smart_contracts/autopilot_rule/contract.py:102
     // self.protocol_treasury = Global.creator_address
     bytec 5 // "protocol_treasury"
     global CreatorAddress
     app_global_put
-    // contract.py:103
+    // smart_contracts/autopilot_rule/contract.py:103
     // self.is_paused = False
     bytec_3 // "is_paused"
     intc_1 // 0
     app_global_put
 
 main_after_if_else@2:
-    // contract.py:89
+    // smart_contracts/autopilot_rule/contract.py:89
     // class AutoPilotRuleContract(ARC4Contract):
     txn NumAppArgs
     bz main___algopy_default_create@19
@@ -61,7 +61,7 @@ main___algopy_default_create@19:
 
 // contract.AutoPilotRuleContract.create_rule[routing]() -> void:
 create_rule:
-    // contract.py:105
+    // smart_contracts/autopilot_rule/contract.py:105
     // @arc4.abimethod
     txna ApplicationArgs 1
     dup
@@ -132,7 +132,7 @@ create_rule:
     intc_0 // pay
     ==
     assert // transaction type is pay
-    // contract.py:138-139
+    // smart_contracts/autopilot_rule/contract.py:138-139
     // # Validations
     // assert not self.is_paused, "Contract is paused"
     intc_1 // 0
@@ -141,63 +141,65 @@ create_rule:
     assert // check self.is_paused exists
     !
     assert // Contract is paused
-    // contract.py:140
+    // smart_contracts/autopilot_rule/contract.py:140
     // assert rule_type.native <= 3, "Invalid rule type"
     dig 10
     btoi
     pushint 3 // 3
     <=
     assert // Invalid rule type
-    // contract.py:141
+    // smart_contracts/autopilot_rule/contract.py:141
     // assert target_assets.length > 0, "Must have target assets"
     uncover 8
     assert // Must have target assets
-    // contract.py:142
+    // smart_contracts/autopilot_rule/contract.py:142
     // assert max_spend_microalgos.native > 0, "Max spend must be > 0"
     dig 6
     btoi
     assert // Max spend must be > 0
-    // contract.py:143
+    // smart_contracts/autopilot_rule/contract.py:143
     // assert max_slippage_bps.native <= MAX_SLIPPAGE_BPS, "Slippage too high (max 50%)"
     dig 5
     btoi
     pushint 5000 // 5000
     <=
     assert // Slippage too high (max 50%)
-    // contract.py:144
+    // smart_contracts/autopilot_rule/contract.py:144
     // assert cooldown_minutes.native >= MIN_COOLDOWN_MINUTES, "Cooldown too short (min 5 minutes)"
     dig 4
     btoi
     pushint 5 // 5
     >=
     assert // Cooldown too short (min 5 minutes)
-    // contract.py:145
+    // smart_contracts/autopilot_rule/contract.py:145
     // assert trigger_type.native <= 3, "Invalid trigger type"
     dig 3
     btoi
     pushint 3 // 3
     <=
     assert // Invalid trigger type
-    // contract.py:150
+    // smart_contracts/autopilot_rule/contract.py:152
     // assert payment.receiver == Global.current_application_address, "Payment must be to contract"
     dup
     gtxns Receiver
     global CurrentApplicationAddress
     ==
     assert // Payment must be to contract
-    // contract.py:151
+    // smart_contracts/autopilot_rule/contract.py:153
     // assert payment.amount >= min_payment, "Insufficient payment for box storage"
     gtxns Amount
-    // contract.py:147-149
+    // smart_contracts/autopilot_rule/contract.py:147-151
     // # Verify payment for box storage
-    // # Box size estimate: ~400 bytes, cost = 2500 + 400 * 400 = 162,500 microALGOs
-    // min_payment = UInt64(165000)  # ~0.165 ALGO with buffer
+    // # Box size varies based on number of target assets
+    // # Minimum: ~100 bytes for 1 asset = 2,500 + (100 * 400) = 42,500 microALGOs
+    // # We require 0.165 ALGO (165,000 microALGOs) to cover up to ~400 bytes
+    // min_payment = UInt64(165000)
     pushint 165000 // 165000
-    // contract.py:151
+    // smart_contracts/autopilot_rule/contract.py:153
     // assert payment.amount >= min_payment, "Insufficient payment for box storage"
     >=
     assert // Insufficient payment for box storage
-    // contract.py:153-154
+    // smart_contracts/autopilot_rule/contract.py:155-156
     // # Increment rule counter
     // self.rule_counter += 1
     intc_1 // 0
@@ -209,7 +211,7 @@ create_rule:
     bytec_1 // "rule_counter"
     dig 1
     app_global_put
-    // contract.py:157-163
+    // smart_contracts/autopilot_rule/contract.py:159-165
     // # Create trigger data
     // trigger = TriggerData(
     //     trigger_type=trigger_type,
@@ -222,10 +224,10 @@ create_rule:
     concat
     uncover 2
     concat
-    // contract.py:162
+    // smart_contracts/autopilot_rule/contract.py:164
     // lookback_days=arc4.UInt8(0),
     pushbytes 0x00
-    // contract.py:157-163
+    // smart_contracts/autopilot_rule/contract.py:159-165
     // # Create trigger data
     // trigger = TriggerData(
     //     trigger_type=trigger_type,
@@ -234,18 +236,18 @@ create_rule:
     //     lookback_days=arc4.UInt8(0),
     // )
     concat
-    // contract.py:167
+    // smart_contracts/autopilot_rule/contract.py:169
     // rule_id=arc4.UInt64(rule_id),
     swap
     itob
-    // contract.py:168
+    // smart_contracts/autopilot_rule/contract.py:170
     // owner=arc4.Address(Txn.sender),
     txn Sender
-    // contract.py:180
+    // smart_contracts/autopilot_rule/contract.py:182
     // created_at=arc4.UInt64(Global.latest_timestamp),
     global LatestTimestamp
     itob
-    // contract.py:165-181
+    // smart_contracts/autopilot_rule/contract.py:167-183
     // # Create rule data
     // rule = RuleData(
     //     rule_id=arc4.UInt64(rule_id),
@@ -286,23 +288,25 @@ create_rule:
     concat
     uncover 2
     concat
-    // contract.py:183-184
+    // smart_contracts/autopilot_rule/contract.py:185-186
     // # Store in box (key: owner address + rule_id)
     // box_key = Txn.sender.bytes + op.itob(rule_id)
     txn Sender
     dig 2
     concat
-    // contract.py:185
-    // op.Box.create(box_key, UInt64(512))  # 512 bytes for rule data
-    dup
-    pushint 512 // 512
+    // smart_contracts/autopilot_rule/contract.py:189
+    // op.Box.create(box_key, rule_bytes.length)
+    dig 1
+    len
+    dig 1
+    swap
     box_create
     pop
-    // contract.py:186
-    // op.Box.put(box_key, rule.bytes)
+    // smart_contracts/autopilot_rule/contract.py:190
+    // op.Box.put(box_key, rule_bytes)
     swap
     box_put
-    // contract.py:188-189
+    // smart_contracts/autopilot_rule/contract.py:192-193
     // # Log creation event
     // log(b"RuleCreated", op.itob(rule_id), Txn.sender.bytes)
     pushbytes 0x52756c6543726561746564
@@ -311,7 +315,7 @@ create_rule:
     txn Sender
     concat
     log
-    // contract.py:105
+    // smart_contracts/autopilot_rule/contract.py:105
     // @arc4.abimethod
     bytec_0 // 0x151f7c75
     swap
@@ -323,7 +327,7 @@ create_rule:
 
 // contract.AutoPilotRuleContract.execute_rule[routing]() -> void:
 execute_rule:
-    // contract.py:193
+    // smart_contracts/autopilot_rule/contract.py:197
     // @arc4.abimethod
     txna ApplicationArgs 1
     dup
@@ -369,7 +373,7 @@ execute_rule:
     intc_2 // 8
     ==
     assert // invalid number of bytes for arc4.uint64
-    // contract.py:225-226
+    // smart_contracts/autopilot_rule/contract.py:229-230
     // # Load rule from box storage
     // box_key = owner.bytes + op.itob(rule_id.native)
     swap
@@ -382,17 +386,17 @@ execute_rule:
     concat
     dup
     cover 2
-    // contract.py:229
+    // smart_contracts/autopilot_rule/contract.py:233
     // rule_bytes, exists = op.Box.get(box_key)
     box_get
     swap
     dup
     cover 2
     cover 3
-    // contract.py:230
+    // smart_contracts/autopilot_rule/contract.py:234
     // assert exists, "Rule not found"
     assert // Rule not found
-    // contract.py:233-234
+    // smart_contracts/autopilot_rule/contract.py:237-238
     // # Validations
     // assert not self.is_paused, "Contract is paused"
     intc_1 // 0
@@ -401,7 +405,7 @@ execute_rule:
     assert // check self.is_paused exists
     !
     assert // Contract is paused
-    // contract.py:235
+    // smart_contracts/autopilot_rule/contract.py:239
     // assert rule.status.native == STATUS_ACTIVE, "Rule not active"
     dup
     pushint 41 // 41
@@ -409,7 +413,7 @@ execute_rule:
     intc_0 // 1
     ==
     assert // Rule not active
-    // contract.py:237-238
+    // smart_contracts/autopilot_rule/contract.py:241-242
     // # Check cooldown period
     // time_since_last = Global.latest_timestamp - rule.last_execution_timestamp.native
     global LatestTimestamp
@@ -417,18 +421,18 @@ execute_rule:
     pushint 63 // 63
     extract_uint64
     -
-    // contract.py:239
+    // smart_contracts/autopilot_rule/contract.py:243
     // cooldown_seconds = rule.cooldown_minutes.native * UInt64(60)
     swap
     pushint 55 // 55
     extract_uint16
     pushint 60 // 60
     *
-    // contract.py:240
+    // smart_contracts/autopilot_rule/contract.py:244
     // assert time_since_last >= cooldown_seconds, "Cooldown period not met"
     >=
     assert // Cooldown period not met
-    // contract.py:242-243
+    // smart_contracts/autopilot_rule/contract.py:246-247
     // # Verify caller is authorized (owner or contract)
     // assert Txn.sender == owner.native or Txn.sender == Global.current_application_address, "Unauthorized"
     txn Sender
@@ -443,11 +447,11 @@ execute_rule_bool_true@3:
     intc_0 // 1
 
 execute_rule_bool_merge@5:
-    // contract.py:242-243
+    // smart_contracts/autopilot_rule/contract.py:246-247
     // # Verify caller is authorized (owner or contract)
     // assert Txn.sender == owner.native or Txn.sender == Global.current_application_address, "Unauthorized"
     assert // Unauthorized
-    // contract.py:245-246
+    // smart_contracts/autopilot_rule/contract.py:249-250
     // # Verify spend limit
     // assert amount_in.native <= rule.max_spend_microalgos.native, "Exceeds max spend limit"
     dig 3
@@ -461,7 +465,7 @@ execute_rule_bool_merge@5:
     dig 1
     >=
     assert // Exceeds max spend limit
-    // contract.py:261-262
+    // smart_contracts/autopilot_rule/contract.py:265-266
     // # Update rule statistics
     // rule.last_execution_timestamp = arc4.UInt64(Global.latest_timestamp)
     global LatestTimestamp
@@ -469,7 +473,7 @@ execute_rule_bool_merge@5:
     uncover 2
     swap
     replace2 63
-    // contract.py:263
+    // smart_contracts/autopilot_rule/contract.py:267
     // rule.total_executions = arc4.UInt32(rule.total_executions.native + UInt64(1))
     dup
     pushint 71 // 71
@@ -484,26 +488,26 @@ execute_rule_bool_merge@5:
     assert // overflow
     extract 4 4
     replace2 71
-    // contract.py:265
+    // smart_contracts/autopilot_rule/contract.py:269
     // rule.total_spent_microalgos.native + amount_spent
     dup
     pushint 75 // 75
     extract_uint64
     dig 2
     +
-    // contract.py:264-266
+    // smart_contracts/autopilot_rule/contract.py:268-270
     // rule.total_spent_microalgos = arc4.UInt64(
     //     rule.total_spent_microalgos.native + amount_spent
     // )
     itob
     replace2 75
-    // contract.py:268-269
+    // smart_contracts/autopilot_rule/contract.py:272-273
     // # Save updated rule
     // op.Box.put(box_key, rule.bytes)
     dig 4
     swap
     box_put
-    // contract.py:271-272
+    // smart_contracts/autopilot_rule/contract.py:275-276
     // # Increment global execution counter
     // self.total_executions += 1
     intc_1 // 0
@@ -515,7 +519,7 @@ execute_rule_bool_merge@5:
     bytec_2 // "total_executions"
     swap
     app_global_put
-    // contract.py:274-275
+    // smart_contracts/autopilot_rule/contract.py:278-279
     // # Log execution
     // log(b"RuleExecuted", op.itob(rule_id.native), op.itob(amount_spent))
     pushbytes 0x52756c654578656375746564
@@ -525,7 +529,7 @@ execute_rule_bool_merge@5:
     itob
     concat
     log
-    // contract.py:193
+    // smart_contracts/autopilot_rule/contract.py:197
     // @arc4.abimethod
     bytec_0 // 0x151f7c75
     swap
@@ -541,7 +545,7 @@ execute_rule_bool_false@4:
 
 // contract.AutoPilotRuleContract.update_rule_status[routing]() -> void:
 update_rule_status:
-    // contract.py:279
+    // smart_contracts/autopilot_rule/contract.py:283
     // @arc4.abimethod
     txna ApplicationArgs 1
     dup
@@ -555,7 +559,7 @@ update_rule_status:
     intc_0 // 1
     ==
     assert // invalid number of bytes for arc4.uint8
-    // contract.py:296-297
+    // smart_contracts/autopilot_rule/contract.py:300-301
     // # Load rule
     // box_key = Txn.sender.bytes + op.itob(rule_id.native)
     txn Sender
@@ -565,14 +569,14 @@ update_rule_status:
     swap
     dig 1
     concat
-    // contract.py:300
+    // smart_contracts/autopilot_rule/contract.py:304
     // rule_bytes, exists = op.Box.get(box_key)
     dup
     box_get
-    // contract.py:301
+    // smart_contracts/autopilot_rule/contract.py:305
     // assert exists, "Rule not found"
     assert // Rule not found
-    // contract.py:304-305
+    // smart_contracts/autopilot_rule/contract.py:308-309
     // # Validate
     // assert rule.owner.native == Txn.sender, "Not rule owner"
     dup
@@ -580,7 +584,7 @@ update_rule_status:
     txn Sender
     ==
     assert // Not rule owner
-    // contract.py:306
+    // smart_contracts/autopilot_rule/contract.py:310
     // assert new_status.native <= STATUS_CANCELLED, "Invalid status"
     dig 3
     btoi
@@ -588,7 +592,7 @@ update_rule_status:
     pushint 3 // 3
     <=
     assert // Invalid status
-    // contract.py:307
+    // smart_contracts/autopilot_rule/contract.py:311
     // assert rule.status.native != STATUS_CANCELLED, "Cannot modify cancelled rule"
     dig 1
     pushint 41 // 41
@@ -596,18 +600,18 @@ update_rule_status:
     pushint 3 // 3
     !=
     assert // Cannot modify cancelled rule
-    // contract.py:309-310
+    // smart_contracts/autopilot_rule/contract.py:313-314
     // # Update status
     // rule.status = new_status
     swap
     uncover 4
     replace2 41
-    // contract.py:311
+    // smart_contracts/autopilot_rule/contract.py:315
     // op.Box.put(box_key, rule.bytes)
     uncover 2
     swap
     box_put
-    // contract.py:313-314
+    // smart_contracts/autopilot_rule/contract.py:317-318
     // # Log
     // log(b"RuleStatusUpdated", op.itob(rule_id.native), op.itob(new_status.native))
     pushbytes 0x52756c6553746174757355706461746564
@@ -617,7 +621,7 @@ update_rule_status:
     itob
     concat
     log
-    // contract.py:279
+    // smart_contracts/autopilot_rule/contract.py:283
     // @arc4.abimethod
     intc_0 // 1
     return
@@ -625,7 +629,7 @@ update_rule_status:
 
 // contract.AutoPilotRuleContract.update_rule_parameters[routing]() -> void:
 update_rule_parameters:
-    // contract.py:316
+    // smart_contracts/autopilot_rule/contract.py:320
     // @arc4.abimethod
     txna ApplicationArgs 1
     dup
@@ -651,7 +655,7 @@ update_rule_parameters:
     intc_3 // 2
     ==
     assert // invalid number of bytes for arc4.uint16
-    // contract.py:336-337
+    // smart_contracts/autopilot_rule/contract.py:340-341
     // # Load rule
     // box_key = Txn.sender.bytes + op.itob(rule_id.native)
     txn Sender
@@ -661,14 +665,14 @@ update_rule_parameters:
     swap
     dig 1
     concat
-    // contract.py:340
+    // smart_contracts/autopilot_rule/contract.py:344
     // rule_bytes, exists = op.Box.get(box_key)
     dup
     box_get
-    // contract.py:341
+    // smart_contracts/autopilot_rule/contract.py:345
     // assert exists, "Rule not found"
     assert // Rule not found
-    // contract.py:344-345
+    // smart_contracts/autopilot_rule/contract.py:348-349
     // # Validate
     // assert rule.owner.native == Txn.sender, "Not rule owner"
     dup
@@ -676,49 +680,49 @@ update_rule_parameters:
     txn Sender
     ==
     assert // Not rule owner
-    // contract.py:346
+    // smart_contracts/autopilot_rule/contract.py:350
     // assert max_spend_microalgos.native > 0, "Max spend must be > 0"
     dig 5
     btoi
     assert // Max spend must be > 0
-    // contract.py:347
+    // smart_contracts/autopilot_rule/contract.py:351
     // assert max_slippage_bps.native <= MAX_SLIPPAGE_BPS, "Slippage too high"
     dig 4
     btoi
     pushint 5000 // 5000
     <=
     assert // Slippage too high
-    // contract.py:348
+    // smart_contracts/autopilot_rule/contract.py:352
     // assert cooldown_minutes.native >= MIN_COOLDOWN_MINUTES, "Cooldown too short"
     dig 3
     btoi
     pushint 5 // 5
     >=
     assert // Cooldown too short
-    // contract.py:350-351
+    // smart_contracts/autopilot_rule/contract.py:354-355
     // # Update parameters
     // rule.max_spend_microalgos = max_spend_microalgos
     uncover 5
     replace2 45
-    // contract.py:352
+    // smart_contracts/autopilot_rule/contract.py:356
     // rule.max_slippage_bps = max_slippage_bps
     uncover 4
     replace2 53
-    // contract.py:353
+    // smart_contracts/autopilot_rule/contract.py:357
     // rule.cooldown_minutes = cooldown_minutes
     uncover 3
     replace2 55
-    // contract.py:355
+    // smart_contracts/autopilot_rule/contract.py:359
     // op.Box.put(box_key, rule.bytes)
     box_put
-    // contract.py:357-358
+    // smart_contracts/autopilot_rule/contract.py:361-362
     // # Log
     // log(b"RuleParametersUpdated", op.itob(rule_id.native))
     pushbytes 0x52756c65506172616d657465727355706461746564
     swap
     concat
     log
-    // contract.py:316
+    // smart_contracts/autopilot_rule/contract.py:320
     // @arc4.abimethod
     intc_0 // 1
     return
@@ -726,7 +730,7 @@ update_rule_parameters:
 
 // contract.AutoPilotRuleContract.delete_rule[routing]() -> void:
 delete_rule:
-    // contract.py:360
+    // smart_contracts/autopilot_rule/contract.py:364
     // @arc4.abimethod
     txna ApplicationArgs 1
     dup
@@ -734,7 +738,7 @@ delete_rule:
     intc_2 // 8
     ==
     assert // invalid number of bytes for arc4.uint64
-    // contract.py:375-376
+    // smart_contracts/autopilot_rule/contract.py:379-380
     // # Load rule first to verify ownership
     // box_key = Txn.sender.bytes + op.itob(rule_id.native)
     txn Sender
@@ -744,27 +748,27 @@ delete_rule:
     swap
     dig 1
     concat
-    // contract.py:379
+    // smart_contracts/autopilot_rule/contract.py:383
     // rule_bytes, exists = op.Box.get(box_key)
     dup
     box_get
-    // contract.py:380
+    // smart_contracts/autopilot_rule/contract.py:384
     // assert exists, "Rule not found"
     assert // Rule not found
-    // contract.py:383
+    // smart_contracts/autopilot_rule/contract.py:387
     // assert rule.owner.native == Txn.sender, "Not rule owner"
     extract 8 32
     txn Sender
     ==
     assert // Not rule owner
-    // contract.py:389-390
+    // smart_contracts/autopilot_rule/contract.py:393-394
     // # Delete box
     // deleted = op.Box.delete(box_key)
     box_del
-    // contract.py:391
+    // smart_contracts/autopilot_rule/contract.py:395
     // assert deleted, "Failed to delete box"
     assert // Failed to delete box
-    // contract.py:393-398
+    // smart_contracts/autopilot_rule/contract.py:397-402
     // # Return MBR to owner
     // itxn.Payment(
     //     receiver=Txn.sender,
@@ -772,24 +776,24 @@ delete_rule:
     //     fee=UInt64(0),
     // ).submit()
     itxn_begin
-    // contract.py:395
+    // smart_contracts/autopilot_rule/contract.py:399
     // receiver=Txn.sender,
     txn Sender
-    // contract.py:387
+    // smart_contracts/autopilot_rule/contract.py:391
     // box_mbr = box_size * UInt64(400) + UInt64(2500)
     pushint 207300 // 207300
     itxn_field Amount
     itxn_field Receiver
-    // contract.py:393-394
+    // smart_contracts/autopilot_rule/contract.py:397-398
     // # Return MBR to owner
     // itxn.Payment(
     intc_0 // pay
     itxn_field TypeEnum
-    // contract.py:397
+    // smart_contracts/autopilot_rule/contract.py:401
     // fee=UInt64(0),
     intc_1 // 0
     itxn_field Fee
-    // contract.py:393-398
+    // smart_contracts/autopilot_rule/contract.py:397-402
     // # Return MBR to owner
     // itxn.Payment(
     //     receiver=Txn.sender,
@@ -797,14 +801,14 @@ delete_rule:
     //     fee=UInt64(0),
     // ).submit()
     itxn_submit
-    // contract.py:400-401
+    // smart_contracts/autopilot_rule/contract.py:404-405
     // # Log
     // log(b"RuleDeleted", op.itob(rule_id.native))
     pushbytes 0x52756c6544656c65746564
     swap
     concat
     log
-    // contract.py:360
+    // smart_contracts/autopilot_rule/contract.py:364
     // @arc4.abimethod
     intc_0 // 1
     return
@@ -812,7 +816,7 @@ delete_rule:
 
 // contract.AutoPilotRuleContract.get_rule[routing]() -> void:
 get_rule:
-    // contract.py:403
+    // smart_contracts/autopilot_rule/contract.py:407
     // @arc4.abimethod(readonly=True)
     txna ApplicationArgs 1
     dup
@@ -826,19 +830,19 @@ get_rule:
     pushint 32 // 32
     ==
     assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
-    // contract.py:420
+    // smart_contracts/autopilot_rule/contract.py:424
     // box_key = owner.bytes + op.itob(rule_id.native)
     swap
     btoi
     itob
     concat
-    // contract.py:423
+    // smart_contracts/autopilot_rule/contract.py:427
     // rule_bytes, exists = op.Box.get(box_key)
     box_get
-    // contract.py:424
+    // smart_contracts/autopilot_rule/contract.py:428
     // assert exists, "Rule not found"
     assert // Rule not found
-    // contract.py:403
+    // smart_contracts/autopilot_rule/contract.py:407
     // @arc4.abimethod(readonly=True)
     bytec_0 // 0x151f7c75
     swap
@@ -850,7 +854,7 @@ get_rule:
 
 // contract.AutoPilotRuleContract.get_rule_stats[routing]() -> void:
 get_rule_stats:
-    // contract.py:427
+    // smart_contracts/autopilot_rule/contract.py:431
     // @arc4.abimethod(readonly=True)
     txna ApplicationArgs 1
     dup
@@ -864,31 +868,31 @@ get_rule_stats:
     pushint 32 // 32
     ==
     assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
-    // contract.py:444
+    // smart_contracts/autopilot_rule/contract.py:448
     // box_key = owner.bytes + op.itob(rule_id.native)
     swap
     btoi
     itob
     concat
-    // contract.py:447
+    // smart_contracts/autopilot_rule/contract.py:451
     // rule_bytes, exists = op.Box.get(box_key)
     box_get
-    // contract.py:448
+    // smart_contracts/autopilot_rule/contract.py:452
     // assert exists, "Rule not found"
     assert // Rule not found
-    // contract.py:452
+    // smart_contracts/autopilot_rule/contract.py:456
     // rule.total_executions,
     dup
     extract 71 4
-    // contract.py:453
+    // smart_contracts/autopilot_rule/contract.py:457
     // rule.total_spent_microalgos,
     dig 1
     extract 75 8
-    // contract.py:454
+    // smart_contracts/autopilot_rule/contract.py:458
     // rule.last_execution_timestamp,
     uncover 2
     extract 63 8
-    // contract.py:451-455
+    // smart_contracts/autopilot_rule/contract.py:455-459
     // return arc4.Tuple((
     //     rule.total_executions,
     //     rule.total_spent_microalgos,
@@ -898,7 +902,7 @@ get_rule_stats:
     concat
     swap
     concat
-    // contract.py:427
+    // smart_contracts/autopilot_rule/contract.py:431
     // @arc4.abimethod(readonly=True)
     bytec_0 // 0x151f7c75
     swap
@@ -910,7 +914,7 @@ get_rule_stats:
 
 // contract.AutoPilotRuleContract.set_protocol_fee[routing]() -> void:
 set_protocol_fee:
-    // contract.py:457
+    // smart_contracts/autopilot_rule/contract.py:461
     // @arc4.abimethod
     txna ApplicationArgs 1
     dup
@@ -918,7 +922,7 @@ set_protocol_fee:
     intc_3 // 2
     ==
     assert // invalid number of bytes for arc4.uint16
-    // contract.py:469
+    // smart_contracts/autopilot_rule/contract.py:473
     // assert Txn.sender == self.protocol_treasury, "Only admin"
     txn Sender
     intc_1 // 0
@@ -927,26 +931,26 @@ set_protocol_fee:
     assert // check self.protocol_treasury exists
     ==
     assert // Only admin
-    // contract.py:470
+    // smart_contracts/autopilot_rule/contract.py:474
     // assert new_fee_bps.native <= 100, "Fee too high (max 1%)"
     btoi
     dup
     pushint 100 // 100
     <=
     assert // Fee too high (max 1%)
-    // contract.py:472
+    // smart_contracts/autopilot_rule/contract.py:476
     // self.protocol_fee_bps = new_fee_bps.native
     bytec 4 // "protocol_fee_bps"
     dig 1
     app_global_put
-    // contract.py:473
+    // smart_contracts/autopilot_rule/contract.py:477
     // log(b"ProtocolFeeUpdated", op.itob(new_fee_bps.native))
     itob
     pushbytes 0x50726f746f636f6c46656555706461746564
     swap
     concat
     log
-    // contract.py:457
+    // smart_contracts/autopilot_rule/contract.py:461
     // @arc4.abimethod
     intc_0 // 1
     return
@@ -954,7 +958,7 @@ set_protocol_fee:
 
 // contract.AutoPilotRuleContract.set_pause[routing]() -> void:
 set_pause:
-    // contract.py:475
+    // smart_contracts/autopilot_rule/contract.py:479
     // @arc4.abimethod
     txna ApplicationArgs 1
     dup
@@ -962,7 +966,7 @@ set_pause:
     intc_0 // 1
     ==
     assert // invalid number of bytes for arc4.bool
-    // contract.py:487
+    // smart_contracts/autopilot_rule/contract.py:491
     // assert Txn.sender == self.protocol_treasury, "Only admin"
     txn Sender
     intc_1 // 0
@@ -971,21 +975,21 @@ set_pause:
     assert // check self.protocol_treasury exists
     ==
     assert // Only admin
-    // contract.py:488
+    // smart_contracts/autopilot_rule/contract.py:492
     // self.is_paused = paused.native
     intc_1 // 0
     getbit
     bytec_3 // "is_paused"
     dig 1
     app_global_put
-    // contract.py:490
+    // smart_contracts/autopilot_rule/contract.py:494
     // log(b"PauseUpdated", op.itob(UInt64(1) if paused.native else UInt64(0)))
     itob
     pushbytes 0x506175736555706461746564
     swap
     concat
     log
-    // contract.py:475
+    // smart_contracts/autopilot_rule/contract.py:479
     // @arc4.abimethod
     intc_0 // 1
     return
@@ -993,21 +997,21 @@ set_pause:
 
 // contract.AutoPilotRuleContract.get_contract_stats[routing]() -> void:
 get_contract_stats:
-    // contract.py:538
+    // smart_contracts/autopilot_rule/contract.py:542
     // arc4.UInt64(self.rule_counter),
     intc_1 // 0
     bytec_1 // "rule_counter"
     app_global_get_ex
     assert // check self.rule_counter exists
     itob
-    // contract.py:539
+    // smart_contracts/autopilot_rule/contract.py:543
     // arc4.UInt64(self.total_executions),
     intc_1 // 0
     bytec_2 // "total_executions"
     app_global_get_ex
     assert // check self.total_executions exists
     itob
-    // contract.py:540
+    // smart_contracts/autopilot_rule/contract.py:544
     // arc4.UInt16(self.protocol_fee_bps),
     intc_1 // 0
     bytec 4 // "protocol_fee_bps"
@@ -1020,7 +1024,7 @@ get_contract_stats:
     <=
     assert // overflow
     extract 6 2
-    // contract.py:537-541
+    // smart_contracts/autopilot_rule/contract.py:541-545
     // return arc4.Tuple((
     //     arc4.UInt64(self.rule_counter),
     //     arc4.UInt64(self.total_executions),
@@ -1030,7 +1034,7 @@ get_contract_stats:
     concat
     swap
     concat
-    // contract.py:528
+    // smart_contracts/autopilot_rule/contract.py:532
     // @arc4.abimethod(readonly=True)
     bytec_0 // 0x151f7c75
     swap

@@ -145,8 +145,10 @@ class AutoPilotRuleContract(ARC4Contract):
         assert trigger_type.native <= 3, "Invalid trigger type"
         
         # Verify payment for box storage
-        # Box size estimate: ~400 bytes, cost = 2500 + 400 * 400 = 162,500 microALGOs
-        min_payment = UInt64(165000)  # ~0.165 ALGO with buffer
+        # Box size varies based on number of target assets
+        # Minimum: ~100 bytes for 1 asset = 2,500 + (100 * 400) = 42,500 microALGOs
+        # We require 0.165 ALGO (165,000 microALGOs) to cover up to ~400 bytes
+        min_payment = UInt64(165000)
         assert payment.receiver == Global.current_application_address, "Payment must be to contract"
         assert payment.amount >= min_payment, "Insufficient payment for box storage"
         
@@ -182,8 +184,10 @@ class AutoPilotRuleContract(ARC4Contract):
         
         # Store in box (key: owner address + rule_id)
         box_key = Txn.sender.bytes + op.itob(rule_id)
-        op.Box.create(box_key, UInt64(512))  # 512 bytes for rule data
-        op.Box.put(box_key, rule.bytes)
+        # Create box with exact size needed for the serialized rule data
+        rule_bytes = rule.bytes
+        op.Box.create(box_key, rule_bytes.length)
+        op.Box.put(box_key, rule_bytes)
         
         # Log creation event
         log(b"RuleCreated", op.itob(rule_id), Txn.sender.bytes)
