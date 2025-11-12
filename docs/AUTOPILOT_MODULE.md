@@ -404,9 +404,10 @@ type Rule = {
                ▼
 ┌─────────────────────────────────────────┐
 │  6. EXECUTE ON-CHAIN (if approved)      │
-│     - Build transaction group           │
-│     - Sign with user's wallet           │
-│     - Submit to blockchain              │
+│     - Get user's agent wallet           │
+│     - Check agent wallet balance        │
+│     - Auto opt-in to asset if needed    │
+│     - Transfer from agent → main wallet │
 │     - Wait for confirmation             │
 └──────────────┬──────────────────────────┘
                │
@@ -418,6 +419,34 @@ type Rule = {
 │     - Track success/failure             │
 │     - Store transaction details         │
 └─────────────────────────────────────────┘
+```
+
+### Agent Wallet Integration
+
+**Important:** Since the agent wallet update, autopilot rules now use **per-user agent wallets** instead of a shared deployer wallet.
+
+**Key Changes:**
+- Each user has their own dedicated agent wallet
+- Agent wallet is automatically created on first connection
+- Rules execute transfers from **user's agent wallet** → **user's main wallet**
+- Users must fund their agent wallets before rules can execute
+
+**Requirements:**
+1. **Fund Agent Wallet:** Send at least 0.5 ALGO to your agent wallet address
+2. **Opt-In to Assets:** Agent wallet must opt into assets (auto-handled, costs 0.1 ALGO per asset)
+3. **Maintain Balance:** Keep sufficient ALGO for transaction fees (~0.001-0.002 per execution)
+
+**Example Flow:**
+```
+User Agent Wallet: 2AXW6UGLRWFYWMMEDDSXLZJFGWEWUBKFTAQE673MZXAROURSE6E6OHWOMA
+User Main Wallet:  YCBV32KEY47XNQ6SB2GIS3PAFQP2GUQ3Z7JZ2U4A3PSMCRLXQAWMJM657I
+
+1. User funds agent wallet with 1.0 ALGO + 100 USDC
+2. Rule triggers (e.g., DCA: buy ALGO with 10 USDC)
+3. System gets user's agent wallet from database
+4. Checks agent wallet has 10 USDC + fees
+5. Executes: Transfer 10 USDC from agent → main wallet (or swap on DEX)
+6. Logs transaction
 ```
 
 ### Poller Service Details
@@ -571,6 +600,58 @@ if (quote.priceImpact > 0.05) {
 - ✅ Multi-DEX quote comparison
 - ✅ Automatic rejection if exceeded
 - ✅ Logged for user awareness
+
+---
+
+### 5. Agent Wallet Funding Requirements
+
+**Purpose:** Ensure user's agent wallet has sufficient funds before execution
+
+**Configuration:** Automatic checks
+
+**Requirements:**
+```typescript
+// Minimum balances for agent wallet
+{
+  "minimumAlgo": 0.1,           // Base requirement
+  "perAssetOptIn": 0.1,         // Per ASA opted-in
+  "transactionFee": 0.001,      // Per transaction
+  "recommendedMinimum": 0.5     // For initial funding
+}
+```
+
+**Implementation:**
+```typescript
+// Before rule execution
+const userAgent = await buildUserAgentWallet(rule.ownerAddress);
+const balance = await userAgent.getBalance(assetId);
+
+if (balance < requiredAmount + fees) {
+  return { 
+    rejected: true, 
+    reason: 'insufficient_agent_wallet_balance',
+    required: requiredAmount + fees,
+    current: balance
+  };
+}
+
+// Auto opt-in if needed
+if (!alreadyOptedIn) {
+  await userAgent.optInToAsset(assetId); // Costs 0.1 ALGO
+}
+```
+
+**Protection Level:**
+- ✅ Pre-execution balance verification
+- ✅ Automatic asset opt-in handling
+- ✅ Clear error messages with funding instructions
+
+**User Action Required:**
+1. Navigate to `/agent-wallet` page
+2. Copy agent wallet address
+3. Fund with at least 0.5 ALGO + trading assets
+4. Wait for confirmation (~4 seconds)
+5. Rules will execute automatically when conditions are met
 
 ---
 
