@@ -377,6 +377,8 @@ This project maintains a registry of supported tokens per chain in `src/lib/toke
 |--------|--------|----------|
 | ALGO   | 0      | 6        |
 | USDC   | 10458941 | 6      |
+| USDT   | 67396430 | 6      |
+| ALGF   | 70283957 | 6      |
 
 If you need additional tokens supported, add them to `src/lib/tokens.ts` and the UI will pick them up automatically.
 
