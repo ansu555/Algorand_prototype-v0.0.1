@@ -1,6 +1,6 @@
-import { tursoDriver, type Rule, type LogEntry } from './turso'
+import { tursoDriver, type Rule, type LogEntry, type AgentWallet } from './turso'
 
-export type { Rule, LogEntry }
+export type { Rule, LogEntry, AgentWallet }
 
 // Initialize Turso database
 let initPromise: Promise<void> | null = null
@@ -50,4 +50,19 @@ export async function updateRule(id: string, changes: Partial<Rule>): Promise<Ru
 export async function deleteRule(id: string, ownerAddress: string): Promise<boolean> { 
   await ensureInit(); 
   return tursoDriver.deleteRule(id, ownerAddress) 
+}
+
+export async function createAgentWallet(wallet: AgentWallet): Promise<AgentWallet> {
+  await ensureInit()
+  return tursoDriver.createAgentWallet(wallet)
+}
+
+export async function getAgentWallet(userAddress: string): Promise<AgentWallet | null> {
+  await ensureInit()
+  return tursoDriver.getAgentWallet(userAddress)
+}
+
+export async function updateAgentWalletLastUsed(userAddress: string): Promise<void> {
+  await ensureInit()
+  return tursoDriver.updateAgentWalletLastUsed(userAddress)
 }

@@ -37,6 +37,15 @@ export type LogEntry = {
   createdAt: string
 }
 
+export type AgentWallet = {
+  id: string
+  userAddress: string // The user's main wallet address
+  agentAddress: string // The generated agent wallet address
+  encryptedMnemonic: string // Encrypted agent wallet mnemonic
+  createdAt: string
+  lastUsedAt?: string
+}
+
 function str(v: any) { return v == null ? null : JSON.stringify(v) }
 function parseArr(v: any): string[] { if (!v) return []; try { const x = JSON.parse(String(v)); return Array.isArray(x) ? x : [] } catch { return [] } }
 function parseObj(v: any): Record<string, any> | undefined { if (!v) return undefined; try { const x = JSON.parse(String(v)); return (x && typeof x === 'object') ? x : undefined } catch { return undefined } }
@@ -66,6 +75,14 @@ export const tursoDriver = {
       details TEXT,
       status TEXT NOT NULL,
       createdAt TEXT NOT NULL
+    )`)
+    await client.execute(`CREATE TABLE IF NOT EXISTS agent_wallets (
+      id TEXT PRIMARY KEY,
+      userAddress TEXT NOT NULL UNIQUE,
+      agentAddress TEXT NOT NULL UNIQUE,
+      encryptedMnemonic TEXT NOT NULL,
+      createdAt TEXT NOT NULL,
+      lastUsedAt TEXT
     )`)
   },
   async createRule(rule: Rule): Promise<Rule> {
@@ -152,5 +169,42 @@ export const tursoDriver = {
       console.error('Turso delete error:', error)
       return false
     }
+  },
+
+  // Agent Wallet Operations
+  async createAgentWallet(wallet: AgentWallet): Promise<AgentWallet> {
+    const client = await getClient()
+    await client.execute({
+      sql: `INSERT INTO agent_wallets (id, userAddress, agentAddress, encryptedMnemonic, createdAt, lastUsedAt)
+            VALUES (?, ?, ?, ?, ?, ?)`,
+      args: [wallet.id, wallet.userAddress, wallet.agentAddress, wallet.encryptedMnemonic, wallet.createdAt, wallet.lastUsedAt ?? null]
+    })
+    return wallet
+  },
+
+  async getAgentWallet(userAddress: string): Promise<AgentWallet | null> {
+    const client = await getClient()
+    const { rows } = await client.execute({
+      sql: `SELECT * FROM agent_wallets WHERE userAddress = ?`,
+      args: [userAddress]
+    })
+    const r: any = rows[0]
+    if (!r) return null
+    return {
+      id: r.id,
+      userAddress: r.userAddress,
+      agentAddress: r.agentAddress,
+      encryptedMnemonic: r.encryptedMnemonic,
+      createdAt: r.createdAt,
+      lastUsedAt: r.lastUsedAt ?? undefined
+    }
+  },
+
+  async updateAgentWalletLastUsed(userAddress: string): Promise<void> {
+    const client = await getClient()
+    await client.execute({
+      sql: `UPDATE agent_wallets SET lastUsedAt = ? WHERE userAddress = ?`,
+      args: [new Date().toISOString(), userAddress]
+    })
   },
 }
