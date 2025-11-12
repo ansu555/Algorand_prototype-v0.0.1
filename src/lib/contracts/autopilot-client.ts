@@ -258,7 +258,8 @@ export class AutoPilotRuleClient {
     const suggestedParams = await this.algodClient.getTransactionParams().do();
     const contracts = getContracts();
 
-    const swapRouterAppId = params.swapRouterAppId ?? contracts.multihopRouter?.appId;
+    // Use Tinyman adapter instead of MultihopSwapRouter for direct swaps
+    const swapRouterAppId = params.swapRouterAppId ?? contracts.adapters.tinyman.appId;
     if (!swapRouterAppId) {
       throw new Error('Swap router App ID not configured');
     }
@@ -270,6 +271,31 @@ export class AutoPilotRuleClient {
     const foreignApps = [swapRouterAppId]
       .concat(params.poolAppId ? [params.poolAppId] : [])
       .filter((appId, index, array) => array.indexOf(appId) === index);
+
+    // Create payment/asset transfer transaction based on asset_in type
+    let paymentTxn: algosdk.Transaction;
+    
+    // Get contract address to send funds to
+    const contractAddress = algosdk.getApplicationAddress(this.appId);
+    
+    if (params.assetIn === 0) {
+      // ALGO swap - create payment transaction
+      paymentTxn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+        sender: signer.address,
+        receiver: contractAddress,
+        amount: Number(params.amountIn),
+        suggestedParams,
+      });
+    } else {
+      // ASA swap - create asset transfer transaction
+      paymentTxn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
+        sender: signer.address,
+        receiver: contractAddress,
+        assetIndex: params.assetIn,
+        amount: Number(params.amountIn),
+        suggestedParams,
+      });
+    }
 
     const appCallTxn = algosdk.makeApplicationNoOpTxnFromObject({
       sender: signer.address,
@@ -288,8 +314,15 @@ export class AutoPilotRuleClient {
       suggestedParams,
     });
 
-    const signedTxn = await signer.signTransactions([appCallTxn]);
-    const sendResult = await this.algodClient.sendRawTransaction(signedTxn).do();
+    // Group transactions atomically
+    const txns = [paymentTxn, appCallTxn];
+    algosdk.assignGroupID(txns);
+
+    // Sign both transactions
+    const signedTxns = await signer.signTransactions(txns);
+    
+    // Send grouped transactions
+    const sendResult = await this.algodClient.sendRawTransaction(signedTxns).do();
     const txId = sendResult.txid;
 
     const confirmedTxn = await algosdk.waitForConfirmation(

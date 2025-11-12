@@ -54,8 +54,8 @@ export function getContractConfig(network: 'mainnet' | 'testnet'): ContractConfi
         },
       },
       autopilotRule: {
-        appId: 749504577,
-        address: 'WOITU4VP4564VECHTHXWCCNFHW33A5ONV74ZYZWQHLMV6WMBBG5LIEOZIE',
+        appId: 749509231,
+        address: 'KO5JO5GWYY5TIY3NQJ3VHNKF6DZSVWGWHBJI55LSFPA5PYQXMGSGWIEGS4',
       },
     };
   }

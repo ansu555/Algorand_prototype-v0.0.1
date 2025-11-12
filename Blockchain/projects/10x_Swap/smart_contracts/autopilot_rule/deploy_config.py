@@ -100,6 +100,7 @@ if __name__ == "__main__":
     import json
     import base64
     from algosdk import account, mnemonic
+    from algosdk.abi.method import Method
     from algosdk.v2client.algod import AlgodClient
     import algosdk.transaction
     import algosdk.logic
@@ -180,6 +181,7 @@ if __name__ == "__main__":
         global_schema=global_schema,
         local_schema=local_schema,
         extra_pages=3,  # For larger contract
+        app_args=[Method.from_signature("create_application()string").get_selector()],
     )
     
     # Sign and send

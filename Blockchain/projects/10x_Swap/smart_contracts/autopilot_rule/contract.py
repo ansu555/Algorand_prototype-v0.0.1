@@ -18,6 +18,7 @@ from algopy import (
     Asset,
     Bytes,
     Global,
+    TransactionType,
     Txn,
     UInt64,
     arc4,
@@ -101,6 +102,11 @@ class AutoPilotRuleContract(ARC4Contract):
         self.protocol_fee_bps = UInt64(10)  # 0.1% protocol fee
         self.protocol_treasury = Global.creator_address
         self.is_paused = False
+    
+    @arc4.abimethod(create="require")
+    def create_application(self) -> arc4.String:
+        """Initialize the contract on creation"""
+        return arc4.String("AutoPilot Rule Contract v1.0")
     
     @arc4.abimethod
     def create_rule(
@@ -212,6 +218,10 @@ class AutoPilotRuleContract(ARC4Contract):
         This method executes a single swap for the rule. For multiple assets,
         this should be called multiple times (can be grouped).
         
+        Expected atomic group:
+        [0] Payment/AssetTransfer from user to this contract (asset_in)
+        [1] App call to this method
+        
         Args:
             rule_id: Rule to execute
             owner: Rule owner address
@@ -219,12 +229,31 @@ class AutoPilotRuleContract(ARC4Contract):
             asset_out: Asset to swap to
             amount_in: Amount to swap
             min_amount_out: Minimum output (slippage protection)
-            swap_router_app: MultihopSwapRouter application ID
+            swap_router_app: DEX adapter application ID (Tinyman/Pact adapter)
             pool_app: DEX pool application ID
         
         Returns:
             amount_spent: Amount of asset_in spent
         """
+        
+        # Verify atomic group structure
+        assert Global.group_size == UInt64(2), "Invalid group size (expected 2)"
+        
+        # Verify first transaction is payment/transfer of input asset
+        if asset_in.id == UInt64(0):
+            # ALGO swap - expect payment transaction
+            assert gtxn.Transaction(0).type == TransactionType.Payment, "First txn must be payment for ALGO"
+            assert gtxn.PaymentTransaction(0).receiver == Global.current_application_address, "Must send ALGO to contract"
+            actual_amount = gtxn.PaymentTransaction(0).amount
+        else:
+            # ASA swap - expect asset transfer
+            assert gtxn.Transaction(0).type == TransactionType.AssetTransfer, "First txn must be asset transfer"
+            assert gtxn.AssetTransferTransaction(0).xfer_asset == asset_in, "Wrong input asset"
+            assert gtxn.AssetTransferTransaction(0).asset_receiver == Global.current_application_address, "Must send to contract"
+            actual_amount = gtxn.AssetTransferTransaction(0).asset_amount
+        
+        # Verify amount matches
+        assert actual_amount == amount_in.native, "Amount mismatch"
         
         # Load rule from box storage
         box_key = owner.bytes + op.itob(rule_id.native)
@@ -253,13 +282,15 @@ class AutoPilotRuleContract(ARC4Contract):
         # min_out should already be calculated by caller, but we verify it's within limits
         max_slippage = rule.max_slippage_bps.native
         
-        # Execute the swap by calling the swap router
-        # This is a simplified version - actual implementation would call MultihopSwapRouter
+        # Execute the swap by calling the DEX adapter
+        # We use the swap_router_app as the adapter (Tinyman/Pact adapter)
         amount_spent = self._execute_swap_inner(
             asset_in=asset_in,
             asset_out=asset_out,
             amount_in=amount_in.native,
             min_amount_out=min_amount_out.native,
+            adapter_app_id=swap_router_app,
+            pool_app_id=pool_app,
         )
         
         # Update rule statistics
@@ -477,6 +508,32 @@ class AutoPilotRuleContract(ARC4Contract):
         log(b"ProtocolFeeUpdated", op.itob(new_fee_bps.native))
     
     @arc4.abimethod
+    def opt_in_asset(
+        self,
+        asset: Asset,
+    ) -> None:
+        """
+        Opt the contract into an asset (admin only)
+        
+        This is required before the contract can receive and hold ASAs
+        
+        Args:
+            asset: The asset to opt into
+        """
+        
+        assert Txn.sender == self.protocol_treasury, "Only admin"
+        
+        # Opt-in via inner transaction (transfer 0 to self)
+        itxn.AssetTransfer(
+            xfer_asset=asset,
+            asset_receiver=Global.current_application_address,
+            asset_amount=UInt64(0),
+            fee=UInt64(0),
+        ).submit()
+        
+        log(b"AssetOptIn", op.itob(asset.id))
+    
+    @arc4.abimethod
     def set_pause(
         self,
         paused: arc4.Bool,
@@ -493,6 +550,29 @@ class AutoPilotRuleContract(ARC4Contract):
         
         log(b"PauseUpdated", op.itob(UInt64(1) if paused.native else UInt64(0)))
     
+    @arc4.baremethod(allow_actions=["NoOp"], create="disallow")
+    def opt_in_asset_bare(self) -> None:
+        """Bare method to opt the contract into a single ASA.
+
+        Usage pattern (atomic group size 1):
+            ApplicationCall (NoOp) with no app_args and foreign_assets=[asset_id]
+
+        This avoids ARC4 method selector issues and lets the admin opt-in quickly.
+        """
+        # Only protocol treasury (admin) can perform asset opt-ins
+        assert Txn.sender == self.protocol_treasury, "Only admin"
+        # Must supply exactly one foreign asset in the call
+        assert Txn.num_assets == UInt64(1), "Provide exactly one asset"
+        asset_ref = Txn.assets(0)
+        # Inner 0-amount transfer to self performs opt-in
+        itxn.AssetTransfer(
+            xfer_asset=asset_ref,
+            asset_receiver=Global.current_application_address,
+            asset_amount=UInt64(0),
+            fee=UInt64(0),
+        ).submit()
+        log(b"AssetOptIn", op.itob(asset_ref.id))
+
     @subroutine
     def _execute_swap_inner(
         self,
@@ -500,33 +580,79 @@ class AutoPilotRuleContract(ARC4Contract):
         asset_out: Asset,
         amount_in: UInt64,
         min_amount_out: UInt64,
+        adapter_app_id: Application,
+        pool_app_id: Application,
     ) -> UInt64:
         """
-        Execute a swap using inner transactions
+        Execute a swap using inner transactions via DEX adapter
         
-        This is a placeholder that demonstrates the pattern.
-        In production, this would call the MultihopSwapRouter or DEX pool directly.
+        This calls the TinymanPoolAdapter (or PactPoolAdapter) to perform the actual swap.
         
         Args:
             asset_in: Asset to swap from
             asset_out: Asset to swap to
             amount_in: Amount to swap
-            min_amount_out: Minimum output amount
-        
+            min_amount_out: Minimum output (slippage protection)
+            adapter_app_id: The DEX adapter contract (Tinyman/Pact)
+            pool_app_id: The DEX pool application ID
+            
         Returns:
-            Amount spent
+            Amount of asset_in actually spent
         """
         
-        # For now, this is a simplified version
-        # In production, this would:
-        # 1. Transfer asset_in to pool or router
-        # 2. Call swap method on pool/router
-        # 3. Receive asset_out
-        # 4. Verify received amount >= min_amount_out
+        # Check if we're swapping from ALGO (asset ID 0)
+        if asset_in.id == UInt64(0):
+            # For ALGO swaps, we need to send a payment transaction
+            # Transfer ALGO to adapter contract
+            itxn.Payment(
+                receiver=adapter_app_id.address,
+                amount=amount_in,
+                fee=UInt64(0),
+            ).submit()
+        else:
+            # For ASA swaps, transfer the asset to adapter
+            itxn.AssetTransfer(
+                xfer_asset=asset_in,
+                asset_receiver=adapter_app_id.address,
+                asset_amount=amount_in,
+                fee=UInt64(0),
+            ).submit()
         
-        # Placeholder: just return the amount_in
-        # Real implementation would use itxn to call swap contracts
+        # Call adapter's swap_fixed_input method
+        # Method signature: "swap_fixed_input(uint64,uint64,uint64,uint64,uint64)uint64"
+        # ABI selector for this method
+        swap_method = Bytes.from_hex("0f2f6f7f")
         
+        result = itxn.ApplicationCall(
+            app_id=adapter_app_id,
+            app_args=(
+                swap_method,
+                op.itob(pool_app_id.id),
+                op.itob(asset_in.id),
+                op.itob(asset_out.id),
+                op.itob(amount_in),
+                op.itob(min_amount_out),
+            ),
+            fee=UInt64(0),
+        ).submit()
+        
+        # Extract output amount from adapter's return value
+        output_bytes = result.last_log
+        output_amount = op.btoi(output_bytes)
+        
+        # Verify minimum output was met
+        assert output_amount >= min_amount_out, "Output below minimum (slippage exceeded)"
+        
+        # Transfer received assets from adapter back to this contract
+        itxn.AssetTransfer(
+            xfer_asset=asset_out,
+            asset_sender=adapter_app_id.address,
+            asset_receiver=Global.current_application_address,
+            asset_amount=output_amount,
+            fee=UInt64(0),
+        ).submit()
+        
+        # Return the amount spent (which is the input amount for fixed-input swaps)
         return amount_in
     
     @arc4.abimethod(readonly=True)
