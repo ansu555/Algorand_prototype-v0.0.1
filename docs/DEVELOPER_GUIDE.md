@@ -103,6 +103,9 @@ INDEXER_SERVER="https://testnet-idx.algonode.cloud"
 
 # Deployer Wallet (25-word mnemonic phrase)
 DEPLOYER_MNEMONIC="word1 word2 word3 ... word25"
+
+# Agent Wallet Encryption Key (32-byte key for AES-256-GCM)
+AGENT_WALLET_ENCRYPTION_KEY="your-32-byte-encryption-key-here"
 ```
 
 **How to get a testnet wallet:**
@@ -113,10 +116,24 @@ DEPLOYER_MNEMONIC="word1 word2 word3 ... word25"
 4. Copy your 25-word mnemonic phrase
 5. Paste it into `DEPLOYER_MNEMONIC` in `.env`
 
+**Generate encryption key for agent wallets:**
+
+```bash
+# macOS/Linux
+openssl rand -hex 32
+
+# Or use Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Copy the generated key and paste into `AGENT_WALLET_ENCRYPTION_KEY` in `.env`.
+
 ⚠️ **Security Warning:**
 - NEVER commit your real mnemonic to git
 - NEVER use mainnet keys in `.env` files
 - Use testnet keys for development only
+- Generate a unique encryption key for each environment
+- Rotate encryption keys periodically in production
 
 #### 2. Smart Contract Configuration
 
@@ -257,6 +274,9 @@ ALGOD_SERVER="https://testnet-api.algonode.cloud"
 ALGOD_TOKEN=""
 INDEXER_SERVER="https://testnet-idx.algonode.cloud"
 DEPLOYER_MNEMONIC="your 25-word mnemonic phrase"
+
+# Agent Wallet Encryption
+AGENT_WALLET_ENCRYPTION_KEY="your-32-byte-encryption-key-here"
 
 # Smart Contracts
 NEXT_PUBLIC_AUTOPILOT_CONTRACT_APP_ID=""
@@ -628,6 +648,67 @@ npx tsc --noEmit
 2. Check transaction parameters are valid
 3. Verify network matches wallet network
 4. Check if wallet is locked
+
+### Agent Wallet Issues
+
+#### "Agent wallet not showing" error
+
+**Cause:** Database not initialized or environment variables missing
+
+**Solution:**
+```bash
+# Check environment variables
+cat .env | grep AGENT_WALLET_ENCRYPTION_KEY
+
+# Run database migration
+curl -X POST "http://localhost:3000/api/db/migrate?token=YOUR_MIGRATE_SECRET"
+
+# Restart dev server
+npm run dev
+```
+
+#### "Not opted in" errors
+
+**Cause:** Agent wallet hasn't opted into required assets
+
+**Solution:**
+1. Fund agent wallet with at least 0.5 ALGO first
+2. Use the "Opt-in to All Trading Assets" button on `/agent-wallet` page
+3. Or manually opt-in via API:
+```bash
+curl -X POST "http://localhost:3000/api/agent/wallet/opt-in-all" \
+  -H "Content-Type: application/json" \
+  -d '{"userAddress":"YOUR_WALLET_ADDRESS"}'
+```
+
+#### "Insufficient balance" in agent wallet
+
+**Cause:** Agent wallet needs funding before use
+
+**Solution:**
+1. Navigate to `/agent-wallet` page
+2. Copy your agent wallet address
+3. Send at least 0.5 ALGO from your main wallet
+4. Each ASA opt-in requires 0.1 ALGO (locked, recoverable)
+5. Transaction fees: ~0.001-0.002 ALGO per transaction
+
+#### "Encryption key error"
+
+**Cause:** Missing or incorrect `AGENT_WALLET_ENCRYPTION_KEY`
+
+**Solution:**
+```bash
+# Generate new encryption key
+openssl rand -hex 32
+
+# Add to .env
+echo "AGENT_WALLET_ENCRYPTION_KEY=your_generated_key" >> .env
+
+# Restart server
+npm run dev
+```
+
+**Note:** Changing the encryption key will invalidate existing encrypted mnemonics. Only do this on fresh installations.
 
 ### Debugging Tips
 
