@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { SearchBar } from "@/components/shared/search-bar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -202,6 +203,9 @@ export default function PortfolioPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
+      {/* Search Bar */}
+      <SearchBar />
+      
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <h1 className="text-xl sm:text-2xl font-semibold">Portfolio & Agent Dashboard</h1>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">

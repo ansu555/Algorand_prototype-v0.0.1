@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useMemo } from "react"
 import BackgroundPaths from "@/components/shared/animated-background"
+import { SearchBar } from "@/components/shared/search-bar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
-import { Search, Loader2, ArrowUpDown, Copy, ExternalLink, Check, Activity, Clock, CalendarClock } from "lucide-react"
+import { Loader2, ArrowUpDown } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { Button } from "@/components/ui/button"
 
@@ -32,7 +32,6 @@ type Transaction = {
 }
 
 export default function TransactionsPage() {
-  const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState("time_desc")
   const [loading, setLoading] = useState(false)
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -95,19 +94,12 @@ export default function TransactionsPage() {
   const filteredTransactions = useMemo(() => {
     let filtered = transactions
 
-    // Filter by search
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase()
-      filtered = filtered.filter(tx => 
-        tx.fromAssetUnitName?.toLowerCase().includes(q) ||
-        tx.toAssetUnitName?.toLowerCase().includes(q) ||
-        tx.ownerAddress?.toLowerCase().includes(q) ||
-        tx.txId?.toLowerCase().includes(q) ||
-        tx.poolAddress?.toLowerCase().includes(q)
-      )
+    // Filter by type
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter(tx => tx.type === typeFilter)
     }
 
-    // Sort
+    // Sort transactions
     const sorted = [...filtered]
     sorted.sort((a, b) => {
       switch (sortBy) {
@@ -121,61 +113,86 @@ export default function TransactionsPage() {
     })
 
     return sorted
-  }, [transactions, searchQuery, sortBy])
+  }, [transactions, typeFilter, sortBy])
 
   return (
     <div className="flex min-h-screen flex-col">
       <BackgroundPaths />
-      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-2">
-        <div className="w-full space-y-2">
-          {/* Search Bar */}
-          <div className="w-full flex justify-center">
-            <div className="relative w-full max-w-lg">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                placeholder="Search transactions, tokens, wallet..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12 text-base bg-white dark:bg-[#171717] border-2 focus-visible:ring-red-600 dark:focus-visible:ring-[#F3C623]"
-                disabled={loading}
-              />
-            </div>
-          </div>
+      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-6">
+        <div className="w-full space-y-6">
+          {/* Transaction History Card with Search */}
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="text-2xl font-bold tracking-tight">Transaction History</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    View all your transaction history across the platform.
+                  </p>
+                  {!loading && (
+                    <p className="text-xs text-muted-foreground">
+                      {filteredTransactions.length} transactions
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Search Bar */}
+                  <div className="w-full sm:w-auto sm:min-w-[300px] lg:min-w-[400px]">
+                    <SearchBar />
+                  </div>
+                  
+                  {/* Type Filter */}
+                  <Select value={typeFilter} onValueChange={setTypeFilter} disabled={loading}>
+                    <SelectTrigger className="w-[120px] sm:w-[140px]">
+                      <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="swap">Swap</SelectItem>
+                      <SelectItem value="send">Send</SelectItem>
+                      <SelectItem value="receive">Receive</SelectItem>
+                      <SelectItem value="stake">Stake</SelectItem>
+                      <SelectItem value="add_liquidity">Add Liquidity</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-          {/* Header and Filters */}
-          <div className="flex items-end justify-between gap-4 flex-wrap">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Transaction History</h1>
-              <p className="text-sm text-muted-foreground">
-                View all swap transactions across the platform globally.
-              </p>
-              {/* {!loading && (
-                <p className="text-xs text-muted-foreground">
-                  {filteredTransactions.length} transactions
-                </p>
-              )} */}
-            </div>
+                  {/* Sort */}
+                  <Select value={sortBy} onValueChange={setSortBy} disabled={loading}>
+                    <SelectTrigger className="w-[140px] sm:w-[160px]">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="time_desc">Time: New → Old</SelectItem>
+                      <SelectItem value="time_asc">Time: Old → New</SelectItem>
+                      <SelectItem value="usd_desc">USD: High → Low</SelectItem>
+                      <SelectItem value="usd_asc">USD: Low → High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardHeader>
 
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Sort */}
-              <Select value={sortBy} onValueChange={setSortBy} disabled={loading}>
-                <SelectTrigger className="w-[140px] sm:w-[160px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="time_desc">Time: New → Old</SelectItem>
-                  <SelectItem value="time_asc">Time: Old → New</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+            <CardContent className="space-y-6">
+              {/* Statistics Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                {/* 1D Volume */}
+                <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base sm:text-lg">1D volume</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl sm:text-3xl font-bold font-mono">$3.15B</div>
+                <div className="text-xs sm:text-sm text-red-500 flex items-center gap-1">
+                  <span>▼</span>
+                  <span>27.21% today</span>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Project Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Total 10xSwap TVL */}
             <Card>
-              <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-base sm:text-lg">Total Transactions</CardTitle>
-                <Activity className="h-4 w-4 text-muted-foreground" />
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base sm:text-lg">Total 10xSwap TVL</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl sm:text-3xl font-bold font-mono">{stats?.total ?? 0}</div>
@@ -208,15 +225,19 @@ export default function TransactionsPage() {
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
             <span className="ml-auto text-muted-foreground">Note: Testnet - USD value not available</span>
           </div>
+            </CardContent>
+          </Card>
 
           {/* Transactions Table */}
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-red-600 dark:text-[#F3C623]" />
-              <span className="ml-2 text-sm text-muted-foreground">Loading transactions...</span>
-            </div>
-          ) : (
-            <div className="w-full overflow-x-auto">
+          <Card className="relative z-0">
+            <CardContent className="pt-6">
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-red-600 dark:text-[#F3C623]" />
+                  <span className="ml-2 text-sm text-muted-foreground">Loading transactions...</span>
+                </div>
+              ) : (
+                <div className="w-full overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="text-red-600 dark:text-red-400">
@@ -349,6 +370,8 @@ export default function TransactionsPage() {
               </Table>
             </div>
           )}
+            </CardContent>
+          </Card>
         </div>
       </main>
     </div>

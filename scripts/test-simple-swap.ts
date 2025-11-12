@@ -3,8 +3,8 @@
 import { config } from 'dotenv'
 config({ path: '.env.local' })
 
-import { buildAlgorandAgent } from '../lib/algorand'
-import { SimpleSwap } from '../lib/simple-swap'
+import { buildAlgorandAgent } from '../src/lib/algorand'
+import { SimpleSwap } from '../src/lib/simple-swap'
 
 async function testSimpleSwap() {
   try {
@@ -86,10 +86,12 @@ async function testSimpleSwap() {
     // Test swap (simulation)
     console.log('\n🔄 Testing swap simulation...')
     try {
+      const recipientAddress = process.env.SWAP_TEST_RECIPIENT || await agent.getAddress()
       const swapResult = await agent.atomicSwap({
         assetInSymbol: 'ALGO',
         assetOutSymbol: 'USDC',
-        amountIn: '10'
+        amountIn: '10',
+        recipient: recipientAddress
       })
       console.log(`✅ Swap successful: ${swapResult.txId}`)
       console.log(`📊 Details:`, swapResult.details)

@@ -3,12 +3,12 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import BackgroundPaths from "@/components/shared/animated-background"
+import { SearchBar } from "@/components/shared/search-bar"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
-import { Search, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { useMemo, useState, useEffect } from "react"
 import type { PoolInfo } from "@/lib/dex/types"
 
@@ -38,7 +38,6 @@ type Pool = {
 }
 
 export default function PoolPage() {
-  const [searchQuery, setSearchQuery] = useState("")
   const [tab, setTab] = useState("all")
   const [sortBy, setSortBy] = useState("tvl_desc")
   const [network, setNetwork] = useState<'testnet' | 'mainnet'>('testnet')
@@ -143,13 +142,6 @@ export default function PoolPage() {
   const pools = useMemo(() => {
     let filtered = allPools
     if (tab === "mine") filtered = filtered.filter((p) => p.myPosition)
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase()
-      filtered = filtered.filter((p) => 
-        `${p.token0}/${p.token1}`.toLowerCase().includes(q) ||
-        p.dex.toLowerCase().includes(q)
-      )
-    }
     const sorted = [...filtered]
     sorted.sort((a, b) => {
       switch (sortBy) {
@@ -166,28 +158,17 @@ export default function PoolPage() {
       }
     })
     return sorted
-  }, [allPools, searchQuery, tab, sortBy])
+  }, [allPools, tab, sortBy])
 
   return (
     <div className="flex min-h-screen flex-col">
       <BackgroundPaths />
       <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-2">
         <div className="w-full space-y-2">
-          {/* Search Bar - Prominent at top */}
-          <div className="w-full flex justify-center">
-            <div className="relative w-full max-w-lg">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                placeholder="Search tokens, pools..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12 text-base bg-white dark:bg-[#171717] border-2 focus-visible:ring-red-600 dark:focus-visible:ring-[#F3C623]"
-                disabled={loading}
-              />
-            </div>
-          </div>
+          {/* Search Bar */}
+          <SearchBar />
 
-          <div className="flex items-end justify-between gap-4 flex-wrap">
+          <div className="relative">
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Liquidity Pools</h1>
               <p className="text-sm text-muted-foreground">
