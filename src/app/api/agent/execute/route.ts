@@ -3,6 +3,7 @@ import { getRuleById, createLog, type LogEntry } from "@/lib/db"
 import { getAgent } from "@/lib/agent"
 import type { AlgorandAsset } from "@/lib/algorand"
 import algosdk from "algosdk"
+import { buildUserAgentWallet } from "@/lib/agent-wallet"
 
 export const runtime = "nodejs"
 
@@ -58,30 +59,49 @@ export async function POST(req: Request) {
       // Add more mappings as needed
     }
 
-    const agent = await getAgent()
-
-    const firstTarget = targets[0]
-    const assetSymbol = coinrankingToAlgorandMap[firstTarget] || firstTarget.toUpperCase()
-    const assetInfo: AlgorandAsset | undefined = agent.assets[assetSymbol as keyof typeof agent.assets]
-    if (!assetInfo) {
-      throw new Error(`Unsupported asset for execution: ${assetSymbol}`)
-    }
-
+    // Validate owner address
     const rawRecipient = typeof rule.ownerAddress === 'string' ? rule.ownerAddress.trim() : ''
     const normalizedRecipient = rawRecipient ? rawRecipient.toUpperCase() : ''
     if (!algosdk.isValidAddress(normalizedRecipient)) {
       throw new Error(`Rule owner address is not a valid Algorand address: ${rawRecipient || '<empty>'}`)
     }
 
-    await ensureOwnerHasAssetBalance(agent.algodClient, normalizedRecipient, assetInfo, spendAmount)
+    // Build user's personal agent wallet (NOT the shared agent!)
+    const userAgent = await buildUserAgentWallet(normalizedRecipient)
+    
+    const firstTarget = targets[0]
+    const assetSymbol = coinrankingToAlgorandMap[firstTarget] || firstTarget.toUpperCase()
+    const assetInfo: AlgorandAsset | undefined = userAgent.assets[assetSymbol as keyof typeof userAgent.assets]
+    if (!assetInfo) {
+      throw new Error(`Unsupported asset for execution: ${assetSymbol}`)
+    }
+    
+    // Auto opt-in to asset if not already opted in (for non-ALGO assets)
+    if (assetInfo.id !== 0) {
+      try {
+        console.log(`🔄 Ensuring agent wallet is opted into ${assetSymbol} (asset ${assetInfo.id})`)
+        await userAgent.optInToAsset(assetInfo.id)
+        console.log(`✅ Agent wallet opted into ${assetSymbol}`)
+      } catch (error: any) {
+        // If already opted in, that's fine
+        if (!error.message?.includes('Already opted in')) {
+          console.error(`⚠️ Opt-in failed for ${assetSymbol}:`, error.message)
+          // Don't throw - let the balance check below catch if there's a real problem
+        }
+      }
+    }
+
+    // Check that user's agent wallet has sufficient balance
+    await ensureOwnerHasAssetBalance(userAgent.algodClient, userAgent.address, assetInfo, spendAmount)
 
     const amountStr = spendAmount.toString()
 
-    const swapResult = await agent.atomicSwap({
-      assetInSymbol: assetSymbol,
-      assetOutSymbol: assetSymbol,
-      amountIn: amountStr,
-      recipient: normalizedRecipient,
+    // Execute transfer from user's agent wallet to owner's main wallet
+    const swapResult = await userAgent.transfer({
+      to: normalizedRecipient,
+      assetId: assetInfo.id,
+      amount: spendAmount,
+      note: `AutoPilot Rule ${ruleId} execution`
     })
     const txHash = swapResult.txId
 
