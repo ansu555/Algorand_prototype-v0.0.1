@@ -207,4 +207,17 @@ export const tursoDriver = {
       args: [new Date().toISOString(), userAddress]
     })
   },
+
+  async deleteAgentWallet(userAddress: string): Promise<void> {
+    const client = await getClient()
+    await client.execute({
+      sql: `DELETE FROM agent_wallets WHERE userAddress = ?`,
+      args: [userAddress]
+    })
+  },
+
+  async deleteAllAgentWallets(): Promise<void> {
+    const client = await getClient()
+    await client.execute(`DELETE FROM agent_wallets`)
+  },
 }

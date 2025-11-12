@@ -66,3 +66,13 @@ export async function updateAgentWalletLastUsed(userAddress: string): Promise<vo
   await ensureInit()
   return tursoDriver.updateAgentWalletLastUsed(userAddress)
 }
+
+export async function deleteAgentWallet(userAddress: string): Promise<void> {
+  await ensureInit()
+  return tursoDriver.deleteAgentWallet(userAddress)
+}
+
+export async function deleteAllAgentWallets(): Promise<void> {
+  await ensureInit()
+  return tursoDriver.deleteAllAgentWallets()
+}
