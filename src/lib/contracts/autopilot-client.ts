@@ -258,6 +258,19 @@ export class AutoPilotRuleClient {
     const suggestedParams = await this.algodClient.getTransactionParams().do();
     const contracts = getContracts();
 
+    const swapRouterAppId = params.swapRouterAppId ?? contracts.multihopRouter?.appId;
+    if (!swapRouterAppId) {
+      throw new Error('Swap router App ID not configured');
+    }
+
+    const foreignAssets = [params.assetIn, params.assetOut]
+      .filter((assetId) => typeof assetId === 'number' && assetId > 0)
+      .filter((assetId, index, array) => array.indexOf(assetId) === index);
+
+    const foreignApps = [swapRouterAppId]
+      .concat(params.poolAppId ? [params.poolAppId] : [])
+      .filter((appId, index, array) => array.indexOf(appId) === index);
+
     const appCallTxn = algosdk.makeApplicationNoOpTxnFromObject({
       sender: signer.address,
       appIndex: this.appId,
@@ -270,11 +283,8 @@ export class AutoPilotRuleClient {
         this.encodeUint64(Number(params.amountIn)),
         this.encodeUint64(Number(params.minAmountOut)),
       ],
-      foreignAssets: [params.assetIn, params.assetOut],
-      foreignApps: [
-        params.swapRouterAppId || contracts.multihopRouter.appId,
-        params.poolAppId || 0,
-      ],
+      foreignAssets: foreignAssets.length ? foreignAssets : undefined,
+      foreignApps: foreignApps.length ? foreignApps : undefined,
       suggestedParams,
     });
 

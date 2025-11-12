@@ -162,9 +162,10 @@ export type RuleBuilderModalProps = {
 }
 
 const defaultCoinOptions: CoinOption[] = [
-  { id: "bitcoin", symbol: "BTC" },
-  { id: "ethereum", symbol: "ETH" },
-  { id: "solana", symbol: "SOL" },
+  { id: "ALGO", symbol: "ALGO", name: "Algorand" },
+  { id: "USDC", symbol: "USDC", name: "USD Coin (Testnet)" },
+  { id: "USDT", symbol: "USDt", name: "Tether USDt (Testnet)" },
+  { id: "ALGF", symbol: "ALGF", name: "AlgoFund (Testnet)" },
 ]
 
 export function RuleBuilderModal(props: RuleBuilderModalProps) {
@@ -233,6 +234,7 @@ export function RuleBuilderModal(props: RuleBuilderModalProps) {
         const key = a.name.toUpperCase().replace(/\s+/g, '')
         if (map[key] === undefined) map[key] = a.id
       }
+      map[`ASA_${a.id}`] = a.id
     }
     return map
   }, [tradeableAssets])
@@ -258,16 +260,35 @@ export function RuleBuilderModal(props: RuleBuilderModalProps) {
     return coins.map((c: any) => ({ id: c.uuid || c.id, symbol: c.symbol, name: c.name, iconUrl: c.iconUrl || c.icon || c.image }))
   }, [apiCoinsData])
 
+  const dexCoinOptions: CoinOption[] = useMemo(() => {
+    if (!tradeableAssets || tradeableAssets.length === 0) return []
+    const options: CoinOption[] = []
+    for (const asset of tradeableAssets) {
+      const unit = asset.unitName?.toUpperCase()
+      const key = unit && unit.length > 0 ? unit : `ASA_${asset.id}`
+      if (!options.some((opt) => opt.id === key)) {
+        options.push({
+          id: key,
+          symbol: unit || key,
+          name: asset.name ? `${asset.name} (${asset.id})` : `ASA ${asset.id}`,
+        })
+      }
+    }
+    return options
+  }, [tradeableAssets])
+
   const coinOptions: CoinOption[] = useMemo(() => {
     // Ensure Algorand testnet coins (ALGO, USDC) are always available
     const algorandDefaults: CoinOption[] = [
       { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
       { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
+      { id: 'USDT', symbol: 'USDt', name: 'USDt (Testnet)' },
+      { id: 'ALGF', symbol: 'ALGF', name: 'AlgoFund (Testnet)' },
     ]
 
     const base = (availableCoinsProp && availableCoinsProp.length)
       ? availableCoinsProp
-      : (apiCoinOptions.length ? apiCoinOptions : defaultCoinOptions)
+      : (dexCoinOptions.length ? dexCoinOptions : (apiCoinOptions.length ? apiCoinOptions : defaultCoinOptions))
 
     // Merge with de-duplication by id
     const map = new Map<string, CoinOption>()
@@ -276,7 +297,7 @@ export function RuleBuilderModal(props: RuleBuilderModalProps) {
     })
     const merged = Array.from(map.values())
     // Sort to pin Algorand coins at the top of the list
-    const priority = new Set(['ALGO', 'USDC'])
+  const priority = new Set(['ALGO', 'USDC', 'USDT', 'ALGF'])
     merged.sort((a, b) => {
       const aP = priority.has(a.id) ? 0 : 1
       const bP = priority.has(b.id) ? 0 : 1

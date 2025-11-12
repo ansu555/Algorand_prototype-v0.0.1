@@ -28,7 +28,9 @@ export const ALGORAND_ASSETS = {
   },
   testnet: {
     ALGO: { id: 0, symbol: 'ALGO', decimals: 6, name: 'Algorand' },
-    USDC: { id: 10458941, symbol: 'USDC', decimals: 6, name: 'USDC (Testnet)' }
+    USDC: { id: 10458941, symbol: 'USDC', decimals: 6, name: 'USDC (Testnet)' },
+    USDT: { id: 67396430, symbol: 'USDT', decimals: 6, name: 'USDt (Testnet)' },
+    ALGF: { id: 70283957, symbol: 'ALGF', decimals: 6, name: 'AlgoFund (Testnet)' }
   }
 }
 

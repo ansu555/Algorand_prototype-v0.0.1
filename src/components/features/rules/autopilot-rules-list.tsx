@@ -21,6 +21,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { 
   MoreVertical, 
   Pause, 
@@ -32,6 +49,7 @@ import {
   TrendingUp,
   DollarSign,
   Clock,
+  Zap,
 } from "lucide-react"
 import { useWalletConnection, useWalletActions } from "@/components/providers/txnlab-wallet-provider"
 import { AutoPilotRuleClient } from "@/lib/contracts/autopilot-client"
@@ -51,6 +69,7 @@ import {
   type RuleStatus,
 } from "@/lib/contracts/autopilot-types"
 import { toast } from "sonner"
+import { useTradeableAssets } from "@/hooks/use-tradeable-assets"
 
 interface RuleWithId extends RuleData {
   ruleId: bigint
@@ -63,6 +82,11 @@ export function AutoPilotRulesList() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [actionInProgress, setActionInProgress] = useState<bigint | null>(null)
+  const [ruleToExecute, setRuleToExecute] = useState<RuleWithId | null>(null)
+  const [isExecuteDialogOpen, setIsExecuteDialogOpen] = useState(false)
+  const [executeAmount, setExecuteAmount] = useState<string>("")
+  const [selectedAssetOut, setSelectedAssetOut] = useState<string>("")
+  const [isExecuting, setIsExecuting] = useState(false)
 
   // Initialize autopilot client
   const autopilotClient = useMemo(() => {
@@ -74,6 +98,8 @@ export function AutoPilotRulesList() {
       return null
     }
   }, [])
+
+  const { assets: tradeableAssets } = useTradeableAssets()
 
   // Fetch user's rules
   const fetchRules = async () => {
@@ -202,6 +228,87 @@ export function AutoPilotRulesList() {
   const formatTimestamp = (timestamp: bigint) => {
     if (timestamp === BigInt(0)) return 'Never'
     return new Date(Number(timestamp) * 1000).toLocaleString()
+  }
+
+  const formatAssetLabel = (assetId: bigint) => {
+    if (assetId === BigInt(0)) {
+      return 'ALGO (0)'
+    }
+    const asset = tradeableAssets.find((item) => item.id === Number(assetId))
+    if (asset) {
+      const unit = asset.unitName || `#${asset.id}`
+      return `${asset.name} (${unit})`
+    }
+    return `ASA ${assetId.toString()}`
+  }
+
+  const openExecuteDialog = (rule: RuleWithId) => {
+    setRuleToExecute(rule)
+    const defaultAmount = microalgosToAlgo(Number(rule.max_spend_microalgos))
+    setExecuteAmount(defaultAmount)
+    const firstTarget = rule.target_assets[0]
+    setSelectedAssetOut(firstTarget !== undefined ? firstTarget.toString() : "")
+    setIsExecuteDialogOpen(true)
+  }
+
+  const resetExecuteDialog = () => {
+    setRuleToExecute(null)
+    setExecuteAmount("")
+    setSelectedAssetOut("")
+    setIsExecuteDialogOpen(false)
+  }
+
+  const handleExecuteConfirm = async () => {
+    if (!walletSigner || !autopilotClient || !ruleToExecute) {
+      return
+    }
+
+    const amountFloat = Number(executeAmount)
+    if (!Number.isFinite(amountFloat) || amountFloat <= 0) {
+      toast.error('Enter a valid amount to execute')
+      return
+    }
+
+    const assetOutId = Number(selectedAssetOut)
+    if (!Number.isInteger(assetOutId) || assetOutId < 0) {
+      toast.error('Select a target asset for this execution')
+      return
+    }
+
+    const amountInMicroalgos = BigInt(Math.round(amountFloat * 1_000_000))
+    if (amountInMicroalgos <= BigInt(0)) {
+      toast.error('Amount must be greater than zero')
+      return
+    }
+
+    setIsExecuting(true)
+    setActionInProgress(ruleToExecute.ruleId)
+    toast.loading('Executing rule on-chain...', { id: 'execute-rule' })
+
+    try {
+      const result = await autopilotClient.executeRule(walletSigner, {
+        ruleId: ruleToExecute.ruleId,
+        owner: ruleToExecute.owner,
+        assetIn: 0, // Spend ALGO by default
+        assetOut: assetOutId,
+        amountIn: amountInMicroalgos,
+        minAmountOut: BigInt(0),
+      })
+
+      toast.success(`Rule executed successfully!`, {
+        id: 'execute-rule',
+        description: `Spent ${microalgosToAlgo(result.amountSpent)} ALGO · Tx: ${result.txId}`,
+      })
+
+      resetExecuteDialog()
+      await fetchRules()
+    } catch (error: any) {
+      console.error('Failed to execute rule:', error)
+      toast.error(error.message || 'Failed to execute rule', { id: 'execute-rule' })
+    } finally {
+      setIsExecuting(false)
+      setActionInProgress(null)
+    }
   }
 
   if (!isConnected) {
@@ -342,6 +449,17 @@ export function AutoPilotRulesList() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           {rule.status === STATUS_ACTIVE && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => openExecuteDialog(rule)}
+                              >
+                                <Zap className="w-4 h-4 mr-2" />
+                                Execute Now
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                            </>
+                          )}
+                          {rule.status === STATUS_ACTIVE && (
                             <DropdownMenuItem
                               onClick={() => handleStatusUpdate(rule.ruleId, STATUS_PAUSED)}
                             >
@@ -403,6 +521,86 @@ export function AutoPilotRulesList() {
           </div>
         )}
       </CardContent>
+      <Dialog
+        open={isExecuteDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            if (isExecuting) return
+            resetExecuteDialog()
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Execute Rule
+              {ruleToExecute && (
+                <span className="ml-2 font-mono text-xs text-muted-foreground">
+                  #{ruleToExecute.ruleId.toString()}
+                </span>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              Trigger an immediate swap using this rule. Execution spends funds from your connected wallet.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="execute-amount">Amount to Spend (ALGO)</Label>
+              <Input
+                id="execute-amount"
+                type="number"
+                min="0"
+                step="0.000001"
+                value={executeAmount}
+                onChange={(event) => setExecuteAmount(event.target.value)}
+                disabled={isExecuting}
+              />
+              {ruleToExecute && (
+                <p className="text-xs text-muted-foreground">
+                  Rule max spend: {microalgosToAlgo(Number(ruleToExecute.max_spend_microalgos))} ALGO
+                </p>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <Label>Target Asset</Label>
+              <Select
+                value={selectedAssetOut}
+                onValueChange={setSelectedAssetOut}
+                disabled={isExecuting || !(ruleToExecute?.target_assets?.length)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select asset" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ruleToExecute?.target_assets.map((assetId) => (
+                    <SelectItem key={assetId.toString()} value={assetId.toString()}>
+                      {formatAssetLabel(assetId)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={resetExecuteDialog}
+              disabled={isExecuting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleExecuteConfirm}
+              disabled={isExecuting || !ruleToExecute}
+            >
+              {isExecuting ? 'Executing…' : 'Execute Rule'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }

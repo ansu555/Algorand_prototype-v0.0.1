@@ -100,9 +100,9 @@ export function convertFormToContractParams(
  */
 export const TESTNET_ASSET_MAP: Record<string, number> = {
   ALGO: 0,
-  USDC: 10458941, // Testnet USDC asset ID
-  USDT: 10458942, // Testnet USDT asset ID (example)
-  // Add more as needed
+  USDC: 10458941, // Circle USDC (Tinyman verified)
+  USDT: 67396430, // Tether USDt (Tinyman verified)
+  ALGF: 70283957, // AlgoFund governance token
 };
 
 /**
