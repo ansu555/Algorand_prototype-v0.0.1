@@ -363,7 +363,7 @@ export default function TransactionsPage() {
                           <TableCell className="text-center py-4">
                             {tx.txId ? (
                               <a
-                                href={`https://testnet.algoexplorer.io/tx/${tx.txId}`}
+                                href={`https://lora.algokit.io/testnet/transaction/${tx.txId}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center justify-center h-7 w-7 rounded-md"
