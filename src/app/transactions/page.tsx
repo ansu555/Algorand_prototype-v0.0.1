@@ -26,11 +26,14 @@ type Transaction = {
   fromAmount: string
   fromAmountBaseUnits?: number | string
   toAmount: string
+  toAmountBaseUnits?: number | string
   slippage: string
   routePath: any[]
   poolAddress?: string
   confirmedRound?: number
   decimals?: number
+  fromDecimals?: number
+  toDecimals?: number
 }
 
 export default function TransactionsPage() {
@@ -282,17 +285,41 @@ export default function TransactionsPage() {
                                       (Array.isArray(tx.routePath) && tx.routePath.length > 0 && tx.routePath[0]?.poolAddress) ||
                                       null
                       
-                      // Calculate display amount for EXECUTE_RULE
-                      let displayAmountNumber: number | null = null
+                      // Calculate display amounts
+                      let executeAmountNumber: number | null = null
                       if (isExecuteRule) {
                         if (tx.fromAmountBaseUnits != null && tx.decimals != null) {
-                          displayAmountNumber = Number(tx.fromAmountBaseUnits) / Math.pow(10, tx.decimals)
+                          executeAmountNumber = Number(tx.fromAmountBaseUnits) / Math.pow(10, tx.decimals)
                         } else if (tx.fromAmount != null) {
-                          // fromAmount may already be a human-readable number for execute_rule
-                          displayAmountNumber = Number(tx.fromAmount)
+                          // fromAmount may already be human-readable
+                          const n = Number(tx.fromAmount)
+                          executeAmountNumber = Number.isFinite(n) ? n : null
                         }
                       }
-                      const executeAmount = displayAmountNumber != null ? displayAmountNumber.toFixed(6) : null
+
+                      // For swaps, compute both sides where possible
+                      const isSwap = tx.action === 'swap'
+                      let swapFromNumber: number | null = null
+                      let swapToNumber: number | null = null
+                      if (isSwap) {
+                        if (tx.fromAmountBaseUnits != null && tx.fromDecimals != null) {
+                          swapFromNumber = Number(tx.fromAmountBaseUnits) / Math.pow(10, tx.fromDecimals)
+                        } else if (tx.fromAmount != null) {
+                          const n = Number(tx.fromAmount)
+                          swapFromNumber = Number.isFinite(n) ? n : null
+                        }
+
+                        if (tx.toAmountBaseUnits != null && tx.toDecimals != null) {
+                          swapToNumber = Number(tx.toAmountBaseUnits) / Math.pow(10, tx.toDecimals)
+                        } else if (tx.toAmount != null) {
+                          const n = Number(tx.toAmount)
+                          swapToNumber = Number.isFinite(n) ? n : null
+                        }
+                      }
+
+                      const executeAmount = executeAmountNumber != null ? executeAmountNumber.toFixed(6) : null
+                      const swapFromAmount = swapFromNumber != null ? swapFromNumber.toFixed(6) : null
+                      const swapToAmount = swapToNumber != null ? swapToNumber.toFixed(6) : null
                       
                       return (
                         <TableRow key={tx.id} className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors">
@@ -317,16 +344,20 @@ export default function TransactionsPage() {
 
                           {/* Token Amount */}
                           <TableCell className="text-left py-4">
-                            {isExecuteRule && executeAmount ? (
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{executeAmount}</span>
-                                <span className="text-xs text-muted-foreground">{fromSymbol}</span>
-                              </div>
+                            {isExecuteRule ? (
+                              executeAmount ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{executeAmount}</span>
+                                  <span className="text-xs text-muted-foreground">{fromSymbol}</span>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )
                             ) : (
                               <div className="flex items-center gap-2">
-                                <span className="text-muted-foreground">—</span>
+                                <span className="text-muted-foreground">{swapFromAmount ?? '—'}</span>
                                 <span className="font-medium">→</span>
-                                <span className="text-muted-foreground">—</span>
+                                <span className="text-muted-foreground">{swapToAmount ?? '—'}</span>
                               </div>
                             )}
                           </TableCell>

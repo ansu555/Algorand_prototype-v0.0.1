@@ -96,6 +96,7 @@ export async function GET(request: Request) {
         // also expose base units when available so frontend can format consistently
         fromAmountBaseUnits: fromAmountBaseUnits ?? swapDetails.fromAmountBaseUnits,
         toAmount: isExecuteRule ? undefined : swapDetails.toAmount,
+        toAmountBaseUnits: isExecuteRule ? undefined : swapDetails.toAmountBaseUnits,
         
         slippage: swapDetails.slippage,
         routePath: swapDetails.routePath || swapDetails.route || [],
@@ -108,6 +109,9 @@ export async function GET(request: Request) {
         
         // Add execute-specific fields
         decimals: isExecuteRule ? plan?.decimals : undefined,
+        // Add swap-specific decimals for better formatting
+        fromDecimals: isExecuteRule ? plan?.decimals : (swapDetails.fromAssetDecimals ?? swapDetails.fromDecimals),
+        toDecimals: isExecuteRule ? undefined : (swapDetails.toAssetDecimals ?? swapDetails.toDecimals),
       }
     })
 
