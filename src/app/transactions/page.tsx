@@ -8,7 +8,6 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
 import { Loader2, ArrowUpDown, Clock, CalendarClock, ExternalLink, Copy, Check } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-import { Button } from "@/components/ui/button"
 
 type Transaction = {
   id: string
@@ -24,11 +23,16 @@ type Transaction = {
   fromAssetUnitName: string
   toAssetUnitName: string
   fromAmount: string
+  fromAmountBaseUnits?: number | string
   toAmount: string
+  toAmountBaseUnits?: number | string
   slippage: string
   routePath: any[]
   poolAddress?: string
   confirmedRound?: number
+  decimals?: number
+  fromDecimals?: number
+  toDecimals?: number
 }
 
 export default function TransactionsPage() {
@@ -119,7 +123,17 @@ export default function TransactionsPage() {
   }, [transactions, typeFilter, sortBy])
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col [&_*:hover]:!bg-transparent [&_*:hover]:!text-current [&_*:hover]:!opacity-100">
+      <style jsx global>{`
+        .flex.min-h-screen * {
+          transition: none !important;
+        }
+        .flex.min-h-screen *:hover {
+          background-color: transparent !important;
+          color: inherit !important;
+          opacity: inherit !important;
+        }
+      `}</style>
       <BackgroundPaths />
       <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-6">
         <div className="w-full space-y-6">
@@ -154,7 +168,7 @@ export default function TransactionsPage() {
                       <SelectValue placeholder="Type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="all">All Transactions</SelectItem>
                       <SelectItem value="swap">Swap</SelectItem>
                       <SelectItem value="send">Send</SelectItem>
                       <SelectItem value="receive">Receive</SelectItem>
@@ -181,7 +195,7 @@ export default function TransactionsPage() {
 
             <CardContent className="space-y-6">
               {/* Statistics Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* 1D Volume */}
                 <Card>
               <CardHeader className="pb-2">
@@ -247,18 +261,15 @@ export default function TransactionsPage() {
                 <div className="w-full overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="text-red-600 dark:text-red-400">
-                    <TableHead className="text-left">
-                      <div className="flex items-center gap-1">
-                        Time
-                        <ArrowUpDown className="h-3 w-3" />
-                      </div>
+                  <TableRow className="border-b border-gray-200 dark:border-gray-800">
+                    <TableHead className="text-left font-semibold text-red-600 dark:text-red-400">
+                      Time
                     </TableHead>
-                    <TableHead className="text-left">Type</TableHead>
-                    <TableHead className="text-right">Token Amount</TableHead>
-                    <TableHead className="text-center">Pool Address</TableHead>
-                    <TableHead className="text-right">Wallet</TableHead>
-                    <TableHead className="text-center">Explorer</TableHead>
+                    <TableHead className="text-left font-semibold text-red-600 dark:text-red-400">Type</TableHead>
+                    <TableHead className="text-left font-semibold text-red-600 dark:text-red-400">Token Amount</TableHead>
+                    <TableHead className="text-left font-semibold text-red-600 dark:text-red-400">Pool Address</TableHead>
+                    <TableHead className="text-left font-semibold text-red-600 dark:text-red-400">Wallet</TableHead>
+                    <TableHead className="text-center font-semibold text-red-600 dark:text-red-400">Explorer</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -270,6 +281,10 @@ export default function TransactionsPage() {
                     </TableRow>
                   ) : (
                     filteredTransactions.map((tx) => {
+                      const isExecuteRule = tx.action === 'execute_rule'
+                      
+                      // For EXECUTE_RULE, show only the single token being executed
+                      // For SWAP, show the from -> to format
                       const fromSymbol = tx.fromAssetUnitName || tx.fromAssetName || `#${tx.fromAssetId}`
                       const toSymbol = tx.toAssetUnitName || tx.toAssetName || `#${tx.toAssetId}`
                       
@@ -279,94 +294,145 @@ export default function TransactionsPage() {
                                       (Array.isArray(tx.routePath) && tx.routePath.length > 0 && tx.routePath[0]?.poolAddress) ||
                                       null
                       
+                      // Calculate display amounts
+                      let executeAmountNumber: number | null = null
+                      if (isExecuteRule) {
+                        if (tx.fromAmountBaseUnits != null && tx.decimals != null) {
+                          executeAmountNumber = Number(tx.fromAmountBaseUnits) / Math.pow(10, tx.decimals)
+                        } else if (tx.fromAmount != null) {
+                          // fromAmount may already be human-readable
+                          const n = Number(tx.fromAmount)
+                          executeAmountNumber = Number.isFinite(n) ? n : null
+                        }
+                      }
+
+                      // For swaps, compute both sides where possible
+                      const isSwap = tx.action === 'swap'
+                      let swapFromNumber: number | null = null
+                      let swapToNumber: number | null = null
+                      if (isSwap) {
+                        if (tx.fromAmountBaseUnits != null && tx.fromDecimals != null) {
+                          swapFromNumber = Number(tx.fromAmountBaseUnits) / Math.pow(10, tx.fromDecimals)
+                        } else if (tx.fromAmount != null) {
+                          const n = Number(tx.fromAmount)
+                          swapFromNumber = Number.isFinite(n) ? n : null
+                        }
+
+                        if (tx.toAmountBaseUnits != null && tx.toDecimals != null) {
+                          swapToNumber = Number(tx.toAmountBaseUnits) / Math.pow(10, tx.toDecimals)
+                        } else if (tx.toAmount != null) {
+                          const n = Number(tx.toAmount)
+                          swapToNumber = Number.isFinite(n) ? n : null
+                        }
+                      }
+
+                      const executeAmount = executeAmountNumber != null ? executeAmountNumber.toFixed(6) : null
+                      const swapFromAmount = swapFromNumber != null ? swapFromNumber.toFixed(6) : null
+                      const swapToAmount = swapToNumber != null ? swapToNumber.toFixed(6) : null
+                      
                       return (
-                        <TableRow key={tx.id} className="hover:bg-muted/30">
+                        <TableRow key={tx.id} className="border-b border-gray-100 dark:border-gray-800/50">
                           {/* Time */}
-                          <TableCell className="text-left text-muted-foreground text-sm">
+                          <TableCell className="text-left text-muted-foreground text-sm py-4">
                             {formatDistanceToNow(new Date(tx.createdAt), { addSuffix: true })}
                           </TableCell>
 
-                          {/* Type - with spacing */}
-                          <TableCell className="text-left">
-                            <div className="flex items-center gap-3">
-                              <span className="text-muted-foreground text-sm">{tx.action ? String(tx.action).toUpperCase().replace(/_/g, ' ') : 'EVENT'}</span>
-                              <span className="font-medium">{fromSymbol} → {toSymbol}</span>
+                          {/* Type */}
+                          <TableCell className="text-left py-4">
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs text-muted-foreground uppercase tracking-wide">
+                                {tx.action ? String(tx.action).toUpperCase().replace(/_/g, ' ') : 'EVENT'}
+                              </span>
+                              {isExecuteRule ? (
+                                <span className="font-medium text-sm">{fromSymbol}</span>
+                              ) : (
+                                <span className="font-medium text-sm">{fromSymbol} → {toSymbol}</span>
+                              )}
                             </div>
                           </TableCell>
 
-                          {/* Token Amount - consolidated */}
-                          <TableCell className="text-right font-mono text-sm">
-                            <span className="font-medium">
-                              {tx.fromAmount || '—'} → {tx.toAmount || '—'}
-                            </span>
+                          {/* Token Amount */}
+                          <TableCell className="text-left py-4">
+                            {isExecuteRule ? (
+                              executeAmount ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{executeAmount}</span>
+                                  <span className="text-xs text-muted-foreground">{fromSymbol}</span>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground">{swapFromAmount ?? '—'}</span>
+                                <span className="font-medium">→</span>
+                                <span className="text-muted-foreground">{swapToAmount ?? '—'}</span>
+                              </div>
+                            )}
                           </TableCell>
 
-                          {/* Pool Address - copy icon */}
-                          <TableCell className="text-center">
+                          {/* Pool Address */}
+                          <TableCell className="text-left py-4">
                             {poolAddr ? (
-                              <div className="flex items-center justify-center gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
+                              <div className="flex items-center gap-2">
+                                <button
                                   onClick={() => copyToClipboard(String(poolAddr))}
-                                  className="h-8 w-8 p-0 flex-shrink-0"
+                                  className="h-7 w-7 p-0 flex-shrink-0 inline-flex items-center justify-center rounded-md cursor-pointer"
                                   title={`Copy: ${String(poolAddr)}`}
                                 >
                                   {copiedAddress === poolAddr ? (
-                                    <Check className="h-4 w-4 text-green-500" />
+                                    <Check className="h-3.5 w-3.5 text-green-500" />
                                   ) : (
-                                    <Copy className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                                    <Copy className="h-3.5 w-3.5 text-muted-foreground" />
                                   )}
-                                </Button>
+                                </button>
                                 <span className="font-mono text-xs text-muted-foreground">
                                   {String(poolAddr).slice(0, 6)}...{String(poolAddr).slice(-6)}
                                 </span>
                               </div>
                             ) : (
-                              <span className="text-muted-foreground text-xs">—</span>
+                              <span className="text-muted-foreground text-sm">—</span>
                             )}
                           </TableCell>
 
                           {/* Wallet */}
-                          <TableCell className="text-center">
+                          <TableCell className="text-left py-4">
                             {tx.ownerAddress ? (
-                              <div className="flex items-center justify-center gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
+                              <div className="flex items-center gap-2">
+                                <button
                                   onClick={() => copyToClipboard(tx.ownerAddress)}
-                                  className="h-8 w-8 p-0 flex-shrink-0"
+                                  className="h-7 w-7 p-0 flex-shrink-0 inline-flex items-center justify-center rounded-md cursor-pointer"
                                   title={`Copy: ${tx.ownerAddress}`}
                                 >
                                   {copiedAddress === tx.ownerAddress ? (
-                                    <Check className="h-4 w-4 text-green-500" />
+                                    <Check className="h-3.5 w-3.5 text-green-500" />
                                   ) : (
-                                    <Copy className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                                    <Copy className="h-3.5 w-3.5 text-muted-foreground" />
                                   )}
-                                </Button>
+                                </button>
                                 <span className="font-mono text-xs text-muted-foreground">
                                   {tx.ownerAddress.slice(0, 6)}...{tx.ownerAddress.slice(-6)}
                                 </span>
                               </div>
                             ) : (
-                              <span className="text-muted-foreground text-xs">—</span>
+                              <span className="text-muted-foreground text-sm">—</span>
                             )}
                           </TableCell>
 
                           {/* Explorer Link */}
-                          <TableCell className="text-center">
+                          <TableCell className="text-center py-4">
                             {tx.txId ? (
                               <a
                                 href={`https://testnet.algoexplorer.io/tx/${tx.txId}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-muted transition-colors"
+                                className="inline-flex items-center justify-center h-7 w-7 rounded-md"
                                 title="View on AlgoExplorer"
                               >
-                                <ExternalLink className="h-4 w-4 text-blue-500 hover:text-blue-600" />
+                                <ExternalLink className="h-4 w-4 text-blue-500 dark:text-blue-400" />
                               </a>
                             ) : (
-                              <span className="text-muted-foreground text-xs">—</span>
+                              <span className="text-muted-foreground text-sm">—</span>
                             )}
                           </TableCell>
                         </TableRow>
