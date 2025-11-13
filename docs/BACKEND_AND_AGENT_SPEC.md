@@ -98,18 +98,12 @@ Response ← Validation ← Processing ← Data Fetch
 
 #### POST /api/agent/execute
 
-**Purpose:** Execute specific agent actions
+**Purpose:** Execute autopilot rule (transfers from user's agent wallet to main wallet)
 
 **Request:**
 ```json
 {
-  "action": "transfer",
-  "params": {
-    "to": "RECIPIENT_ADDRESS",
-    "amount": "10",
-    "assetId": 0
-  },
-  "walletAddress": "SENDER_ADDRESS"
+  "ruleId": "rule_1756454137894_d3sxos"
 }
 ```
 
@@ -119,13 +113,28 @@ Response ← Validation ← Processing ← Data Fetch
   "ok": true,
   "txId": "ABC123...",
   "details": {
-    "from": "SENDER_ADDRESS",
-    "to": "RECIPIENT_ADDRESS",
+    "from": "AGENT_WALLET_ADDRESS",
+    "to": "USER_MAIN_WALLET_ADDRESS",
     "amount": "10",
-    "assetId": 0
+    "assetId": 10458941,
+    "note": "AutoPilot Rule rule_1756454137894_d3sxos execution"
   }
 }
 ```
+
+**Flow:**
+1. Fetch rule from database
+2. Get user's agent wallet (via `buildUserAgentWallet`)
+3. Check agent wallet has sufficient balance
+4. Auto opt-in to asset if needed (costs 0.1 ALGO)
+5. Execute transfer from agent wallet → user's main wallet
+6. Log execution to database
+
+**Important Notes:**
+- Uses **user's personal agent wallet**, not the shared deployer wallet
+- Agent wallet must be funded before rule execution
+- Agent wallet automatically opts into required assets
+- Transaction fees paid from agent wallet (~0.001 ALGO)
 
 ---
 
@@ -149,6 +158,138 @@ Response ← Validation ← Processing ← Data Fetch
   "txId": "DEF456..."
 }
 ```
+
+---
+
+#### GET /api/agent/wallet
+
+**Purpose:** Get or create agent wallet for a user
+
+**Request:**
+```
+GET /api/agent/wallet?userAddress=ALGORAND_ADDRESS
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "agentAddress": "2AXW6UGLRWFYWMMEDDSXLZJFGWEWUBKFTAQE673MZXAROURSE6E6OHWOMA",
+  "isNew": false,
+  "accountInfo": {
+    "address": "2AXW6UGLRWFYWMMEDDSXLZJFGWEWUBKFTAQE673MZXAROURSE6E6OHWOMA",
+    "algoBalance": 1.5,
+    "minBalance": 0.2,
+    "availableBalance": 1.3,
+    "assets": [
+      {
+        "assetId": 10458941,
+        "symbol": "USDC",
+        "balance": "100.0",
+        "decimals": 6
+      }
+    ],
+    "totalAssets": 1
+  },
+  "network": "testnet"
+}
+```
+
+**Features:**
+- Automatically creates agent wallet if it doesn't exist
+- Returns encrypted mnemonic from database
+- Fetches current account info from blockchain
+- Calculates available balance (total - minimum balance)
+
+---
+
+#### POST /api/agent/wallet/opt-in
+
+**Purpose:** Opt agent wallet into a specific asset
+
+**Request:**
+```json
+{
+  "userAddress": "YCBV32KEY47XNQ6SB2GIS3PAFQP2GUQ3Z7JZ2U4A3PSMCRLXQAWMJM657I",
+  "assetId": 10458941
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "txId": "ABC123DEF456...",
+  "accountInfo": {
+    "address": "2AXW6UGLRWFYWMMEDDSXLZJFGWEWUBKFTAQE673MZXAROURSE6E6OHWOMA",
+    "algoBalance": 1.4,
+    "minBalance": 0.2,
+    "assets": [
+      {
+        "assetId": 10458941,
+        "symbol": "USDC",
+        "balance": "0.0",
+        "decimals": 6
+      }
+    ]
+  },
+  "message": "Successfully opted in to asset 10458941"
+}
+```
+
+**Requirements:**
+- Agent wallet must have at least 0.101 ALGO (0.1 for opt-in + 0.001 for fee)
+- Each opt-in locks 0.1 ALGO (recoverable by opting out)
+
+---
+
+#### POST /api/agent/wallet/opt-in-all
+
+**Purpose:** Opt agent wallet into all common trading assets (USDC, USDT, ALGF)
+
+**Request:**
+```json
+{
+  "userAddress": "YCBV32KEY47XNQ6SB2GIS3PAFQP2GUQ3Z7JZ2U4A3PSMCRLXQAWMJM657I"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "results": [
+    {
+      "assetId": 10458941,
+      "symbol": "USDC",
+      "txId": "ABC123...",
+      "success": true
+    },
+    {
+      "assetId": 67396430,
+      "symbol": "USDT",
+      "txId": "DEF456...",
+      "success": true
+    },
+    {
+      "assetId": 70283957,
+      "symbol": "ALGF",
+      "txId": "GHI789...",
+      "success": true
+    }
+  ],
+  "totalOptedIn": 3,
+  "totalCost": "0.303 ALGO",
+  "accountInfo": {
+    "algoBalance": 0.197,
+    "assets": [...]
+  }
+}
+```
+
+**Requirements:**
+- Agent wallet must have at least 0.5 ALGO for all opt-ins
+- Opt-ins are executed sequentially to ensure reliability
 
 ---
 
@@ -668,6 +809,45 @@ GET /api/pools/market-data?dex=tinyman&asset1=0&asset2=10458941
 ## Database Schema
 
 ### Tables
+
+#### agent_wallets
+
+**Purpose:** Store encrypted per-user agent wallets for automated trading
+
+**Schema:**
+```sql
+CREATE TABLE agent_wallets (
+  id TEXT PRIMARY KEY,
+  userAddress TEXT NOT NULL UNIQUE,
+  agentAddress TEXT NOT NULL UNIQUE,
+  encryptedMnemonic TEXT NOT NULL,
+  createdAt TEXT NOT NULL,
+  lastUsedAt TEXT
+);
+
+CREATE INDEX idx_agent_wallets_user ON agent_wallets(userAddress);
+CREATE INDEX idx_agent_wallets_agent ON agent_wallets(agentAddress);
+```
+
+**Example Row:**
+```json
+{
+  "id": "agent_YCBV32KEY47XNQ6SB2GIS3PAFQP2GUQ3Z7JZ2U4A3PSMCRLXQAWMJM657I_1699876543210",
+  "userAddress": "YCBV32KEY47XNQ6SB2GIS3PAFQP2GUQ3Z7JZ2U4A3PSMCRLXQAWMJM657I",
+  "agentAddress": "2AXW6UGLRWFYWMMEDDSXLZJFGWEWUBKFTAQE673MZXAROURSE6E6OHWOMA",
+  "encryptedMnemonic": "a1b2c3d4e5f6...iv:authTag:encrypted",
+  "createdAt": "2025-11-12T09:00:00.000Z",
+  "lastUsedAt": "2025-11-12T10:30:00.000Z"
+}
+```
+
+**Security:**
+- `encryptedMnemonic` uses AES-256-GCM encryption
+- Format: `iv:authTag:encryptedData` (all hex-encoded)
+- Encryption key stored in environment variable `AGENT_WALLET_ENCRYPTION_KEY`
+- Each user's mnemonic is independently encrypted
+
+---
 
 #### rules
 

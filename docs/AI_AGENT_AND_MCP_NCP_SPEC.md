@@ -74,18 +74,52 @@
 
 ### Agent Initialization
 
-**File:** `src/lib/agent.ts`, `src/lib/algorand.ts`
+**File:** `src/lib/agent.ts`, `src/lib/algorand.ts`, `src/lib/agent-wallet.ts`
 
 ```typescript
 import { getAgent } from '@/lib/agent';
+import { buildUserAgentWallet } from '@/lib/agent-wallet';
 
-// Get singleton agent instance
+// Get shared deployer agent (for general queries)
 const agent = await getAgent();
+
+// Get user's personal agent wallet (for autopilot)
+const userAgent = await buildUserAgentWallet(userWalletAddress);
 
 // Agent is initialized with:
 // - Algorand wallet (from mnemonic)
 // - Network configuration (testnet/mainnet)
 // - Connected to Algod and Indexer
+```
+
+### Per-User Agent Wallets
+
+**New Feature:** Each user now has a dedicated agent wallet for automated trading.
+
+**Key Functions:**
+```typescript
+import { getOrCreateAgentWallet, buildUserAgentWallet } from '@/lib/agent-wallet';
+
+// Create or retrieve agent wallet for user
+const { agentAddress, agentMnemonic, isNew } = 
+  await getOrCreateAgentWallet(userWalletAddress);
+
+// Build agent instance for operations
+const userAgent = await buildUserAgentWallet(userWalletAddress);
+
+// Check balance
+const balance = await userAgent.getBalance(assetId);
+
+// Opt-in to asset
+const txId = await userAgent.optInToAsset(assetId);
+
+// Transfer assets
+const result = await userAgent.transfer({
+  to: recipientAddress,
+  assetId: 10458941,
+  amount: 1000000,
+  note: "AutoPilot execution"
+});
 ```
 
 ### Core Capabilities
@@ -98,6 +132,8 @@ const agent = await getAgent();
 | **Token Swap** | `swap(opts)` | assetIn, assetOut, amount | Transaction ID |
 | **Transaction History** | `getTransactions()` | None | Array of transactions |
 | **Asset Opt-In** | `optIn(assetId)` | Asset ID | Transaction ID |
+| **Agent Wallet Mgmt** | `getOrCreateAgentWallet()` | userAddress | Agent wallet details |
+| **Fund Agent Wallet** | Manual transfer | ALGO/assets | N/A |
 
 ### Agent Response Format
 
@@ -327,6 +363,79 @@ Confirm? (yes/no)
 └─────────┴──────────┴────────────┴──────────┘
 
 Total Value: $93.52
+```
+
+---
+
+### Agent Wallet Commands
+
+**Triggers:** `agent wallet`, `agent balance`, `agent address`, `fund agent`
+
+**Examples:**
+- "show my agent wallet"
+- "what's my agent wallet address?"
+- "agent wallet balance"
+- "how do I fund my agent wallet?"
+
+**Response (agent wallet info):**
+```
+🔐 Your Agent Wallet:
+• Address: 2AXW6UGLRW...E6OHWOMA
+• ALGO Balance: 0.5 ALGO
+• Available: 0.3 ALGO (after min balance)
+• Assets: USDC (100.0), USDT (50.0)
+
+To fund: Send ALGO or assets to the address above
+```
+
+**Response (funding instructions):**
+```
+💡 How to Fund Your Agent Wallet:
+
+1. Copy your agent address: 2AXW6UGLRW...E6OHWOMA
+2. Open your main wallet (Pera, Defly, etc.)
+3. Send at least 0.5 ALGO to fund it
+4. Optionally send trading assets (USDC, USDT, etc.)
+5. Agent wallet will auto opt-in to assets when needed
+
+Minimum Requirements:
+• 0.1 ALGO (base)
+• +0.1 ALGO per asset you want to hold
+• +fees (~0.001 ALGO per transaction)
+
+Recommended: Start with 0.5 ALGO + your trading assets
+```
+
+---
+
+### Opt-In Commands
+
+**Triggers:** `opt in`, `opt-in`, `add asset`, `enable asset`
+
+**Examples:**
+- "opt in to USDC"
+- "add USDT to agent wallet"
+- "enable all trading assets"
+
+**Response:**
+```
+✅ Asset Opt-In Successful!
+• Asset: USDC (10458941)
+• Transaction ID: ABC123...
+• Cost: 0.101 ALGO (0.1 locked + 0.001 fee)
+
+Your agent wallet can now hold USDC.
+```
+
+**Response (opt-in all):**
+```
+✅ Opted in to all trading assets!
+• USDC: Transaction ABC123...
+• USDT: Transaction DEF456...
+• ALGF: Transaction GHI789...
+
+Total Cost: 0.303 ALGO
+Your agent wallet is ready for automated trading!
 ```
 
 ---
