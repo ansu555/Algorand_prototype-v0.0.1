@@ -6,7 +6,7 @@ import { SearchBar } from "@/components/shared/search-bar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
-import { Loader2, ArrowUpDown } from "lucide-react"
+import { Loader2, ArrowUpDown, Clock, CalendarClock, ExternalLink, Copy, Check } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { Button } from "@/components/ui/button"
 
@@ -37,6 +37,9 @@ export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
   const [stats, setStats] = useState<{ total: number; last1d: number; last30d: number } | null>(null)
+  const [typeFilter, setTypeFilter] = useState<
+    'all' | 'swap' | 'send' | 'receive' | 'stake' | 'add_liquidity'
+  >('all')
 
   // Fetch real transactions from all users
   useEffect(() => {
@@ -96,7 +99,7 @@ export default function TransactionsPage() {
 
     // Filter by type
     if (typeFilter !== 'all') {
-      filtered = filtered.filter(tx => tx.type === typeFilter)
+      filtered = filtered.filter(tx => (tx.action || '').toLowerCase() === typeFilter)
     }
 
     // Sort transactions
@@ -142,7 +145,11 @@ export default function TransactionsPage() {
                   </div>
                   
                   {/* Type Filter */}
-                  <Select value={typeFilter} onValueChange={setTypeFilter} disabled={loading}>
+                  <Select
+                    value={typeFilter}
+                    onValueChange={(v) => setTypeFilter(v as 'all' | 'swap' | 'send' | 'receive' | 'stake' | 'add_liquidity')}
+                    disabled={loading}
+                  >
                     <SelectTrigger className="w-[120px] sm:w-[140px]">
                       <SelectValue placeholder="Type" />
                     </SelectTrigger>

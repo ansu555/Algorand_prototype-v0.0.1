@@ -96,7 +96,7 @@ const schema = z
       .number()
       .min(0, { message: "Must be >= 0" })
       .max(100, { message: "Must be <= 100" }),
-    cooldownMinutes: z.number().min(0, { message: "Must be >= 0" }),
+    cooldownMinutes: z.number().min(5, { message: "Must be >= 5 minutes" }),
   })
   .superRefine((data, ctx) => {
     // Conditional requirements based on trigger
