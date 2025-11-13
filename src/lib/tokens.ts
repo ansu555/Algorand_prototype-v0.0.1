@@ -11,7 +11,9 @@ export type TokenInfo = {
 // Algorand testnet ASAs only
 const ALGORAND_TESTNET_TOKENS: Record<string, TokenInfo> = {
   ALGO: { symbol: 'ALGO', address: 0, decimals: 6, coingeckoId: 'algorand', network: 'algorand' },
-  USDC: { symbol: 'USDC', address: 10458941, decimals: 6, coingeckoId: 'usd-coin', network: 'algorand' }
+  USDC: { symbol: 'USDC', address: 10458941, decimals: 6, coingeckoId: 'usd-coin', network: 'algorand' },
+  USDT: { symbol: 'USDT', address: 67396430, decimals: 6, coingeckoId: 'tether', network: 'algorand' },
+  ALGF: { symbol: 'ALGF', address: 70283957, decimals: 6, network: 'algorand' }
 }
 
 export function resolveTokenBySymbol(symbol?: string): TokenInfo | null {

@@ -20,6 +20,7 @@
 ## ✨ Features
 
 - **🤖 AI-Powered Chat Agent**: Natural language interface for blockchain operations
+- **🔐 Per-User Agent Wallets**: Dedicated Algorand wallet for each user with encrypted storage
 - **� Algorand Blockchain**: Fast, secure, and carbon-neutral blockchain integration
 - **💱 DEX Integration**: Swap tokens via Tinyman and Pact on Algorand
 - **👛 Multi-Wallet Support**: Pera, Defly, MyAlgo wallet connections
@@ -86,11 +87,15 @@ Algorand_prototype-v0.0.1/
 
 ### 📚 Documentation
 
-Single-source docs (minimal set):
+**Core Documentation** (7 canonical guides):
 
-- **[🏗️ System Architecture](./docs/SYSTEM_ARCHITECTURE.md)**
-- **[🧩 Architecture Diagram](./docs/ARCHITECTURE_DIAGRAM.md)**
-- **[⚙️ Backend Architecture](./docs/BACKEND_ARCHITECTURE.md)**
+- **[🏗️ System Overview](./docs/SYSTEM_OVERVIEW.md)** - Architecture, components, and data flows
+- **[👨‍💻 Developer Guide](./docs/DEVELOPER_GUIDE.md)** - Setup, installation, testing, and troubleshooting
+- **[📦 Smart Contracts & Deployment](./docs/CONTRACTS_AND_DEPLOYMENT.md)** - Contract details and deployment procedures
+- **[🤖 Autopilot Module](./docs/AUTOPILOT_MODULE.md)** - Automated trading rules and execution
+- **[⚙️ Backend & Agent Spec](./docs/BACKEND_AND_AGENT_SPEC.md)** - API endpoints and database schema
+- **[🧠 AI Agent & MCP/NCP](./docs/AI_AGENT_AND_MCP_NCP_SPEC.md)** - AI capabilities and analytics engine
+- **[🔐 Agent Wallet System](./docs/AGENT_WALLET_SYSTEM.md)** - Per-user agent wallets and automated trading
 
 ### Key Architectural Decisions
 
@@ -229,6 +234,9 @@ INDEXER_SERVER="https://testnet-idx.algonode.cloud"
 
 # Deployer Wallet Mnemonic
 DEPLOYER_MNEMONIC="your 25-word mnemonic phrase for the deployer account"
+
+# Agent Wallet Encryption (32-byte key for AES-256-GCM encryption)
+AGENT_WALLET_ENCRYPTION_KEY="your-32-byte-encryption-key-here"
 ```
 
 ### 🔐 Security Notes
@@ -236,6 +244,7 @@ DEPLOYER_MNEMONIC="your 25-word mnemonic phrase for the deployer account"
 - **NEVER** use a wallet with significant real funds for `DEPLOYER_MNEMONIC` during development.
 - Use a dedicated wallet for testing and development.
 - Keep your `.env.local` file secure and never commit it to version control.
+- Generate a secure `AGENT_WALLET_ENCRYPTION_KEY` using: `openssl rand -hex 32`
 - Consider using different API keys for development and production environments.
 
 ## 📡 API Endpoints
@@ -273,51 +282,52 @@ This is the main endpoint for all user interactions with the AI agent.
 
 ## 🤖 AI Agent Features
 
-### 0xGasless & AI Agent Implementation
+### AI-Powered Natural Language Interface
 
-The core of this project is the integration of gasless transactions via **0xGasless Agentkit** and natural language processing with an AI agent across multiple blockchain networks.
+The AI agent enables natural language interaction with the Algorand blockchain, allowing users to execute operations through simple conversational commands.
 
-### 0xGasless Smart Account
+### Agent Implementation
 
-We use an ERC-4337 Smart Account to execute transactions on behalf of the user without requiring them to pay for gas directly. The system supports multiple chains with per-chain configuration.
+The agent is built using **Algorand SDK** and **LangChain** for intelligent command processing. It uses a two-tier approach:
 
-1.  **Multi-Chain Initialization**: In `lib/agent.ts`, we configure the `Agentkit` with chain-specific parameters. Each chain has its own API keys, paymaster URLs, and RPC endpoints.
+1.  **Fast Path (Regex-Based)**: Instant responses for simple commands like balance checks and price queries (~50ms)
 
-    ```typescript
-    // lib/agent.ts
-    import { Agentkit } from '@0xgasless/agentkit';
+2.  **AI Path (LangChain + OpenAI)**: Complex query processing for multi-step operations and context-aware responses (~2-5s)
 
-    // ... inside buildAgent(chainId)
-    const agentkit = await Agentkit.configureWithWallet({
-      privateKey: PRIVATE_KEY,
-      rpcUrl: getRpcUrl(chainId),
-      apiKey: getGaslessApiKey(chainId),
-      chainID: chainId,
-      paymasterUrl: getPaymasterUrl(chainId),
-    });
+**Core Capabilities:**
 
-    // The smart account is accessed via agentkit.smartAccount
-    const smartAccountAddress = await agentkit.smartAccount.getAddress();
-    ```
+```typescript
+// Initialize Algorand agent
+const agent = await getAgent();
 
-2.  **Executing Transactions**: All on-chain actions like `smartTransfer` and `smartSwap` are executed through the `agentkit.smartAccount` instance. This ensures they are routed through the paymaster for gas sponsorship.
+// Get wallet address
+const address = await agent.getAddress();
 
-    ```typescript
-    // lib/agent.ts
-    async function smartTransfer(opts) {
-      const sa = agentkit.smartAccount;
-      // For native ETH transfer
-      const tx = await sa.sendTransaction({ to: destination, value });
-      // For ERC20 transfer
-      const tx = await sa.writeContract({
-        address: tokenAddress,
-        abi: erc20Abi,
-        functionName: 'transfer',
-        args: [destination, value],
-      });
-      return { hash: tx };
-    }
-    ```
+// Check balances
+const algoBalance = await agent.getBalance();        // ALGO balance
+const usdcBalance = await agent.getBalance(10458941); // USDC balance
+
+// Transfer assets
+const result = await agent.transfer({
+  to: 'RECIPIENT_ADDRESS',
+  amount: '10',
+  assetId: 0,  // 0 for ALGO, ASA ID for tokens
+  note: 'Payment for services'
+});
+
+// Get transaction history
+const txns = await agent.getTransactions();
+```
+
+**Supported Natural Language Commands:**
+- "What's my ALGO balance?"
+- "Transfer 10 ALGO to [address]"
+- "Swap 5 ALGO for USDC"
+- "Show my portfolio"
+- "What's the price of Algorand?"
+- "Show recent transactions"
+
+For complete AI agent documentation, see **[AI Agent & MCP/NCP Spec](./docs/AI_AGENT_AND_MCP_NCP_SPEC.md)**
 
 ### AI Agent Actions & Triggers
 
@@ -377,6 +387,8 @@ This project maintains a registry of supported tokens per chain in `src/lib/toke
 |--------|--------|----------|
 | ALGO   | 0      | 6        |
 | USDC   | 10458941 | 6      |
+| USDT   | 67396430 | 6      |
+| ALGF   | 70283957 | 6      |
 
 If you need additional tokens supported, add them to `src/lib/tokens.ts` and the UI will pick them up automatically.
 
@@ -405,6 +417,7 @@ All API routes are located in `src/app/api/`:
 | Endpoint | Purpose | File Location |
 |----------|---------|---------------|
 | `/api/agent` | AI agent chat interface | `src/app/api/agent/` |
+| `/api/agent/wallet` | Per-user agent wallet management | `src/app/api/agent/wallet/` |
 | `/api/algorand` | Algorand blockchain operations | `src/app/api/algorand/` |
 | `/api/analytics` | Market analytics data | `src/app/api/analytics/` |
 | `/api/db` | Database operations | `src/app/api/db/` |
@@ -439,11 +452,11 @@ This project includes comprehensive documentation to help you understand and con
 
 **Having issues?**
 
-1. **Setup Issues**: Review the [Getting Started](#-getting-started) section
-2. **Understanding the Code**: Check the [File Structure Guide](./docs/FILE_STRUCTURE.md)
-3. **Architecture Questions**: See [System Architecture](./docs/SYSTEM_ARCHITECTURE.md)
-4. **Technical Details**: Review [Backend Architecture](./docs/BACKEND_ARCHITECTURE.md)
-5. **Configuration**: Verify all API keys in [Configuration Guide](#-api-keys--configuration)
+1. **Setup Issues**: Review the [Getting Started](#️-getting-started) section
+2. **Understanding the Code**: Check the [System Overview](./docs/SYSTEM_OVERVIEW.md)
+3. **Environment Setup**: See [Developer Guide](./docs/DEVELOPER_GUIDE.md)
+4. **API Questions**: Review [Backend & Agent Spec](./docs/BACKEND_AND_AGENT_SPEC.md)
+5. **Smart Contracts**: See [Contracts & Deployment](./docs/CONTRACTS_AND_DEPLOYMENT.md)
 
 ### 🤝 Contributing
 
@@ -454,8 +467,8 @@ This project includes comprehensive documentation to help you understand and con
 5. Open a Pull Request
 
 **Before contributing**, please read:
-- [File Structure Guide](./docs/FILE_STRUCTURE.md) - Understand the organization
-- [System Architecture](./docs/SYSTEM_ARCHITECTURE.md) - Know the design principles
+- [System Overview](./docs/SYSTEM_OVERVIEW.md) - Understand the architecture
+- [Developer Guide](./docs/DEVELOPER_GUIDE.md) - Know the development workflow
 
 ### 📄 License
 

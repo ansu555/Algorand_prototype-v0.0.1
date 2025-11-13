@@ -1,13 +1,14 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import BackgroundPaths from "@/components/shared/animated-background"
+import { SearchBar } from "@/components/shared/search-bar"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
-import { Search, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { useMemo, useState, useEffect } from "react"
 import type { PoolInfo } from "@/lib/dex/types"
 
@@ -15,9 +16,18 @@ type Pool = {
   id: string
   token0: string
   token1: string
+  token0Logo?: string // Logo URL for token0
+  token1Logo?: string // Logo URL for token1
+  token0Decimals?: number // Decimals for token0
+  token1Decimals?: number // Decimals for token1
+  protocol?: string // Protocol version (v1, v2, v3, v4)
   feeTier: number // in basis points (30 = 0.3%)
-  tvlUSD?: number
-  volume24hUSD?: number
+  tvlUSD?: number // Total Value Locked in USD
+  volume1dUSD?: number // 1-day trading volume in USD
+  volume30dUSD?: number // 30-day trading volume in USD
+  volume24hUSD?: number // 24h volume (legacy)
+  poolAPR?: number // Pool APR from trading fees
+  rewardAPR?: number // Additional rewards APR
   myPosition?: boolean
   fees24hUSD?: number
   currentPrice?: number // price of token0 in terms of token1
@@ -28,7 +38,6 @@ type Pool = {
 }
 
 export default function PoolPage() {
-  const [searchQuery, setSearchQuery] = useState("")
   const [tab, setTab] = useState("all")
   const [sortBy, setSortBy] = useState("tvl_desc")
   const [network, setNetwork] = useState<'testnet' | 'mainnet'>('testnet')
@@ -43,15 +52,29 @@ export default function PoolPage() {
         setLoading(true)
         setError(null)
         
-        const response = await fetch(`/api/pools/all?network=${network}`)
-        const data = await response.json()
+        // Fetch both pool data and market data in parallel
+        const [poolsResponse, marketResponse] = await Promise.all([
+          fetch(`/api/pools/all?network=${network}`),
+          fetch(`/api/pools/market-data?network=${network}`).catch(() => null),
+        ])
         
-        if (!data.success) {
-          throw new Error(data.error || 'Failed to fetch pools')
+        const poolsData = await poolsResponse.json()
+        
+        if (!poolsData.success) {
+          throw new Error(poolsData.error || 'Failed to fetch pools')
+        }
+
+        // Get market data if available
+        let marketData: Record<string, any> = {}
+        if (marketResponse?.ok) {
+          const marketJson = await marketResponse.json()
+          if (marketJson.success) {
+            marketData = marketJson.data
+          }
         }
 
         // Map PoolInfo to Pool format
-        const pools: Pool[] = data.pools.map((poolInfo: any) => {
+        const pools: Pool[] = poolsData.pools.map((poolInfo: any) => {
           // Convert string BigInt values back to BigInt
           const reserve1 = BigInt(poolInfo.reserve1)
           const reserve2 = BigInt(poolInfo.reserve2)
@@ -64,18 +87,42 @@ export default function PoolPage() {
             currentPrice = reserve1Num / reserve0Num // price of asset1 in terms of asset2
           }
 
+          // Determine protocol version based on DEX
+          let protocol = 'v2' // Default
+          if (poolInfo.dexName === 'tinyman') {
+            protocol = 'v2' // TinymanV2
+          } else if (poolInfo.dexName === 'pact') {
+            protocol = 'v1' // Pact is v1-style
+          } else if (poolInfo.dexName === 'vestige') {
+            protocol = 'v3' // Vestige uses v3-like concentrated liquidity
+          }
+
+          // Merge with market data if available
+          const poolMarketData = marketData[poolInfo.poolId]
+          
           return {
             id: poolInfo.poolId,
             token0: poolInfo.asset1.symbol,
             token1: poolInfo.asset2.symbol,
+            token0Logo: poolInfo.asset1.logoUrl || poolInfo.asset1.logo, // Support both logoUrl and logo properties
+            token1Logo: poolInfo.asset2.logoUrl || poolInfo.asset2.logo,
+            token0Decimals: poolInfo.asset1.decimals,
+            token1Decimals: poolInfo.asset2.decimals,
+            protocol,
             feeTier: poolInfo.fee, // Already in basis points
             dex: poolInfo.dexName,
             reserve0: reserve1,
             reserve1: reserve2,
             poolAddress: poolInfo.poolAddress,
             currentPrice,
-            // Note: volume24h and fees24h would need additional API calls
-            // For now we'll leave them undefined
+            // Use market data if available
+            tvlUSD: poolMarketData?.tvlUSD,
+            volume1dUSD: poolMarketData?.volume1dUSD,
+            volume30dUSD: poolMarketData?.volume30dUSD,
+            volume24hUSD: poolMarketData?.volume24hUSD,
+            poolAPR: poolMarketData?.poolAPR,
+            rewardAPR: poolMarketData?.rewardAPR,
+            fees24hUSD: poolMarketData?.fees24hUSD,
           }
         })
 
@@ -95,13 +142,6 @@ export default function PoolPage() {
   const pools = useMemo(() => {
     let filtered = allPools
     if (tab === "mine") filtered = filtered.filter((p) => p.myPosition)
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase()
-      filtered = filtered.filter((p) => 
-        `${p.token0}/${p.token1}`.toLowerCase().includes(q) ||
-        p.dex.toLowerCase().includes(q)
-      )
-    }
     const sorted = [...filtered]
     sorted.sort((a, b) => {
       switch (sortBy) {
@@ -118,81 +158,36 @@ export default function PoolPage() {
       }
     })
     return sorted
-  }, [allPools, searchQuery, tab, sortBy])
+  }, [allPools, tab, sortBy])
 
   return (
     <div className="flex min-h-screen flex-col">
       <BackgroundPaths />
-      <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <div className="flex items-end justify-between gap-4 flex-wrap">
+      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-2">
+        <div className="w-full space-y-2">
+          {/* Search Bar */}
+          <SearchBar />
+
+          <div className="relative">
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Liquidity Pools</h1>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground">
                 Discover, search, and manage pools. Add or remove liquidity to earn fees.
               </p>
               {!loading && !error && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {allPools.length} pools on {network} (Tinyman{network === 'mainnet' ? ', Pact' : ''})
+                <p className="text-xs text-muted-foreground">
+                  {allPools.length} pools on {network} (Tinyman{network === 'mainnet' ? ', Pact' : ''}).
+                  {network === 'testnet' && (
+                    <span className="block mt-1">
+                      ⓘ Some values show "—" because testnet doesn't provide market data (TVL, volume, APR).
+                    </span>
+                  )}
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              {/* Network Toggle (Mainnet visible but disabled) */}
-              <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-                <button
-                  onClick={() => setNetwork('testnet')}
-                  disabled={loading}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                    network === 'testnet'
-                      ? 'bg-white dark:bg-[#171717] shadow-sm text-foreground'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  Testnet
-                </button>
-
-                
-
-                {/* Show Mainnet button but make it visibly disabled to avoid API calls */}
-                <button
-                  disabled={true}
-                  //onClick={() => setNetwork('mainnet')}
-                  title="Mainnet is currently disabled"
-                  aria-disabled="true"
-                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foreground`}
-                >
-                  Mainnet
-                </button>
-              </div>
-              <div className="relative w-full sm:w-72">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search pools, tokens, or DEX"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-10 bg-white dark:bg-[#171717] border-2 focus-visible:ring-red-600 dark:focus-visible:ring-[#F3C623]"
-                  disabled={loading}
-                />
-              </div>
-              <Select value={sortBy} onValueChange={setSortBy} disabled={loading}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tvl_desc">TVL: High → Low</SelectItem>
-                  <SelectItem value="vol_desc">24h Vol: High → Low</SelectItem>
-                  <SelectItem value="fee_desc">Fee: High → Low</SelectItem>
-                  <SelectItem value="fee_asc">Fee: Low → High</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button asChild className="whitespace-nowrap" disabled={loading}>
-                <Link href="/pool/create">Create Position</Link>
-              </Button>
-            </div>
           </div>
 
-          {error && (
+          {error && ( 
             <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950 p-4">
               <p className="text-sm text-red-800 dark:text-red-200">
                 ⚠️ Error loading pools: {error}
@@ -207,10 +202,57 @@ export default function PoolPage() {
             </div>
           ) : (
             <Tabs value={tab} onValueChange={setTab} className="w-full">
-              <TabsList>
-                <TabsTrigger value="all">All Pools ({pools.length})</TabsTrigger>
-                <TabsTrigger value="mine">My Positions</TabsTrigger>
-              </TabsList>
+              {/* Tabs with controls aligned horizontally */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 flex-wrap">
+                <TabsList className="w-full sm:w-auto">
+                  <TabsTrigger value="all" className="flex-1 sm:flex-none">All Pools ({pools.length})</TabsTrigger>
+                  <TabsTrigger value="mine" className="flex-1 sm:flex-none">My Positions</TabsTrigger>
+                </TabsList>
+                
+                {/* Right side controls - Network, Sort, Create Position */}
+                <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+                  {/* Network Toggle */}
+                  <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+                    <button
+                      onClick={() => setNetwork('testnet')}
+                      disabled={loading}
+                      className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${
+                        network === 'testnet'
+                          ? 'bg-white dark:bg-[#171717] shadow-sm text-foreground'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Testnet
+                    </button>
+                    <button
+                      disabled={true}
+                      title="Mainnet is currently disabled"
+                      aria-disabled="true"
+                      className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foreground`}
+                    >
+                      Mainnet
+                    </button>
+                  </div>
+                  
+                  {/* Sort dropdown */}
+                  <Select value={sortBy} onValueChange={setSortBy} disabled={loading}>
+                    <SelectTrigger className="w-[140px] sm:w-[160px]">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="tvl_desc">TVL: High → Low</SelectItem>
+                      <SelectItem value="vol_desc">24h Vol: High → Low</SelectItem>
+                      <SelectItem value="fee_desc">Fee: High → Low</SelectItem>
+                      <SelectItem value="fee_asc">Fee: Low → High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Create Position button */}
+                  <Button asChild className="whitespace-nowrap" disabled={loading}>
+                    <Link href="/pool/create">Create Position</Link>
+                  </Button>
+                </div>
+              </div>
 
               <TabsContent value="all" className="mt-4">
                 <PoolTable pools={pools} />
@@ -227,57 +269,139 @@ export default function PoolPage() {
 }
 
 function PoolTable({ pools, emptyLabel = "No pools found." }: { pools: Pool[]; emptyLabel?: string }) {
+  const router = useRouter()
+  
   if (!pools.length) {
     return (
       <div className="text-center text-sm text-muted-foreground py-10">{emptyLabel}</div>
     )
   }
+  
   return (
-    <Table>
+    <div className="w-full overflow-x-auto">
+      <Table>
       <TableHeader>
-        <TableRow>
-          <TableHead>Pool</TableHead>
-          <TableHead>DEX</TableHead>
-          <TableHead>Fee</TableHead>
-          <TableHead>Reserves</TableHead>
-          <TableHead>Current Price</TableHead>
-          <TableHead>Actions</TableHead>
+        <TableRow className="text-red-600 dark:text-red-400">
+          <TableHead className="text-center w-16">#</TableHead>
+          <TableHead className="text-left">Pool</TableHead>
+          <TableHead className="text-center">DEX</TableHead>
+          <TableHead className="text-center">Protocol</TableHead>
+          <TableHead className="text-center">Fee tier</TableHead>
+          <TableHead className="text-center">↓TVL</TableHead>
+          <TableHead className="text-center">Pool APR</TableHead>
+          <TableHead className="text-center">Reward APR</TableHead>
+          <TableHead className="text-center">1D vol</TableHead>
+          <TableHead className="text-center">30D vol</TableHead>
+          <TableHead className="text-center">1D vol/TVL</TableHead>
+          <TableHead className="text-center">Reserves</TableHead>
+          <TableHead className="text-center">Current Price</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {pools.map((p) => (
-          <TableRow key={p.id}>
+        {pools.map((p, index) => (
+          <TableRow 
+            key={p.id} 
+            className="cursor-pointer hover:bg-muted/50 transition-colors"
+            onClick={() => router.push(`/pool/${p.id}`)}
+          >
+            <TableCell className="text-center text-muted-foreground">
+              {index + 1}
+            </TableCell>
             <TableCell className="font-semibold">
-              <div className="flex flex-col">
-                <span>{p.token0}/{p.token1}</span>
-                {p.poolAddress && (
-                  <span className="text-xs text-muted-foreground font-mono">
-                    {p.poolAddress.slice(0, 6)}...{p.poolAddress.slice(-4)}
-                  </span>
-                )}
+              <div className="flex items-center gap-3">
+                <div className="relative w-10 h-10 flex-shrink-0 rounded-full overflow-hidden">
+                  {/* Half-Half Logo using backend images */}
+                  <div className="absolute inset-0 flex">
+                    {/* Token 0 Logo (Left Half) */}
+                    <div className="w-1/2 relative overflow-hidden">
+                      {p.token0Logo ? (
+                        <img 
+                          src={p.token0Logo} 
+                          alt={p.token0}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback to gradient if image fails to load
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : null}
+                      <div className="absolute inset-0 bg-blue-500"></div>
+                    </div>
+                    {/* Token 1 Logo (Right Half) */}
+                    <div className="w-1/2 relative overflow-hidden">
+                      {p.token1Logo ? (
+                        <img 
+                          src={p.token1Logo} 
+                          alt={p.token1}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback to gradient if image fails to load
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : null}
+                      <div className="absolute inset-0 bg-purple-500"></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col items-start min-w-0">
+                  <span className="font-semibold whitespace-nowrap">{p.token0}/{p.token1}</span>
+                  {p.poolAddress && (
+                    <span className="text-xs text-muted-foreground font-mono">
+                      {p.poolAddress.slice(0, 6)}...{p.poolAddress.slice(-4)}
+                    </span>
+                  )}
+                </div>
               </div>
             </TableCell>
-            <TableCell>
+            <TableCell className="text-center">
               <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getDexBadgeColor(p.dex)}`}>
                 {p.dex.charAt(0).toUpperCase() + p.dex.slice(1)}
               </span>
             </TableCell>
-            <TableCell className="text-muted-foreground">
+            <TableCell className="text-center">
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getProtocolBadgeColor(p.protocol)}`}>
+                {p.protocol || 'v2'}
+              </span>
+            </TableCell>
+            <TableCell className="text-muted-foreground text-center">
               {(p.feeTier / 100).toFixed(2)}%
             </TableCell>
-            <TableCell className="text-muted-foreground">
+            <TableCell className="text-muted-foreground text-center font-medium">
+              {formatUSD(p.tvlUSD)}
+            </TableCell>
+            <TableCell className="text-muted-foreground text-center">
+              {formatPercentage(p.poolAPR)}
+            </TableCell>
+            <TableCell className="text-center">
+              {p.rewardAPR ? (
+                <span className="text-green-600 dark:text-green-400 font-medium">
+                  +{formatPercentage(p.rewardAPR)}
+                </span>
+              ) : (
+                <span className="text-muted-foreground">-</span>
+              )}
+            </TableCell>
+            <TableCell className="text-muted-foreground text-center">
+              {formatCompactUSD(p.volume1dUSD)}
+            </TableCell>
+            <TableCell className="text-muted-foreground text-center">
+              {formatCompactUSD(p.volume30dUSD)}
+            </TableCell>
+            <TableCell className="text-muted-foreground text-center">
+              {formatVolumeTVLRatio(p.volume1dUSD, p.tvlUSD)}
+            </TableCell>
+            <TableCell className="text-muted-foreground text-center">
               {formatReserves(p)}
             </TableCell>
-            <TableCell className="text-muted-foreground">{formatPrice(p)}</TableCell>
-            <TableCell>
-              <Button asChild size="sm" variant="outline">
-                <Link href={`/pool/${p.id}`}>View</Link>
-              </Button>
+            <TableCell className="text-muted-foreground text-center">
+              {formatPrice(p)}
             </TableCell>
           </TableRow>
         ))}
       </TableBody>
     </Table>
+    </div>
   )
 }
 
@@ -296,11 +420,66 @@ function getDexBadgeColor(dex: string) {
   }
 }
 
+function getProtocolBadgeColor(protocol?: string) {
+  switch (protocol) {
+    case 'v4':
+      return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+    case 'v3':
+      return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+    case 'v2':
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+    case 'v1':
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+    default:
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+  }
+}
+
+function formatUSD(v?: number) {
+  if (v == null) return "$—"
+  try {
+    return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v)
+  } catch {
+    return "$—"
+  }
+}
+
+function formatCompactUSD(v?: number) {
+  if (v == null) return "$—"
+  try {
+    if (v >= 1e9) return `$${(v / 1e9).toFixed(2)}B`
+    if (v >= 1e6) return `$${(v / 1e6).toFixed(2)}M`
+    if (v >= 1e3) return `$${(v / 1e3).toFixed(2)}K`
+    return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v)
+  } catch {
+    return "$—"
+  }
+}
+
+function formatPercentage(v?: number) {
+  if (v == null) return "—"
+  try {
+    return `${v.toFixed(2)}%`
+  } catch {
+    return "—"
+  }
+}
+
+function formatVolumeTVLRatio(volume?: number, tvl?: number) {
+  if (volume == null || tvl == null || tvl === 0) return "—"
+  try {
+    const ratio = volume / tvl
+    return ratio.toFixed(2)
+  } catch {
+    return "—"
+  }
+}
+
 function formatReserves(p: Pool) {
-  if (p.reserve0 && p.reserve1) {
-    // Format reserves in a compact way
-    const r0 = Number(p.reserve0) / 1e6 // Assume 6 decimals
-    const r1 = Number(p.reserve1) / 1e6
+  if (p.reserve0 && p.reserve1 && p.token0Decimals != null && p.token1Decimals != null) {
+    // Format reserves using actual token decimals
+    const r0 = Number(p.reserve0) / Math.pow(10, p.token0Decimals)
+    const r1 = Number(p.reserve1) / Math.pow(10, p.token1Decimals)
     
     if (r0 < 1000 && r1 < 1000) {
       return `${r0.toFixed(2)} / ${r1.toFixed(2)}`
@@ -315,15 +494,6 @@ function formatCompact(num: number) {
   if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`
   if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`
   return num.toFixed(2)
-}
-
-function formatUSD(v?: number) {
-  if (v == null) return "$—"
-  try {
-    return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v)
-  } catch {
-    return "$—"
-  }
 }
 
 function formatPrice(p: Pool) {

@@ -28,7 +28,9 @@ export const ALGORAND_ASSETS = {
   },
   testnet: {
     ALGO: { id: 0, symbol: 'ALGO', decimals: 6, name: 'Algorand' },
-    USDC: { id: 10458941, symbol: 'USDC', decimals: 6, name: 'USDC (Testnet)' }
+    USDC: { id: 10458941, symbol: 'USDC', decimals: 6, name: 'USDC (Testnet)' },
+    USDT: { id: 67396430, symbol: 'USDT', decimals: 6, name: 'USDt (Testnet)' },
+    ALGF: { id: 70283957, symbol: 'ALGF', decimals: 6, name: 'AlgoFund (Testnet)' }
   }
 }
 
@@ -205,10 +207,11 @@ export async function buildAlgorandAgent() {
       assetInSymbol: string
       assetOutSymbol: string
       amountIn: string
+      recipient: string
     }): Promise<{ txId: string; details: any }> {
       try {
-        const { assetInSymbol, assetOutSymbol, amountIn } = opts
-        
+        const { assetInSymbol, assetOutSymbol, amountIn, recipient } = opts
+
         console.log('🔍 AtomicSwap Debug:', {
           hasAccount: !!account,
           accountType: typeof account,
@@ -217,69 +220,143 @@ export async function buildAlgorandAgent() {
           hasSk: !!account?.sk,
           skType: typeof account?.sk
         })
-        
+
         if (!account || !account.addr) {
           throw new Error('Account object is invalid')
         }
-        
-        // Create a simple real transaction for testing
-        const suggestedParams = await algodClient.getTransactionParams().do()
-        const amountMicroAlgos = Math.round(parseFloat(amountIn) * 1000000)
-        
-        // Create a real ALGO transfer transaction (self-transfer for testing)
-        const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
-          sender: account.addr,
-          receiver: account.addr, // Self-transfer for testing
-          amount: amountMicroAlgos,
-          suggestedParams,
-          note: new Uint8Array(Buffer.from(`Real Swap: ${amountIn} ALGO to USDC`))
-        })
 
-        // Sign and submit the transaction
-        const signedTxn = txn.signTxn(account.sk)
-        const response = await algodClient.sendRawTransaction(signedTxn).do()
-        const txId = response.txid || response.txid
-        
-        console.log('✅ REAL TRANSACTION SUBMITTED:', txId)
-        console.log('Response:', response)
-        
-        // Wait for confirmation (reduced timeout for testing)
-        let confirmed = false
-        let rounds = 0
-        while (!confirmed && rounds < 5) {
-          try {
-            const txInfo = await algodClient.pendingTransactionInformation(txId).do()
-            if (txInfo.confirmedRound && txInfo.confirmedRound > 0) {
-              confirmed = true
-              console.log('✅ Transaction confirmed in round:', txInfo.confirmedRound)
-            } else {
-              await new Promise(resolve => setTimeout(resolve, 2000))
-              rounds++
-            }
-          } catch (error) {
-            await new Promise(resolve => setTimeout(resolve, 2000))
-            rounds++
+        const parsedAmount = Number.parseFloat(amountIn)
+        if (!(parsedAmount > 0)) {
+          throw new Error(`Swap amount must be > 0 (received ${amountIn})`)
+        }
+
+        const normalizedRecipient = recipient.trim()
+        if (!algosdk.isValidAddress(normalizedRecipient)) {
+          throw new Error(`Invalid recipient Algorand address: ${recipient}`)
+        }
+
+        const assetInfo = ALGORAND_ASSETS[network][assetInSymbol as keyof typeof ALGORAND_ASSETS[typeof network]]
+        if (!assetInfo) {
+          throw new Error(`Unsupported asset symbol: ${assetInSymbol}`)
+        }
+
+        const accountInfo = await algodClient.accountInformation(account.addr).do()
+        const suggestedParams = await algodClient.getTransactionParams().do()
+        suggestedParams.flatFee = true
+        suggestedParams.fee = BigInt(Math.max(Number(suggestedParams.minFee) || Number(suggestedParams.fee) || 1000, 1000))
+
+        let txId: string
+
+        if (assetInfo.id === 0) {
+          const requestedMicroAlgosBigInt = BigInt(Math.round(parsedAmount * 1_000_000))
+          if (!(requestedMicroAlgosBigInt > 0n)) {
+            throw new Error('Requested swap amount is too small after conversion')
           }
+
+          const totalMicroAlgos = BigInt(accountInfo.amount ?? 0)
+          const minBalanceRaw = accountInfo.minBalance ?? 0
+          const minBalanceMicroAlgos = BigInt(minBalanceRaw)
+
+          const availableMicroAlgos = totalMicroAlgos - minBalanceMicroAlgos
+          if (availableMicroAlgos <= 0n) {
+            throw new Error(`Insufficient balance: account has ${(Number(totalMicroAlgos) / 1_000_000).toFixed(6)} ALGO with minimum ${(Number(minBalanceMicroAlgos) / 1_000_000).toFixed(6)} ALGO`)
+          }
+
+          const feeBuffer = BigInt(suggestedParams.fee ?? 1000)
+          const spendableMicroAlgos = availableMicroAlgos - feeBuffer
+          if (spendableMicroAlgos <= 0n) {
+            throw new Error('Insufficient balance available after reserving fees')
+          }
+
+          if (requestedMicroAlgosBigInt > spendableMicroAlgos) {
+            const availableRounded = Number(spendableMicroAlgos) / 1_000_000
+            throw new Error(`Insufficient balance: requested ${parsedAmount.toFixed(6)} ALGO but only ${availableRounded.toFixed(6)} ALGO is spendable (balance ${(Number(totalMicroAlgos) / 1_000_000).toFixed(6)} ALGO, minimum ${(Number(minBalanceMicroAlgos) / 1_000_000).toFixed(6)} ALGO)`)
+          }
+
+          const amountMicroAlgos = Number(requestedMicroAlgosBigInt)
+          if (!Number.isSafeInteger(amountMicroAlgos)) {
+            throw new Error('Swap amount exceeds safe integer range')
+          }
+
+          console.log(`📤 Creating ALGO payment: ${parsedAmount} ALGO from ${account.addr} to ${normalizedRecipient}`)
+
+          const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+            sender: account.addr,
+            receiver: normalizedRecipient,
+            amount: amountMicroAlgos,
+            suggestedParams,
+            note: new Uint8Array(Buffer.from(`Swap: ${amountIn} ${assetInSymbol} → ${assetOutSymbol}`))
+          })
+
+          const signedTxn = txn.signTxn(account.sk)
+          const response = await algodClient.sendRawTransaction(signedTxn).do()
+          txId = response.txid
+
+          await algosdk.waitForConfirmation(algodClient, txId, 6)
+        } else {
+          const decimals = assetInfo.decimals ?? 0
+          const scale = Math.pow(10, decimals)
+          const requestedUnitsBigInt = BigInt(Math.round(parsedAmount * scale))
+          if (!(requestedUnitsBigInt > 0n)) {
+            throw new Error('Requested swap amount is too small after conversion')
+          }
+
+          const holdings = (accountInfo.assets || []).find((holding: any) => Number(holding['asset-id'] ?? holding.assetId) === assetInfo.id)
+          if (!holdings) {
+            console.log(`ℹ️ Agent not opted into asset ${assetInfo.id}, opting in now`)
+            const optInTxn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
+              sender: account.addr,
+              receiver: account.addr,
+              amount: 0,
+              assetIndex: assetInfo.id,
+              suggestedParams
+            })
+            const signedOptIn = optInTxn.signTxn(account.sk)
+            const optInResponse = await algodClient.sendRawTransaction(signedOptIn).do()
+            await algosdk.waitForConfirmation(algodClient, optInResponse.txid, 6)
+          }
+
+          const refreshedAccount = await algodClient.accountInformation(account.addr).do()
+          const refreshedHolding = (refreshedAccount.assets || []).find((holding: any) => Number(holding['asset-id'] ?? holding.assetId) === assetInfo.id)
+          const ownedUnits = BigInt(refreshedHolding?.amount ?? 0)
+          if (ownedUnits < requestedUnitsBigInt) {
+            const availableUnits = Number(ownedUnits) / scale
+            throw new Error(`Insufficient balance: requested ${parsedAmount} ${assetInSymbol} but only ${availableUnits.toFixed(decimals)} ${assetInSymbol} is available in agent wallet`)
+          }
+
+          const amountUnits = Number(requestedUnitsBigInt)
+          if (!Number.isSafeInteger(amountUnits)) {
+            throw new Error('Swap amount exceeds safe integer range for asset transfer')
+          }
+
+          console.log(`📤 Creating ASA transfer: ${parsedAmount} ${assetInSymbol} (asset ${assetInfo.id}) from ${account.addr} to ${normalizedRecipient}`)
+
+          const txn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
+            sender: account.addr,
+            receiver: normalizedRecipient,
+            amount: amountUnits,
+            assetIndex: assetInfo.id,
+            suggestedParams,
+            note: new Uint8Array(Buffer.from(`Swap: ${amountIn} ${assetInSymbol} → ${assetOutSymbol}`))
+          })
+
+          const signedTxn = txn.signTxn(account.sk)
+          const response = await algodClient.sendRawTransaction(signedTxn).do()
+          txId = response.txid
+
+          await algosdk.waitForConfirmation(algodClient, txId, 6)
         }
-        
-        // Even if not confirmed, we have a real transaction hash
-        if (!confirmed) {
-          console.log('⚠️ Transaction submitted but not confirmed yet:', txId)
-        }
-        
-        // Calculate expected USDC output (simplified)
-        const amountOutUsdc = parseFloat(amountIn) * 0.24 // Approximate rate
-        
+
         const result = {
-          txId, // REAL transaction hash from Algorand testnet
-          amountIn: parseFloat(amountIn),
-          amountOut: amountOutUsdc,
-          priceImpact: 0.1,
-          fee: 0.001
+          txId,
+          amountIn: parsedAmount,
+          amountOut: parsedAmount,
+          priceImpact: 0,
+          fee: Number(suggestedParams.fee) / 1_000_000
         }
-        
+
         return {
-          txId: result.txId, // REAL transaction hash from Algorand testnet
+          txId,
           details: {
             assetInSymbol,
             assetOutSymbol,
@@ -287,41 +364,47 @@ export async function buildAlgorandAgent() {
             amountOut: result.amountOut,
             priceImpact: result.priceImpact,
             fee: result.fee,
-            network: network,
+            network,
             realTransaction: true,
-            explorerUrl: `https://testnet.algoexplorer.io/tx/${result.txId}`
+            explorerUrl: `https://${network === 'mainnet' ? '' : 'testnet.'}algoexplorer.io/tx/${txId}`
           }
         }
       } catch (e: any) {
         throw new Error(`Swap failed: ${e?.message || e}`)
       }
     }
-    
-    async function getAssetPrice(symbol: string): Promise<{ symbol: string; price: number; change24h?: number }> {
+
+    async function getAssetPrice(symbol: string): Promise<{ symbol: string; price: number; change24h: number }> {
       try {
-        // Use CoinGecko for price data
-        const coinGeckoIds: Record<string, string> = {
+        const upperSymbol = symbol.toUpperCase()
+
+        const coinIdMap: Record<string, string> = {
           ALGO: 'algorand',
           USDC: 'usd-coin',
           USDT: 'tether',
           WBTC: 'wrapped-bitcoin',
-          WETH: 'weth'
+          WETH: 'weth',
+          ALGF: 'algorand' // placeholder; adjust when real price source available
         }
-        
-        const coinId = coinGeckoIds[symbol.toUpperCase()]
-        if (!coinId) throw new Error(`Price not available for ${symbol}`)
-        
+
+        const coinId = coinIdMap[upperSymbol]
+        if (!coinId) {
+          throw new Error(`Price lookup not configured for ${upperSymbol}`)
+        }
+
         const res = await fetch(
           `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd&include_24hr_change=true`
         )
-        
-        if (!res.ok) throw new Error(`Failed to fetch ${symbol} price: ${res.status}`)
-        
+
+        if (!res.ok) {
+          throw new Error(`Failed to fetch ${upperSymbol} price: ${res.status}`)
+        }
+
         const data = await res.json()
         const priceData = data[coinId]
-        
+
         return {
-          symbol: symbol.toUpperCase(),
+          symbol: upperSymbol,
           price: priceData.usd,
           change24h: priceData.usd_24h_change
         }

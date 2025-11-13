@@ -5,7 +5,7 @@ import { useMemo, useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Plus, Check, ChevronsUpDown, X } from "lucide-react"
+import { Plus, Check, ChevronsUpDown, X, Loader2 } from "lucide-react"
 
 import {
   Dialog,
@@ -44,6 +44,14 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { useGetCryptosQuery } from "@/app/services/cryptoApi"
+import { useWalletConnection, useWalletActions } from "@/components/providers/txnlab-wallet-provider"
+import { AutoPilotRuleClient } from "@/lib/contracts/autopilot-client"
+import { convertFormToContractParams, TESTNET_ASSET_MAP } from "@/lib/contracts/autopilot-helpers"
+import { getAlgodClient } from "@/lib/algorand"
+import { toast } from "sonner"
+import algosdk from "algosdk"
+import { useTradeableAssets } from "@/hooks/use-tradeable-assets"
+import { describeRule } from "@/lib/shared/rules"
 
 // Types
 export type CoinOption = {
@@ -88,7 +96,7 @@ const schema = z
       .number()
       .min(0, { message: "Must be >= 0" })
       .max(100, { message: "Must be <= 100" }),
-    cooldownMinutes: z.number().min(0, { message: "Must be >= 0" }),
+    cooldownMinutes: z.number().min(5, { message: "Must be >= 5 minutes" }),
   })
   .superRefine((data, ctx) => {
     // Conditional requirements based on trigger
@@ -154,9 +162,10 @@ export type RuleBuilderModalProps = {
 }
 
 const defaultCoinOptions: CoinOption[] = [
-  { id: "bitcoin", symbol: "BTC" },
-  { id: "ethereum", symbol: "ETH" },
-  { id: "solana", symbol: "SOL" },
+  { id: "ALGO", symbol: "ALGO", name: "Algorand" },
+  { id: "USDC", symbol: "USDC", name: "USD Coin (Testnet)" },
+  { id: "USDT", symbol: "USDt", name: "Tether USDt (Testnet)" },
+  { id: "ALGF", symbol: "ALGF", name: "AlgoFund (Testnet)" },
 ]
 
 export function RuleBuilderModal(props: RuleBuilderModalProps) {
@@ -175,6 +184,22 @@ export function RuleBuilderModal(props: RuleBuilderModalProps) {
   const isControlled = typeof open === "boolean" && !!onOpenChange
   const modalOpen = isControlled ? open! : internalOpen
   const setModalOpen = isControlled ? onOpenChange! : setInternalOpen
+
+  // Wallet integration
+  const { isConnected, activeAccount } = useWalletConnection()
+  const { walletSigner } = useWalletActions()
+  const [isCreating, setIsCreating] = useState(false)
+
+  // Initialize autopilot client
+  const autopilotClient = useMemo(() => {
+    try {
+      const algodClient = getAlgodClient()
+      return new AutoPilotRuleClient(algodClient)
+    } catch (error) {
+      console.error('Failed to initialize autopilot client:', error)
+      return null
+    }
+  }, [])
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -195,6 +220,24 @@ export function RuleBuilderModal(props: RuleBuilderModalProps) {
   })
 
   const values = form.watch()
+
+  // Dynamic asset list (Algorand testnet assets discovered from pools/indexer)
+  const { assets: tradeableAssets } = useTradeableAssets()
+  const assetIdMap = useMemo(() => {
+    const map: Record<string, number> = { ...TESTNET_ASSET_MAP } // start with safe defaults
+    // Always ensure ALGO symbol mapping
+    map["ALGO"] = 0
+    // Map by unitName primarily; also add uppercase name as a loose fallback
+    for (const a of tradeableAssets || []) {
+      if (a.unitName) map[a.unitName.toUpperCase()] = a.id
+      if (a.name) {
+        const key = a.name.toUpperCase().replace(/\s+/g, '')
+        if (map[key] === undefined) map[key] = a.id
+      }
+      map[`ASA_${a.id}`] = a.id
+    }
+    return map
+  }, [tradeableAssets])
 
   // Local text state for drop percent to allow free typing and commit on blur
   const [dropPercentText, setDropPercentText] = useState<string>("")
@@ -217,16 +260,35 @@ export function RuleBuilderModal(props: RuleBuilderModalProps) {
     return coins.map((c: any) => ({ id: c.uuid || c.id, symbol: c.symbol, name: c.name, iconUrl: c.iconUrl || c.icon || c.image }))
   }, [apiCoinsData])
 
+  const dexCoinOptions: CoinOption[] = useMemo(() => {
+    if (!tradeableAssets || tradeableAssets.length === 0) return []
+    const options: CoinOption[] = []
+    for (const asset of tradeableAssets) {
+      const unit = asset.unitName?.toUpperCase()
+      const key = unit && unit.length > 0 ? unit : `ASA_${asset.id}`
+      if (!options.some((opt) => opt.id === key)) {
+        options.push({
+          id: key,
+          symbol: unit || key,
+          name: asset.name ? `${asset.name} (${asset.id})` : `ASA ${asset.id}`,
+        })
+      }
+    }
+    return options
+  }, [tradeableAssets])
+
   const coinOptions: CoinOption[] = useMemo(() => {
     // Ensure Algorand testnet coins (ALGO, USDC) are always available
     const algorandDefaults: CoinOption[] = [
       { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
       { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
+      { id: 'USDT', symbol: 'USDt', name: 'USDt (Testnet)' },
+      { id: 'ALGF', symbol: 'ALGF', name: 'AlgoFund (Testnet)' },
     ]
 
     const base = (availableCoinsProp && availableCoinsProp.length)
       ? availableCoinsProp
-      : (apiCoinOptions.length ? apiCoinOptions : defaultCoinOptions)
+      : (dexCoinOptions.length ? dexCoinOptions : (apiCoinOptions.length ? apiCoinOptions : defaultCoinOptions))
 
     // Merge with de-duplication by id
     const map = new Map<string, CoinOption>()
@@ -235,7 +297,7 @@ export function RuleBuilderModal(props: RuleBuilderModalProps) {
     })
     const merged = Array.from(map.values())
     // Sort to pin Algorand coins at the top of the list
-    const priority = new Set(['ALGO', 'USDC'])
+  const priority = new Set(['ALGO', 'USDC', 'USDT', 'ALGF'])
     merged.sort((a, b) => {
       const aP = priority.has(a.id) ? 0 : 1
       const bP = priority.has(b.id) ? 0 : 1
@@ -263,21 +325,79 @@ export function RuleBuilderModal(props: RuleBuilderModalProps) {
     const parsed = schema.safeParse(data)
     if (parsed.success) {
       onPreview?.(parsed.data)
+      // Fallback preview toast if no handler provided
+      if (!onPreview) {
+        try {
+          const summary = describeRule({ ...parsed.data, coins: parsed.data.coins })
+          toast.info('Preview', { description: summary })
+        } catch {
+          toast.info('Preview ready')
+        }
+      }
     } else {
       // force display errors
       form.handleSubmit(() => {})()
     }
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    // Check wallet connection
+    if (!isConnected || !activeAccount || !walletSigner) {
+      toast.error('Please connect your wallet to create a rule')
+      return
+    }
+
+    if (!autopilotClient) {
+      toast.error('AutoPilot client not initialized')
+      return
+    }
+
     commitDropPercent()
     const data = form.getValues()
     const parsed = schema.safeParse(data)
-    if (parsed.success) {
-      onSave?.(parsed.data)
-      setModalOpen(false)
-    } else {
+    
+    if (!parsed.success) {
       form.handleSubmit(() => {})()
+      return
+    }
+
+    try {
+      setIsCreating(true)
+      
+      // Convert form data to contract parameters
+      const contractParams = convertFormToContractParams(
+        parsed.data,
+        activeAccount.address,
+        assetIdMap
+      )
+
+      toast.loading('Creating autopilot rule...', { id: 'create-rule' })
+
+      // Create rule on blockchain
+      const result = await autopilotClient.createRule(walletSigner, contractParams)
+
+      toast.success(
+        `Rule created successfully! Rule ID: ${result.ruleId}`,
+        { 
+          id: 'create-rule',
+          duration: 5000,
+          description: `Transaction: ${result.txId}`
+        }
+      )
+
+      // Call the onSave callback if provided
+      onSave?.(parsed.data)
+      
+      // Close modal
+      setModalOpen(false)
+    } catch (error: any) {
+      console.error('Failed to create rule:', error)
+      toast.error(
+        error.message || 'Failed to create rule',
+        { id: 'create-rule' }
+      )
+    } finally {
+      setIsCreating(false)
     }
   }
 
@@ -616,8 +736,26 @@ export function RuleBuilderModal(props: RuleBuilderModalProps) {
               <Button type="button" variant="outline" onClick={handlePreview}>
                 Preview Rule
               </Button>
-              <Button type="submit">Save Rule</Button>
+              <Button 
+                type="submit" 
+                disabled={isCreating}
+              >
+                {isCreating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Creating Rule...
+                  </>
+                ) : (
+                  'Save Rule'
+                )}
+              </Button>
             </div>
+
+            {!isConnected && (
+              <p className="text-sm text-muted-foreground text-center">
+                Connect your wallet to create autopilot rules
+              </p>
+            )}
           </form>
         </Form>
       </DialogContent>

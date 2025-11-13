@@ -10,15 +10,22 @@ import { ModeToggle } from "@/components/shared/mode-toggle";
 import AlgorandWalletConnect from "@/components/features/algorand/algorand-wallet-connect";
 import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider";
 import { cn } from "@/lib/utils";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { useViewport } from "@/hooks/use-viewport";
 import { describeRule } from "@/lib/shared/rules";
 import { createRule } from "@/features/agent/api/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function Header() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [rules, setRules] = useState<any[]>([]);
+  const [exploreDropdownOpen, setExploreDropdownOpen] = useState(false);
   const { isMobile } = useViewport();
   const { activeAccount } = useWalletConnection();
   const mobileMenuRef = useRef<HTMLDivElement>(null);
@@ -79,11 +86,15 @@ export function Header() {
 
   const navItems = [
     { name: "Home", href: "/" },
-    { name: "Explore", href: "/cryptocurrencies" },
     { name: "Trade", href: "/trade" },
-    { name: "Pool", href: "/pool" },
     { name: "Stake", href: "/stake" },
     { name: "Portfolio", href: "/portfolio" },
+  ];
+
+  const exploreItems = [
+    { name: "Tokens", href: "/cryptocurrencies" },
+    { name: "Pool", href: "/pool" },
+    { name: "Transaction", href: "/transactions" },
   ];
 
   const saveRule = async (rule: any) => {
@@ -131,8 +142,57 @@ export function Header() {
       </Link>
 
         {/* Desktop navigation - Centered */}
-  <nav className="hidden md:flex gap-6 lg:gap-8 absolute left-1/2 -translate-x-1/2 transform">
-          {navItems.map((item) => (
+  <nav className="hidden md:flex gap-6 lg:gap-8 absolute left-1/2 -translate-x-1/2 transform items-center">
+          <Link
+            href="/"
+            className={cn(
+              "text-sm font-medium transition-colors",
+              pathname === "/"
+                ? "text-primary dark:text-[#F3C623] underline"
+                : "text-gray-700 hover:text-primary dark:text-[#F3C623]/60 dark:hover:text-[#F3C623]"
+            )}
+          >
+            Home
+          </Link>
+          
+          {/* Explore Dropdown */}
+          <DropdownMenu open={exploreDropdownOpen} onOpenChange={setExploreDropdownOpen}>
+            <DropdownMenuTrigger 
+              className={cn(
+                "text-sm font-medium transition-colors flex items-center gap-1",
+                exploreItems.some(item => pathname === item.href)
+                  ? "text-primary dark:text-[#F3C623] underline"
+                  : "text-gray-700 hover:text-primary dark:text-[#F3C623]/60 dark:hover:text-[#F3C623]"
+              )}
+              onMouseEnter={() => setExploreDropdownOpen(true)}
+              onMouseLeave={() => setExploreDropdownOpen(false)}
+            >
+              Explore
+              <ChevronDown className="h-3 w-3" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent 
+              align="center" 
+              className="w-40"
+              onMouseEnter={() => setExploreDropdownOpen(true)}
+              onMouseLeave={() => setExploreDropdownOpen(false)}
+            >
+              {exploreItems.map((item) => (
+                <DropdownMenuItem key={item.href} asChild>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "w-full cursor-pointer",
+                      pathname === item.href && "text-primary dark:text-[#F3C623] font-semibold"
+                    )}
+                  >
+                    {item.name}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          {navItems.slice(1).map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -150,31 +210,6 @@ export function Header() {
 
         {/* Desktop wallet connect and mode toggle */}
         <div className="hidden md:flex items-center gap-2">
-          <RuleBuilderModal
-            trigger={
-              <Button 
-                variant="outline" 
-                size="default" 
-                className="group relative overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/25 dark:hover:shadow-[#F3C623]/25"
-              >
-                <span className="relative z-10 transition-colors duration-300 group-hover:text-white dark:group-hover:text-black">
-                  Auto-Pilot Portfolio
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary/80 dark:from-[#F3C623] dark:to-[#F3C623]/80 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
-              </Button>
-            }
-            availableCoins={[
-              { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
-              { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
-            ]}
-            onPreview={(rule) => {
-              toast({ title: "Preview", description: describeRule(rule) })
-            }}
-            onSave={(rule) => {
-              saveRule(rule)
-              toast({ title: "Rule saved", description: describeRule(rule) })
-            }}
-          />
           <AlgorandWalletConnect variant="dropdown" />
           <ModeToggle />
         </div>
@@ -196,7 +231,49 @@ export function Header() {
         <div ref={mobileMenuRef} className="mobile-menu md:hidden border-t bg-white/95 backdrop-blur dark:bg-[#171717]/95 absolute w-full z-40">
           <div className="container py-4 space-y-4">
             <nav className="flex flex-col space-y-3">
-              {navItems.map((item) => (
+              <Link
+                href="/"
+                className={cn(
+                  "text-sm font-medium transition-colors py-2 px-2 rounded-md",
+                  pathname === "/"
+                    ? "text-primary dark:text-[#F3C623] bg-primary/10 dark:bg-[#F3C623]/10"
+                    : "text-gray-700 hover:text-primary hover:bg-primary/5 dark:text-[#F3C623]/60 dark:hover:text-[#F3C623] dark:hover:bg-[#F3C623]/5"
+                )}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Home
+              </Link>
+              
+              {/* Explore Dropdown for Mobile */}
+              <div className="space-y-1">
+                <div className={cn(
+                  "text-sm font-medium py-2 px-2",
+                  exploreItems.some(item => pathname === item.href)
+                    ? "text-primary dark:text-[#F3C623]"
+                    : "text-gray-700 dark:text-[#F3C623]/60"
+                )}>
+                  Explore
+                </div>
+                <div className="ml-4 space-y-2">
+                  {exploreItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "block text-sm transition-colors py-2 px-2 rounded-md",
+                        pathname === item.href
+                          ? "text-primary dark:text-[#F3C623] bg-primary/10 dark:bg-[#F3C623]/10 font-semibold"
+                          : "text-gray-600 hover:text-primary hover:bg-primary/5 dark:text-[#F3C623]/50 dark:hover:text-[#F3C623] dark:hover:bg-[#F3C623]/5"
+                      )}
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      {item.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+              
+              {navItems.slice(1).map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -213,31 +290,6 @@ export function Header() {
               ))}
             </nav>
             <div className="flex flex-col gap-3 pt-3 border-t">
-              <RuleBuilderModal
-                trigger={
-                  <Button 
-                    variant="outline" 
-                    size="default" 
-                    className="w-full group relative overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/25 dark:hover:shadow-[#F3C623]/25"
-                  >
-                    <span className="relative z-10 transition-colors duration-300 group-hover:text-white dark:group-hover:text-black">
-                      Auto-Pilot Portfolio
-                    </span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary/80 dark:from-[#F3C623] dark:to-[#F3C623]/80 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
-                  </Button>
-                }
-                availableCoins={[
-                  { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
-                  { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
-                ]}
-                onPreview={(rule) => {
-                  toast({ title: "Preview", description: describeRule(rule) })
-                }}
-                onSave={(rule) => {
-                  saveRule(rule)
-                  toast({ title: "Rule saved", description: describeRule(rule) })
-                }}
-              />
               <div className="w-full">
                 <AlgorandWalletConnect variant="button" className="w-full" />
               </div>

@@ -14,12 +14,16 @@ import { SellPanel } from "./sellpanel"
 import { AssetSelector } from "./asset-selector"
 import { useTradeableAssets, AssetInfo } from "@/hooks/use-tradeable-assets"
 import { useToast } from "@/hooks/use-toast"
+import RuleBuilderModal from "@/components/features/rules/rule-builder-modal"
+import { describeRule } from "@/lib/shared/rules"
+import { createRule } from "@/features/agent/api/client"
 
 type SwapCardProps = {
   onPairChange?: (from: AssetInfo | null, to: AssetInfo | null) => void
+  onSwapSuccess?: () => void
 }
 
-export function SwapCard({ onPairChange }: SwapCardProps) {
+export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
   const { activeAccount } = useWalletConnection()
   const { signTransactions } = useWalletActions()
   const { assets, loading: assetsLoading } = useTradeableAssets()
@@ -94,6 +98,10 @@ export function SwapCard({ onPairChange }: SwapCardProps) {
         const outputAmount = data.outputAmount / Math.pow(10, toToken.decimals)
         setToAmount(outputAmount.toFixed(toToken.decimals))
         setRouteData(data)
+        
+        // Debug log to see the route structure
+        console.log('🔍 Route data received:', JSON.stringify(data, null, 2))
+        console.log('🔍 Route pools:', data.route?.pools)
       } else {
         setToAmount('0')
         toast({
@@ -112,6 +120,37 @@ export function SwapCard({ onPairChange }: SwapCardProps) {
       })
     } finally {
       setQuoteLoading(false)
+    }
+  }
+
+  // Save rule function for Auto-Pilot
+  const saveRule = async (rule: any) => {
+    try {
+      const type = rule.strategy === 'DCA' ? 'dca' : rule.strategy === 'REBALANCE' ? 'rebalance' : 'rotate'
+      const payload = {
+        ownerAddress: activeAccount?.address || "0x0000000000000000000000000000000000000000",
+        type,
+        targets: rule.coins || [],
+        rotateTopN: rule.rotateTopN,
+        maxSpendUSD: rule.maxSpendUsd,
+        maxSlippage: rule.maxSlippagePercent,
+        cooldownMinutes: rule.cooldownMinutes,
+        triggerType: rule.triggerType,
+        dropPercent: rule.dropPercent,
+        trendWindow: rule.trendWindow,
+        trendThreshold: rule.trendThreshold,
+        momentumLookback: rule.momentumLookback,
+        momentumThreshold: rule.momentumThreshold,
+        status: 'active',
+      }
+      await createRule(payload)
+    } catch (e) {
+      console.error(e)
+      toast({ 
+        title: "Failed to save rule", 
+        description: "Please try again.", 
+        variant: "destructive" 
+      })
     }
   }
 
@@ -210,7 +249,45 @@ export function SwapCard({ onPairChange }: SwapCardProps) {
       const submitRes = await fetch('/api/swap/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ signedTxns: signedTxnsBase64 })
+        body: JSON.stringify({
+          signedTxns: signedTxnsBase64,
+          ownerAddress: activeAccount?.address,
+          meta: {
+            fromAssetId: fromToken.id,
+            fromAssetName: fromToken.name,
+            fromAssetUnitName: fromToken.unitName,
+            fromAssetDecimals: fromToken.decimals,
+            toAssetId: toToken.id,
+            toAssetName: toToken.name,
+            toAssetUnitName: toToken.unitName,
+            toAssetDecimals: toToken.decimals,
+            fromAmount: fromAmount,
+            fromAmountBaseUnits: amountInBaseUnits,
+            toAmount: toAmount,
+            toAmountEstimated: routeData.outputAmount,
+            minimumReceived: routeData.minimumReceived,
+            slippage: parseFloat(slippage),
+            route: routeData.route,
+            // Extract pool info from route.pools array
+            poolAddress: (routeData.route?.pools && routeData.route.pools.length > 0) 
+              ? routeData.route.pools[0].poolAddress 
+              : undefined,
+            poolId: (routeData.route?.pools && routeData.route.pools.length > 0)
+              ? routeData.route.pools[0].poolId
+              : undefined,
+            routePath: (routeData.route?.pools && Array.isArray(routeData.route.pools)) 
+              ? routeData.route.pools.map((p: any) => ({
+                  dex: p.dexName,
+                  poolId: p.poolId,
+                  poolAddress: p.poolAddress,
+                  appId: p.appId,
+                }))
+              : [],
+            priceImpact: routeData.priceImpact,
+            expectedPricePerUnit: routeData.outputAmount / amountInBaseUnits,
+            timestamp: new Date().toISOString(),
+          }
+        })
       })
 
       if (!submitRes.ok) {
@@ -250,6 +327,9 @@ export function SwapCard({ onPairChange }: SwapCardProps) {
       setFromAmount('')
       setToAmount('')
       setRouteData(null)
+
+      // Trigger swap history refresh
+      onSwapSuccess?.()
 
       console.log('✅ REAL SWAP COMPLETED!')
       console.log('Transaction ID:', txId)
@@ -336,6 +416,33 @@ export function SwapCard({ onPairChange }: SwapCardProps) {
             >
               Sell
             </button>
+
+            {/* Auto-Pilot Button */}
+            <RuleBuilderModal
+              trigger={
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 relative z-10 text-xs px-2 group overflow-hidden transition-all duration-300 hover:scale-105 border border-red-500 dark:border-red-400"
+                >
+                  <span className="relative z-10 transition-colors duration-300 text-red-600 dark:text-red-400 group-hover:text-white dark:group-hover:text-black">
+                    Auto-Pilot
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-red-600 dark:from-red-500 dark:to-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+                </Button>
+              }
+              availableCoins={[
+                { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
+                { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
+              ]}
+              onPreview={(rule) => {
+                toast({ title: "Preview", description: describeRule(rule) })
+              }}
+              onSave={(rule) => {
+                saveRule(rule)
+                toast({ title: "Rule saved", description: describeRule(rule) })
+              }}
+            />
 
             {/* Settings Button moved inside tab bar */}
             <Button
