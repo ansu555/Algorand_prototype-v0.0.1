@@ -23,11 +23,16 @@ type Transaction = {
   fromAssetUnitName: string
   toAssetUnitName: string
   fromAmount: string
+  fromAmountBaseUnits?: number | string
   toAmount: string
+  toAmountBaseUnits?: number | string
   slippage: string
   routePath: any[]
   poolAddress?: string
   confirmedRound?: number
+  decimals?: number
+  fromDecimals?: number
+  toDecimals?: number
 }
 
 export default function TransactionsPage() {
@@ -163,7 +168,7 @@ export default function TransactionsPage() {
                       <SelectValue placeholder="Type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="all">All Transactions</SelectItem>
                       <SelectItem value="swap">Swap</SelectItem>
                       <SelectItem value="send">Send</SelectItem>
                       <SelectItem value="receive">Receive</SelectItem>
@@ -276,6 +281,10 @@ export default function TransactionsPage() {
                     </TableRow>
                   ) : (
                     filteredTransactions.map((tx) => {
+                      const isExecuteRule = tx.action === 'execute_rule'
+                      
+                      // For EXECUTE_RULE, show only the single token being executed
+                      // For SWAP, show the from -> to format
                       const fromSymbol = tx.fromAssetUnitName || tx.fromAssetName || `#${tx.fromAssetId}`
                       const toSymbol = tx.toAssetUnitName || tx.toAssetName || `#${tx.toAssetId}`
                       
@@ -284,6 +293,42 @@ export default function TransactionsPage() {
                                       (Array.isArray(tx.routePath) && tx.routePath.length > 0 && tx.routePath[0]?.poolId) || 
                                       (Array.isArray(tx.routePath) && tx.routePath.length > 0 && tx.routePath[0]?.poolAddress) ||
                                       null
+                      
+                      // Calculate display amounts
+                      let executeAmountNumber: number | null = null
+                      if (isExecuteRule) {
+                        if (tx.fromAmountBaseUnits != null && tx.decimals != null) {
+                          executeAmountNumber = Number(tx.fromAmountBaseUnits) / Math.pow(10, tx.decimals)
+                        } else if (tx.fromAmount != null) {
+                          // fromAmount may already be human-readable
+                          const n = Number(tx.fromAmount)
+                          executeAmountNumber = Number.isFinite(n) ? n : null
+                        }
+                      }
+
+                      // For swaps, compute both sides where possible
+                      const isSwap = tx.action === 'swap'
+                      let swapFromNumber: number | null = null
+                      let swapToNumber: number | null = null
+                      if (isSwap) {
+                        if (tx.fromAmountBaseUnits != null && tx.fromDecimals != null) {
+                          swapFromNumber = Number(tx.fromAmountBaseUnits) / Math.pow(10, tx.fromDecimals)
+                        } else if (tx.fromAmount != null) {
+                          const n = Number(tx.fromAmount)
+                          swapFromNumber = Number.isFinite(n) ? n : null
+                        }
+
+                        if (tx.toAmountBaseUnits != null && tx.toDecimals != null) {
+                          swapToNumber = Number(tx.toAmountBaseUnits) / Math.pow(10, tx.toDecimals)
+                        } else if (tx.toAmount != null) {
+                          const n = Number(tx.toAmount)
+                          swapToNumber = Number.isFinite(n) ? n : null
+                        }
+                      }
+
+                      const executeAmount = executeAmountNumber != null ? executeAmountNumber.toFixed(6) : null
+                      const swapFromAmount = swapFromNumber != null ? swapFromNumber.toFixed(6) : null
+                      const swapToAmount = swapToNumber != null ? swapToNumber.toFixed(6) : null
                       
                       return (
                         <TableRow key={tx.id} className="border-b border-gray-100 dark:border-gray-800/50">
@@ -298,17 +343,32 @@ export default function TransactionsPage() {
                               <span className="text-xs text-muted-foreground uppercase tracking-wide">
                                 {tx.action ? String(tx.action).toUpperCase().replace(/_/g, ' ') : 'EVENT'}
                               </span>
-                              <span className="font-medium text-sm">{fromSymbol} → {toSymbol}</span>
+                              {isExecuteRule ? (
+                                <span className="font-medium text-sm">{fromSymbol}</span>
+                              ) : (
+                                <span className="font-medium text-sm">{fromSymbol} → {toSymbol}</span>
+                              )}
                             </div>
                           </TableCell>
 
                           {/* Token Amount */}
                           <TableCell className="text-left py-4">
-                            <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">—</span>
-                              <span className="font-medium">→</span>
-                              <span className="text-muted-foreground">—</span>
-                            </div>
+                            {isExecuteRule ? (
+                              executeAmount ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{executeAmount}</span>
+                                  <span className="text-xs text-muted-foreground">{fromSymbol}</span>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground">{swapFromAmount ?? '—'}</span>
+                                <span className="font-medium">→</span>
+                                <span className="text-muted-foreground">{swapToAmount ?? '—'}</span>
+                              </div>
+                            )}
                           </TableCell>
 
                           {/* Pool Address */}
