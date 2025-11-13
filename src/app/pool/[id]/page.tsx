@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ArrowLeft, ExternalLink, Loader2, TrendingUp, BarChart3, Copy, Check, X } from 'lucide-react'
 import { SwapCard } from '@/components/features/trading'
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 interface PoolDetails {
   poolId: string
@@ -39,6 +40,20 @@ export default function PoolDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
   const [showSwap, setShowSwap] = useState(false)
+  const [timePeriod, setTimePeriod] = useState<'1H' | '1D' | '1W' | '1M' | '1Y'>('1D')
+
+  // Mock chart data - replace with real data
+  const generateChartData = (period: string) => {
+    const dataPoints = period === '1H' ? 12 : period === '1D' ? 24 : period === '1W' ? 7 : period === '1M' ? 30 : 12
+    const baseValue = 19300
+    return Array.from({ length: dataPoints }, (_, i) => ({
+      time: period === '1H' ? `${i * 5}m` : period === '1D' ? `${i}:00` : period === '1W' ? `Day ${i + 1}` : period === '1M' ? `${i + 1}` : `M${i + 1}`,
+      value: baseValue + Math.random() * 5000 - 2500,
+      volume: Math.random() * 100000 + 50000
+    }))
+  }
+
+  const chartData = generateChartData(timePeriod)
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
@@ -157,59 +172,76 @@ export default function PoolDetailPage() {
                   </div>
 
                   {/* Chart Card */}
-                  <Card className="bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800">
+                  <Card className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950 border-gray-200 dark:border-gray-800 shadow-lg">
                     <CardContent className="pt-6">
-                      <div className="h-64 relative">
-                        <svg className="w-full h-full" viewBox="0 0 600 256" preserveAspectRatio="none">
-                          <defs>
-                            <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
-                              <stop offset="0%" stopColor="rgb(236, 72, 153)" stopOpacity="0.8" />
-                              <stop offset="100%" stopColor="rgb(236, 72, 153)" stopOpacity="0.05" />
-                            </linearGradient>
-                          </defs>
-                          {/* Chart bars */}
-                          <rect x="60" y="200" width="8" height="10" fill="rgb(236, 72, 153)" rx="2" />
-                          <rect x="140" y="180" width="8" height="30" fill="rgb(236, 72, 153)" rx="2" />
-                          <rect x="200" y="20" width="15" height="230" fill="rgb(236, 72, 153)" rx="2" />
-                          <rect x="280" y="190" width="8" height="20" fill="rgb(236, 72, 153)" rx="2" />
-                          <rect x="400" y="90" width="15" height="120" fill="rgb(236, 72, 153)" rx="2" />
-                          <rect x="480" y="200" width="8" height="10" fill="rgb(236, 72, 153)" rx="2" />
-                          
-                          {/* Time labels */}
-                          <text x="60" y="240" fill="currentColor" className="text-gray-500" fontSize="10">8:30 PM</text>
-                          <text x="150" y="240" fill="currentColor" className="text-gray-500" fontSize="10">11:30 PM</text>
-                          <text x="200" y="240" fill="currentColor" className="text-gray-500" fontSize="10">2:30 AM</text>
-                          <text x="280" y="240" fill="currentColor" className="text-gray-500" fontSize="10">Mar 13</text>
-                          <text x="340" y="240" fill="currentColor" className="text-gray-500" fontSize="10">8:30 AM</text>
-                          <text x="400" y="240" fill="currentColor" className="text-gray-500" fontSize="10">11:30 AM</text>
-                          <text x="460" y="240" fill="currentColor" className="text-gray-500" fontSize="10">2:30 PM</text>
-                        </svg>
+                      {/* Chart */}
+                      <div className="h-80 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#ec4899" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#ec4899" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.3} />
+                            <XAxis 
+                              dataKey="time" 
+                              stroke="#9ca3af" 
+                              style={{ fontSize: '12px' }}
+                              tickLine={false}
+                            />
+                            <YAxis 
+                              stroke="#9ca3af" 
+                              style={{ fontSize: '12px' }}
+                              tickLine={false}
+                              tickFormatter={(value) => `$${(value / 1000).toFixed(1)}K`}
+                            />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '8px',
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                              }}
+                              formatter={(value: any) => [`$${value.toLocaleString()}`, 'Value']}
+                            />
+                            <Area 
+                              type="monotone" 
+                              dataKey="value" 
+                              stroke="#ec4899" 
+                              strokeWidth={2}
+                              fill="url(#colorValue)"
+                              animationDuration={1000}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
                       </div>
                       
                       {/* Time Period Buttons */}
-                      <div className="flex gap-2 mt-4 justify-center">
-                        <Button variant="ghost" size="sm" className="h-8 text-xs px-3 rounded-full">1H</Button>
-                        <Button variant="ghost" size="sm" className="h-8 text-xs px-3 rounded-full bg-gray-200 dark:bg-gray-800">1D</Button>
-                        <Button variant="ghost" size="sm" className="h-8 text-xs px-3 rounded-full">1W</Button>
-                        <Button variant="ghost" size="sm" className="h-8 text-xs px-3 rounded-full">1M</Button>
-                        <Button variant="ghost" size="sm" className="h-8 text-xs px-3 rounded-full">1Y</Button>
-                      </div>
-
-                      {/* Volume Dropdown */}
-                      <div className="mt-4 flex justify-center">
-                        <Button variant="ghost" size="sm" className="text-sm">
-                          Volume
-                          <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </Button>
+                      <div className="flex gap-2 mt-6 justify-center">
+                        {(['1H', '1D', '1W', '1M', '1Y'] as const).map((period) => (
+                          <Button 
+                            key={period}
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => setTimePeriod(period)}
+                            className={`h-8 text-xs px-3 rounded-full transition-all ${
+                              timePeriod === period 
+                                ? 'bg-pink-100 text-pink-600 dark:bg-pink-950 dark:text-pink-400' 
+                                : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                            }`}
+                          >
+                            {period}
+                          </Button>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>
                 </div>
 
                 {/* Right Column - Stats & Links */}
-                <div className="space-y-6">
+                <div className="space-y-6 scale-[1.01] origin-left">
                   {/* Action Buttons */}
                   <div className="flex gap-3">
                     <Button 
@@ -254,7 +286,7 @@ export default function PoolDetailPage() {
                   )}
 
                   {/* Total APR Card */}
-                  <Card className="bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800">
+                  <Card className="bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 w-[101%]">
                     <CardContent className="pt-6 pb-6">
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Total APR</p>
                       <p className="text-4xl font-bold">0.02%</p>
@@ -262,7 +294,7 @@ export default function PoolDetailPage() {
                   </Card>
 
                   {/* Stats Card */}
-                  <Card className="bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800">
+                  <Card className="bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 w-[101%]">
                     <CardHeader className="pb-4">
                       <CardTitle className="text-lg">Stats</CardTitle>
                     </CardHeader>
@@ -313,7 +345,7 @@ export default function PoolDetailPage() {
                   </Card>
 
                   {/* Links Card */}
-                  <Card className="bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800">
+                  <Card className="bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 w-[101%]">
                     <CardHeader className="pb-4">
                       <CardTitle className="text-lg">Links</CardTitle>
                     </CardHeader>

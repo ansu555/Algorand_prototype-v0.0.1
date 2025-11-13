@@ -8,7 +8,6 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
 import { Loader2, ArrowUpDown, Clock, CalendarClock, ExternalLink, Copy, Check } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-import { Button } from "@/components/ui/button"
 
 type Transaction = {
   id: string
@@ -119,7 +118,17 @@ export default function TransactionsPage() {
   }, [transactions, typeFilter, sortBy])
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col [&_*:hover]:!bg-transparent [&_*:hover]:!text-current [&_*:hover]:!opacity-100">
+      <style jsx global>{`
+        .flex.min-h-screen * {
+          transition: none !important;
+        }
+        .flex.min-h-screen *:hover {
+          background-color: transparent !important;
+          color: inherit !important;
+          opacity: inherit !important;
+        }
+      `}</style>
       <BackgroundPaths />
       <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-6">
         <div className="w-full space-y-6">
@@ -277,7 +286,7 @@ export default function TransactionsPage() {
                                       null
                       
                       return (
-                        <TableRow key={tx.id} className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors">
+                        <TableRow key={tx.id} className="border-b border-gray-100 dark:border-gray-800/50">
                           {/* Time */}
                           <TableCell className="text-left text-muted-foreground text-sm py-4">
                             {formatDistanceToNow(new Date(tx.createdAt), { addSuffix: true })}
@@ -306,19 +315,17 @@ export default function TransactionsPage() {
                           <TableCell className="text-left py-4">
                             {poolAddr ? (
                               <div className="flex items-center gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
+                                <button
                                   onClick={() => copyToClipboard(String(poolAddr))}
-                                  className="h-7 w-7 p-0 flex-shrink-0"
+                                  className="h-7 w-7 p-0 flex-shrink-0 inline-flex items-center justify-center rounded-md cursor-pointer"
                                   title={`Copy: ${String(poolAddr)}`}
                                 >
                                   {copiedAddress === poolAddr ? (
                                     <Check className="h-3.5 w-3.5 text-green-500" />
                                   ) : (
-                                    <Copy className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+                                    <Copy className="h-3.5 w-3.5 text-muted-foreground" />
                                   )}
-                                </Button>
+                                </button>
                                 <span className="font-mono text-xs text-muted-foreground">
                                   {String(poolAddr).slice(0, 6)}...{String(poolAddr).slice(-6)}
                                 </span>
@@ -332,19 +339,17 @@ export default function TransactionsPage() {
                           <TableCell className="text-left py-4">
                             {tx.ownerAddress ? (
                               <div className="flex items-center gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
+                                <button
                                   onClick={() => copyToClipboard(tx.ownerAddress)}
-                                  className="h-7 w-7 p-0 flex-shrink-0"
+                                  className="h-7 w-7 p-0 flex-shrink-0 inline-flex items-center justify-center rounded-md cursor-pointer"
                                   title={`Copy: ${tx.ownerAddress}`}
                                 >
                                   {copiedAddress === tx.ownerAddress ? (
                                     <Check className="h-3.5 w-3.5 text-green-500" />
                                   ) : (
-                                    <Copy className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+                                    <Copy className="h-3.5 w-3.5 text-muted-foreground" />
                                   )}
-                                </Button>
+                                </button>
                                 <span className="font-mono text-xs text-muted-foreground">
                                   {tx.ownerAddress.slice(0, 6)}...{tx.ownerAddress.slice(-6)}
                                 </span>
@@ -361,10 +366,10 @@ export default function TransactionsPage() {
                                 href={`https://testnet.algoexplorer.io/tx/${tx.txId}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center h-7 w-7 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                className="inline-flex items-center justify-center h-7 w-7 rounded-md"
                                 title="View on AlgoExplorer"
                               >
-                                <ExternalLink className="h-4 w-4 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300" />
+                                <ExternalLink className="h-4 w-4 text-blue-500 dark:text-blue-400" />
                               </a>
                             ) : (
                               <span className="text-muted-foreground text-sm">—</span>
