@@ -181,7 +181,7 @@ export default function TransactionsPage() {
 
             <CardContent className="space-y-6">
               {/* Statistics Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* 1D Volume */}
                 <Card>
               <CardHeader className="pb-2">
@@ -247,18 +247,15 @@ export default function TransactionsPage() {
                 <div className="w-full overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="text-red-600 dark:text-red-400">
-                    <TableHead className="text-left">
-                      <div className="flex items-center gap-1">
-                        Time
-                        <ArrowUpDown className="h-3 w-3" />
-                      </div>
+                  <TableRow className="border-b border-gray-200 dark:border-gray-800">
+                    <TableHead className="text-left font-semibold text-red-600 dark:text-red-400">
+                      Time
                     </TableHead>
-                    <TableHead className="text-left">Type</TableHead>
-                    <TableHead className="text-right">Token Amount</TableHead>
-                    <TableHead className="text-center">Pool Address</TableHead>
-                    <TableHead className="text-right">Wallet</TableHead>
-                    <TableHead className="text-center">Explorer</TableHead>
+                    <TableHead className="text-left font-semibold text-red-600 dark:text-red-400">Type</TableHead>
+                    <TableHead className="text-left font-semibold text-red-600 dark:text-red-400">Token Amount</TableHead>
+                    <TableHead className="text-left font-semibold text-red-600 dark:text-red-400">Pool Address</TableHead>
+                    <TableHead className="text-left font-semibold text-red-600 dark:text-red-400">Wallet</TableHead>
+                    <TableHead className="text-center font-semibold text-red-600 dark:text-red-400">Explorer</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -280,42 +277,46 @@ export default function TransactionsPage() {
                                       null
                       
                       return (
-                        <TableRow key={tx.id} className="hover:bg-muted/30">
+                        <TableRow key={tx.id} className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors">
                           {/* Time */}
-                          <TableCell className="text-left text-muted-foreground text-sm">
+                          <TableCell className="text-left text-muted-foreground text-sm py-4">
                             {formatDistanceToNow(new Date(tx.createdAt), { addSuffix: true })}
                           </TableCell>
 
-                          {/* Type - with spacing */}
-                          <TableCell className="text-left">
-                            <div className="flex items-center gap-3">
-                              <span className="text-muted-foreground text-sm">{tx.action ? String(tx.action).toUpperCase().replace(/_/g, ' ') : 'EVENT'}</span>
-                              <span className="font-medium">{fromSymbol} → {toSymbol}</span>
+                          {/* Type */}
+                          <TableCell className="text-left py-4">
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs text-muted-foreground uppercase tracking-wide">
+                                {tx.action ? String(tx.action).toUpperCase().replace(/_/g, ' ') : 'EVENT'}
+                              </span>
+                              <span className="font-medium text-sm">{fromSymbol} → {toSymbol}</span>
                             </div>
                           </TableCell>
 
-                          {/* Token Amount - consolidated */}
-                          <TableCell className="text-right font-mono text-sm">
-                            <span className="font-medium">
-                              {tx.fromAmount || '—'} → {tx.toAmount || '—'}
-                            </span>
+                          {/* Token Amount */}
+                          <TableCell className="text-left py-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground">—</span>
+                              <span className="font-medium">→</span>
+                              <span className="text-muted-foreground">—</span>
+                            </div>
                           </TableCell>
 
-                          {/* Pool Address - copy icon */}
-                          <TableCell className="text-center">
+                          {/* Pool Address */}
+                          <TableCell className="text-left py-4">
                             {poolAddr ? (
-                              <div className="flex items-center justify-center gap-2">
+                              <div className="flex items-center gap-2">
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => copyToClipboard(String(poolAddr))}
-                                  className="h-8 w-8 p-0 flex-shrink-0"
+                                  className="h-7 w-7 p-0 flex-shrink-0"
                                   title={`Copy: ${String(poolAddr)}`}
                                 >
                                   {copiedAddress === poolAddr ? (
-                                    <Check className="h-4 w-4 text-green-500" />
+                                    <Check className="h-3.5 w-3.5 text-green-500" />
                                   ) : (
-                                    <Copy className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                                    <Copy className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
                                   )}
                                 </Button>
                                 <span className="font-mono text-xs text-muted-foreground">
@@ -323,25 +324,25 @@ export default function TransactionsPage() {
                                 </span>
                               </div>
                             ) : (
-                              <span className="text-muted-foreground text-xs">—</span>
+                              <span className="text-muted-foreground text-sm">—</span>
                             )}
                           </TableCell>
 
                           {/* Wallet */}
-                          <TableCell className="text-center">
+                          <TableCell className="text-left py-4">
                             {tx.ownerAddress ? (
-                              <div className="flex items-center justify-center gap-2">
+                              <div className="flex items-center gap-2">
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => copyToClipboard(tx.ownerAddress)}
-                                  className="h-8 w-8 p-0 flex-shrink-0"
+                                  className="h-7 w-7 p-0 flex-shrink-0"
                                   title={`Copy: ${tx.ownerAddress}`}
                                 >
                                   {copiedAddress === tx.ownerAddress ? (
-                                    <Check className="h-4 w-4 text-green-500" />
+                                    <Check className="h-3.5 w-3.5 text-green-500" />
                                   ) : (
-                                    <Copy className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+                                    <Copy className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
                                   )}
                                 </Button>
                                 <span className="font-mono text-xs text-muted-foreground">
@@ -349,24 +350,24 @@ export default function TransactionsPage() {
                                 </span>
                               </div>
                             ) : (
-                              <span className="text-muted-foreground text-xs">—</span>
+                              <span className="text-muted-foreground text-sm">—</span>
                             )}
                           </TableCell>
 
                           {/* Explorer Link */}
-                          <TableCell className="text-center">
+                          <TableCell className="text-center py-4">
                             {tx.txId ? (
                               <a
                                 href={`https://testnet.algoexplorer.io/tx/${tx.txId}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-muted transition-colors"
+                                className="inline-flex items-center justify-center h-7 w-7 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                                 title="View on AlgoExplorer"
                               >
-                                <ExternalLink className="h-4 w-4 text-blue-500 hover:text-blue-600" />
+                                <ExternalLink className="h-4 w-4 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300" />
                               </a>
                             ) : (
-                              <span className="text-muted-foreground text-xs">—</span>
+                              <span className="text-muted-foreground text-sm">—</span>
                             )}
                           </TableCell>
                         </TableRow>
