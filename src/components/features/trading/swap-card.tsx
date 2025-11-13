@@ -21,9 +21,12 @@ import { createRule } from "@/features/agent/api/client"
 type SwapCardProps = {
   onPairChange?: (from: AssetInfo | null, to: AssetInfo | null) => void
   onSwapSuccess?: () => void
+  initialFromAssetId?: number
+  initialToAssetId?: number
+  showBuySell?: boolean
 }
 
-export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
+export function SwapCard({ onPairChange, onSwapSuccess, initialFromAssetId, initialToAssetId, showBuySell = true }: SwapCardProps) {
   const { activeAccount } = useWalletConnection()
   const { signTransactions } = useWalletActions()
   const { assets, loading: assetsLoading } = useTradeableAssets()
@@ -46,16 +49,25 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
 
   const isConnected = !!activeAccount
 
-  // Set default assets once loaded
+  // Initialize from pool-provided asset IDs if given
   useEffect(() => {
-    if (assets.length > 0 && !fromToken) {
-      // Default to ALGO if available
-      const algoAsset = assets.find(a => a.id === 0)
-      if (algoAsset) {
-        setFromToken(algoAsset)
-      }
+    if (assets.length === 0) return
+
+    if (initialFromAssetId != null) {
+      const match = assets.find(a => a.id === initialFromAssetId)
+      if (match) setFromToken(match)
     }
-  }, [assets, fromToken])
+    if (initialToAssetId != null) {
+      const match = assets.find(a => a.id === initialToAssetId)
+      if (match) setToToken(match)
+    }
+
+    // If still no from token, default to ALGO or first asset
+    if (!fromToken) {
+      const algo = assets.find(a => a.id === 0) || assets[0]
+      if (algo) setFromToken(algo)
+    }
+  }, [assets, initialFromAssetId, initialToAssetId, fromToken])
 
   // Fetch quote when amount or assets change
   useEffect(() => {
@@ -396,26 +408,28 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
             >
               Limit
             </button>
-            <button
-            disabled={true}
-              //onClick={() => setActiveTab('buy')}
-              className={cn(
-                "relative z-10 px-0 py-2 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200 min-w-[60px] sm:min-w-[72px] justify-center transition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foreground flex-shrink-0",
-                activeTab === 'buy' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Buy
-            </button>
-            <button
-            disabled={true}
-             // onClick={() => setActiveTab('sell')}
-              className={cn(
-                "relative z-10 px-0 py-2 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200 min-w-[60px] sm:min-w-[72px] justify-center transition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foregroundtransition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foreground flex-shrink-0",
-                activeTab === 'sell' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Sell
-            </button>
+            {showBuySell && (
+              <button
+                onClick={() => setActiveTab('buy')}
+                className={cn(
+                  "relative z-10 px-0 py-2 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200 min-w-[60px] sm:min-w-[72px] justify-center flex-shrink-0",
+                  activeTab === 'buy' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Buy
+              </button>
+            )}
+            {showBuySell && (
+              <button
+                onClick={() => setActiveTab('sell')}
+                className={cn(
+                  "relative z-10 px-0 py-2 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200 min-w-[60px] sm:min-w-[72px] justify-center flex-shrink-0",
+                  activeTab === 'sell' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Sell
+              </button>
+            )}
 
             {/* Auto-Pilot Button */}
             <div className="ml-auto flex items-center gap-1 flex-shrink-0">

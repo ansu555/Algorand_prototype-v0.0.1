@@ -287,6 +287,9 @@ export default function PoolDetailPage() {
                       </CardHeader>
                       <CardContent>
                         <SwapCard 
+                          initialFromAssetId={pool.asset1.id}
+                          initialToAssetId={pool.asset2.id}
+                          showBuySell={false}
                           onSwapSuccess={() => {
                             // Optional: refresh pool data after successful swap
                             console.log('Swap completed successfully!')
