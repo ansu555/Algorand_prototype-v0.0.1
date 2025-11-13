@@ -365,7 +365,7 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
       <Card className="w-full max-w-full rounded-xl border border-border shadow-lg bg-card relative z-10">
         <CardContent className="p-2 sm:p-3 space-y-3.5">
           {/* Tab Buttons */}
-          <div className="flex items-center p-1 bg-muted/30 rounded-md h-[42px] relative overflow-x-auto scrollbar-hide">
+          <div className="flex items-center p-1 bg-muted/30 rounded-md min-h-[42px] relative">
             {/* Background slider */}
             <div 
               className={cn(
@@ -381,7 +381,7 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
             <button
               onClick={() => setActiveTab('swap')}
               className={cn(
-                "relative z-10 px-0 py-2 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200 min-w-[60px] sm:min-w-[72px] justify-center",
+                "relative z-10 px-0 py-2 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200 min-w-[60px] sm:min-w-[72px] justify-center flex-shrink-0",
                 activeTab === 'swap' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -390,7 +390,7 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
             <button
               onClick={() => setActiveTab('limit')}
               className={cn(
-                "relative z-10 px-0 py-2 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200 min-w-[60px] sm:min-w-[72px] justify-center",
+                "relative z-10 px-0 py-2 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200 min-w-[60px] sm:min-w-[72px] justify-center flex-shrink-0",
                 activeTab === 'limit' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -400,7 +400,7 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
             disabled={true}
               //onClick={() => setActiveTab('buy')}
               className={cn(
-                "relative z-10 px-0 py-2 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200 min-w-[60px] sm:min-w-[72px] justify-center transition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foreground",
+                "relative z-10 px-0 py-2 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200 min-w-[60px] sm:min-w-[72px] justify-center transition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foreground flex-shrink-0",
                 activeTab === 'buy' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -410,7 +410,7 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
             disabled={true}
              // onClick={() => setActiveTab('sell')}
               className={cn(
-                "relative z-10 px-0 py-2 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200 min-w-[60px] sm:min-w-[72px] justify-center transition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foregroundtransition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foreground",
+                "relative z-10 px-0 py-2 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200 min-w-[60px] sm:min-w-[72px] justify-center transition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foregroundtransition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foreground flex-shrink-0",
                 activeTab === 'sell' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -418,40 +418,42 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
             </button>
 
             {/* Auto-Pilot Button */}
-            <RuleBuilderModal
-              trigger={
-                <button 
-                  className="h-auto min-h-[36px] relative z-10 text-xs sm:text-sm px-3 sm:px-4 py-2.5 group transition-all duration-300 hover:scale-105 border-2 border-red-500 dark:border-red-400 whitespace-nowrap flex items-center justify-center rounded-lg bg-transparent font-semibold text-red-600 dark:text-red-400 hover:text-white dark:hover:text-black"
-                >
-                  <span className="relative z-10">
-                    Auto-Pilot
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-red-600 dark:from-red-500 dark:to-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-lg -z-10"></div>
-                </button>
-              }
-              availableCoins={[
-                { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
-                { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
-              ]}
-              onPreview={(rule) => {
-                toast({ title: "Preview", description: describeRule(rule) })
-              }}
-              onSave={(rule) => {
-                saveRule(rule)
-                toast({ title: "Rule saved", description: describeRule(rule) })
-              }}
-            />
+            <div className="ml-auto flex items-center gap-1 flex-shrink-0">
+              <RuleBuilderModal
+                trigger={
+                  <button 
+                    className="h-auto min-h-[32px] relative z-10 text-[10px] sm:text-xs px-2 sm:px-3 py-2 group transition-all duration-300 hover:scale-105 border-2 border-red-500 dark:border-red-400 whitespace-nowrap flex items-center justify-center rounded-lg bg-transparent font-semibold text-red-600 dark:text-red-400 hover:text-white dark:hover:text-black"
+                  >
+                    <span className="relative z-10">
+                      Auto-Pilot
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-red-600 dark:from-red-500 dark:to-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-lg -z-10"></div>
+                  </button>
+                }
+                availableCoins={[
+                  { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
+                  { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
+                ]}
+                onPreview={(rule) => {
+                  toast({ title: "Preview", description: describeRule(rule) })
+                }}
+                onSave={(rule) => {
+                  saveRule(rule)
+                  toast({ title: "Rule saved", description: describeRule(rule) })
+                }}
+              />
 
-            {/* Settings Button moved inside tab bar */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 ml-auto relative z-10"
-              onClick={() => setShowSettings(true)}
-              aria-label="Open settings"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
+              {/* Settings Button moved inside tab bar */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 relative z-10 flex-shrink-0"
+                onClick={() => setShowSettings(true)}
+                aria-label="Open settings"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           {activeTab === 'swap' && (
