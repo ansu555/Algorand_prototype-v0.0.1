@@ -24,6 +24,7 @@
 
 - **Multi-DEX Aggregation** - Intelligent routing across Tinyman and Pact DEXs
 - **AI-Powered Trading** - Natural language interface for blockchain operations
+- **Per-User Agent Wallets** - Dedicated encrypted wallets for automated trading
 - **Automated Trading Rules** - DCA, portfolio rebalancing, and rotation strategies
 - **Real-Time Market Data** - Live price feeds from multiple sources
 - **On-Chain Smart Contracts** - Autopilot rules and multi-hop swap router
@@ -137,6 +138,11 @@ src/components/
 ```
 src/app/api/
 ├── agent/                     # AI agent endpoints
+│   ├── chat/                  # Chat interface
+│   ├── wallet/                # Agent wallet management
+│   │   ├── opt-in/           # Asset opt-in
+│   │   └── opt-in-all/       # Batch opt-in
+│   └── execute/               # Rule execution
 ├── algorand/                  # Blockchain operations
 ├── analytics/                 # Market analytics
 ├── db/                        # Database operations
@@ -153,6 +159,7 @@ src/app/api/
 ```
 src/lib/
 ├── agent.ts                   # AI agent orchestration
+├── agent-wallet.ts            # Per-user agent wallet system
 ├── algorand.ts                # Algorand SDK functions
 ├── algorand-wallet.ts         # Wallet integration
 ├── tokens.ts                  # Token registry
@@ -162,6 +169,88 @@ src/lib/
     ├── tinyman-client.ts      # Tinyman integration
     └── pact-client.ts         # Pact integration
 ```
+
+---
+
+## Agent Wallet System
+
+### Overview
+
+Each user has a dedicated Algorand wallet (agent wallet) that enables automated trading without requiring manual approval for each transaction. Agent wallets are automatically created when a user connects their main wallet.
+
+### Key Features
+
+- **Per-User Isolation** - Each user gets a unique agent wallet tied to their main wallet address
+- **Encrypted Storage** - Wallet mnemonics encrypted with AES-256-GCM encryption
+- **Automatic Creation** - Created on first wallet connection
+- **Asset Support** - Supports ALGO and all Algorand Standard Assets (ASAs)
+- **Auto Opt-In** - Automatically opts into required assets when needed
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    USER CONNECTS WALLET                     │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│               GET /api/agent/wallet?userAddress             │
+│                                                             │
+│  Check Database for Existing Agent Wallet                  │
+│           │                            │                    │
+│      ┌────▼─────┐              ┌──────▼──────┐            │
+│      │  EXISTS  │              │  NOT FOUND  │            │
+│      └────┬─────┘              └──────┬──────┘            │
+│           │                            │                    │
+│  ┌────────▼─────────┐        ┌────────▼──────────────┐    │
+│  │ Decrypt Mnemonic │        │ Generate New Wallet   │    │
+│  │ Return Address   │        │ Encrypt Mnemonic      │    │
+│  └──────────────────┘        │ Store in Database     │    │
+│                               └───────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   AGENT WALLET READY                        │
+│                                                             │
+│  • Unique address per user                                 │
+│  • Encrypted mnemonic stored in DB                         │
+│  • Ready for funding and asset opt-ins                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Database Schema
+
+```sql
+CREATE TABLE agent_wallets (
+  id TEXT PRIMARY KEY,
+  userAddress TEXT NOT NULL UNIQUE,
+  agentAddress TEXT NOT NULL UNIQUE,
+  encryptedMnemonic TEXT NOT NULL,
+  createdAt TEXT NOT NULL,
+  lastUsedAt TEXT
+)
+```
+
+### Security
+
+- **AES-256-GCM Encryption** - Military-grade encryption for mnemonics
+- **Environment Key Storage** - Encryption key stored in `AGENT_WALLET_ENCRYPTION_KEY`
+- **Isolated Access** - Each agent wallet accessible only by its owner
+- **No Shared Secrets** - Each user has independent encryption
+
+### Usage in Autopilot
+
+When executing autopilot rules, the system:
+
+1. Retrieves user's agent wallet from database
+2. Decrypts the mnemonic
+3. Checks balance and opt-in status
+4. Executes transfers from agent wallet to user's main wallet
+5. Logs the transaction
+
+For complete documentation, see **[Agent Wallet System](./AGENT_WALLET_SYSTEM.md)**.
 
 ---
 

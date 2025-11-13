@@ -20,6 +20,7 @@
 ## ✨ Features
 
 - **🤖 AI-Powered Chat Agent**: Natural language interface for blockchain operations
+- **🔐 Per-User Agent Wallets**: Dedicated Algorand wallet for each user with encrypted storage
 - **� Algorand Blockchain**: Fast, secure, and carbon-neutral blockchain integration
 - **💱 DEX Integration**: Swap tokens via Tinyman and Pact on Algorand
 - **👛 Multi-Wallet Support**: Pera, Defly, MyAlgo wallet connections
@@ -94,6 +95,7 @@ Algorand_prototype-v0.0.1/
 - **[🤖 Autopilot Module](./docs/AUTOPILOT_MODULE.md)** - Automated trading rules and execution
 - **[⚙️ Backend & Agent Spec](./docs/BACKEND_AND_AGENT_SPEC.md)** - API endpoints and database schema
 - **[🧠 AI Agent & MCP/NCP](./docs/AI_AGENT_AND_MCP_NCP_SPEC.md)** - AI capabilities and analytics engine
+- **[🔐 Agent Wallet System](./docs/AGENT_WALLET_SYSTEM.md)** - Per-user agent wallets and automated trading
 
 ### Key Architectural Decisions
 
@@ -232,6 +234,9 @@ INDEXER_SERVER="https://testnet-idx.algonode.cloud"
 
 # Deployer Wallet Mnemonic
 DEPLOYER_MNEMONIC="your 25-word mnemonic phrase for the deployer account"
+
+# Agent Wallet Encryption (32-byte key for AES-256-GCM encryption)
+AGENT_WALLET_ENCRYPTION_KEY="your-32-byte-encryption-key-here"
 ```
 
 ### 🔐 Security Notes
@@ -239,6 +244,7 @@ DEPLOYER_MNEMONIC="your 25-word mnemonic phrase for the deployer account"
 - **NEVER** use a wallet with significant real funds for `DEPLOYER_MNEMONIC` during development.
 - Use a dedicated wallet for testing and development.
 - Keep your `.env.local` file secure and never commit it to version control.
+- Generate a secure `AGENT_WALLET_ENCRYPTION_KEY` using: `openssl rand -hex 32`
 - Consider using different API keys for development and production environments.
 
 ## 📡 API Endpoints
@@ -411,6 +417,7 @@ All API routes are located in `src/app/api/`:
 | Endpoint | Purpose | File Location |
 |----------|---------|---------------|
 | `/api/agent` | AI agent chat interface | `src/app/api/agent/` |
+| `/api/agent/wallet` | Per-user agent wallet management | `src/app/api/agent/wallet/` |
 | `/api/algorand` | Algorand blockchain operations | `src/app/api/algorand/` |
 | `/api/analytics` | Market analytics data | `src/app/api/analytics/` |
 | `/api/db` | Database operations | `src/app/api/db/` |
