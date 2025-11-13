@@ -178,7 +178,7 @@ export function PoolLiquidityChart({ fromAsset, toAsset, pools, loading, error, 
     <Card className="border border-border/60 bg-card/80 backdrop-blur-xl">
       <CardHeader className="space-y-1">
         <CardTitle className="text-base font-semibold">Pool Liquidity</CardTitle>
-        <p className="text-xs text-muted-foreground">{matchingPool.dexName.toUpperCase()} • Pool ID {matchingPool.poolId}</p>
+        <p className="text-xs text-muted-foreground">{matchingPool.dexName.toUpperCase()}</p>
       </CardHeader>
       <CardContent className="space-y-5">
         {chartData.length > 0 ? (

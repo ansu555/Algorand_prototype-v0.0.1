@@ -43,6 +43,8 @@ export default function PoolDetailPage() {
   const [showSwap, setShowSwap] = useState(false)
   const [marketData, setMarketData] = useState<Record<string, any> | null>(null)
   const [marketError, setMarketError] = useState<string | null>(null)
+  const [txItems, setTxItems] = useState<any[]>([])
+  const [txLoading, setTxLoading] = useState(false)
   const isTestnet = process.env.NEXT_PUBLIC_ALGORAND_NETWORK === 'testnet'
 
   const copyToClipboard = (text: string) => {
@@ -96,6 +98,26 @@ export default function PoolDetailPage() {
     fetchMarketData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poolId])
+
+  useEffect(() => {
+    const loadTx = async () => {
+      if (!pool) return
+      try {
+        setTxLoading(true)
+        const address = (pool as any).poolAddress || pool.poolId
+        const res = await fetch(`/api/pools/transactions?poolId=${encodeURIComponent(address)}&limit=20`)
+        const data = await res.json()
+        if (data.success) setTxItems(data.items || [])
+        else setTxItems([])
+      } catch (e) {
+        console.error('Tx fetch error', e)
+        setTxItems([])
+      } finally {
+        setTxLoading(false)
+      }
+    }
+    loadTx()
+  }, [pool])
 
   const md = useMemo(() => (pool && marketData ? marketData[pool.poolId] : null), [marketData, pool])
 
@@ -164,7 +186,20 @@ export default function PoolDetailPage() {
                 <Link href="/pool" className="hover:text-gray-900 dark:hover:text-gray-100">Pools</Link>
                 <span>›</span>
                 <span className="text-gray-900 dark:text-gray-100">{pool.asset1.symbol} / {pool.asset2.symbol}</span>
-                <span className="text-xs text-gray-400">0x{poolId.slice(0, 4)}...{poolId.slice(-4)}</span>
+                <span className="text-xs text-gray-400 flex items-center gap-1">
+                  0x{poolId.slice(0, 4)}...{poolId.slice(-4)}
+                  <button
+                    onClick={() => copyToClipboard(poolId)}
+                    className="p-0.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                    title="Copy pool address"
+                  >
+                    {copiedAddress === poolId ? (
+                      <Check className="w-3 h-3 text-green-500" />
+                    ) : (
+                      <Copy className="w-3 h-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" />
+                    )}
+                  </button>
+                </span>
               </div>
 
               {/* Header Section */}
@@ -242,7 +277,84 @@ export default function PoolDetailPage() {
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {/* No real transactions available on this view; leaving blank as requested */}
+                            {txLoading && (
+                              <TableRow>
+                                <TableCell className="py-4 text-muted-foreground" colSpan={6}>Loading...</TableCell>
+                              </TableRow>
+                            )}
+                            {!txLoading && txItems.length === 0 && (
+                              <TableRow>
+                                <TableCell className="py-4 text-muted-foreground" colSpan={6}>No swaps found for this pool yet.</TableCell>
+                              </TableRow>
+                            )}
+                            {!txLoading && txItems.map((t) => {
+                              const timeLabel = (() => {
+                                if (!t.timestamp) return ''
+                                const date = new Date(t.timestamp)
+                                const diff = Date.now() - date.getTime()
+                                const m = Math.floor(diff / 60000)
+                                if (m < 60) return `${m}m`
+                                const h = Math.floor(m / 60)
+                                if (h < 24) return `${h}h`
+                                const d = Math.floor(h / 24)
+                                return `${d}d`
+                              })()
+
+                              const shortWallet = t.ownerAddress ? `${t.ownerAddress.slice(0,4)}...${t.ownerAddress.slice(-4)}` : ''
+                              
+                              // Determine swap type based on which asset matches pool assets
+                              const isBuyingAsset1 = t.toAssetId === pool.asset1.id
+                              const swapType = isBuyingAsset1 ? 'buy' : 'sell'
+                              const typeLabel = `${swapType} ${pool.asset1.symbol}`
+
+                              // Format amounts with proper decimals
+                              const fromAmountDisplay = t.fromAmount || ''
+                              const toAmountDisplay = t.toAmount || ''
+
+                              return (
+                                <TableRow key={t.id} className="border-b border-gray-100 dark:border-gray-800 hover:bg-pink-50/30 dark:hover:bg-pink-950/20 transition-colors">
+                                  <TableCell className="text-gray-600 dark:text-gray-400 py-4">{timeLabel}</TableCell>
+                                  <TableCell className="py-4">
+                                    <span className={`font-medium ${
+                                      swapType === 'buy' 
+                                        ? 'text-green-600 dark:text-green-400' 
+                                        : 'text-red-600 dark:text-red-400'
+                                    }`}>
+                                      {typeLabel}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell className="text-right font-medium py-4">{/* USD value - blank for now */}</TableCell>
+                                  <TableCell className="text-right text-gray-900 dark:text-gray-100 py-4">
+                                    {t.fromAssetSymbol === pool.asset1.symbol ? fromAmountDisplay : toAmountDisplay}
+                                  </TableCell>
+                                  <TableCell className="text-right text-gray-900 dark:text-gray-100 py-4">
+                                    {t.fromAssetSymbol === pool.asset2.symbol ? fromAmountDisplay : toAmountDisplay}
+                                  </TableCell>
+                                  <TableCell className="py-4">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono text-gray-600 dark:text-gray-400">{shortWallet}</span>
+                                      <button
+                                        onClick={() => {
+                                          if (t.ownerAddress) {
+                                            navigator.clipboard.writeText(t.ownerAddress)
+                                            setCopiedAddress(t.ownerAddress)
+                                            setTimeout(() => setCopiedAddress(null), 2000)
+                                          }
+                                        }}
+                                        className="opacity-100 transition-opacity"
+                                        title="Copy address"
+                                      >
+                                        {copiedAddress === t.ownerAddress ? (
+                                          <Check className="w-3 h-3 text-green-500" />
+                                        ) : (
+                                          <Copy className="w-3 h-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" />
+                                        )}
+                                      </button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              )
+                            })}
                           </TableBody>
                         </Table>
                       </div>
@@ -272,31 +384,27 @@ export default function PoolDetailPage() {
 
                   {/* Swap Card - Shown when Swap button is clicked */}
                   {showSwap && (
-                    <Card className="bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg">Swap Tokens</CardTitle>
-                          <button
-                            onClick={() => setShowSwap(false)}
-                            className="p-1 hover:bg-gray-200 dark:hover:bg-gray-800 rounded transition-colors"
-                            title="Close"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <SwapCard 
-                          initialFromAssetId={pool.asset1.id}
-                          initialToAssetId={pool.asset2.id}
-                          showBuySell={false}
-                          onSwapSuccess={() => {
-                            // Optional: refresh pool data after successful swap
-                            console.log('Swap completed successfully!')
-                          }}
-                        />
-                      </CardContent>
-                    </Card>
+                    <div className="relative">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-semibold">Swap Tokens</h3>
+                        <button
+                          onClick={() => setShowSwap(false)}
+                          className="p-1 hover:bg-gray-200 dark:hover:bg-gray-800 rounded transition-colors"
+                          title="Close"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <SwapCard 
+                        initialFromAssetId={pool.asset1.id}
+                        initialToAssetId={pool.asset2.id}
+                        showBuySell={false}
+                        onSwapSuccess={() => {
+                          // Optional: refresh pool data after successful swap
+                          console.log('Swap completed successfully!')
+                        }}
+                      />
+                    </div>
                   )}
 
                   {/* Total APR Card (blank if unavailable) */}
@@ -308,29 +416,68 @@ export default function PoolDetailPage() {
                   </Card>
 
                   {/* Stats Card (real balances; blanks for missing) */}
-                  <Card className="bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 w-[101%]">
-                    <CardHeader className="pb-4">
-                      <CardTitle className="text-lg">Stats</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                      {/* Pool Balances */}
-                      <div>
+                    <Card className="bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800 w-[101%]">
+                      <CardHeader className="pb-4">
+                        <CardTitle className="text-lg">Stats</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                       <div>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Pool balances</p>
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
-                            <p className="text-base font-bold">
-                              {pool?.reserve1 ? (Number(pool.reserve1) / Math.pow(10, pool.asset1.decimals)).toLocaleString(undefined, { maximumFractionDigits: 4 }) : ''} {pool.asset1.symbol}
-                            </p>
-                            <p className="text-base font-bold">
-                              {pool?.reserve2 ? (Number(pool.reserve2) / Math.pow(10, pool.asset2.decimals)).toLocaleString(undefined, { maximumFractionDigits: 4 }) : ''} {pool.asset2.symbol}
-                            </p>
+                            <div>
+                              <p className="text-base font-bold">
+                                {pool?.reserve1 ? (Number(pool.reserve1) / Math.pow(10, pool.asset1.decimals)).toLocaleString(undefined, { maximumFractionDigits: 4 }) : ''} {pool.asset1.symbol}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">ID: {pool.asset1.id}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-base font-bold">
+                                {pool?.reserve2 ? (Number(pool.reserve2) / Math.pow(10, pool.asset2.decimals)).toLocaleString(undefined, { maximumFractionDigits: 4 }) : ''} {pool.asset2.symbol}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">ID: {pool.asset2.id}</p>
+                            </div>
                           </div>
-                          <div className="flex gap-0.5 h-1.5 rounded-full overflow-hidden">
-                            <div className="flex-1 bg-pink-500" />
-                            <div className="flex-1 bg-blue-500" />
+                          <div className="flex gap-0.5 h-2 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700">
+                            {(() => {
+                              const reserve1Value = Number(pool?.reserve1 || 0) / Math.pow(10, pool?.asset1.decimals || 0)
+                              const reserve2Value = Number(pool?.reserve2 || 0) / Math.pow(10, pool?.asset2.decimals || 0)
+                              const total = reserve1Value + reserve2Value
+                              const percent1 = total > 0 ? (reserve1Value / total) * 100 : 50
+                              const percent2 = total > 0 ? (reserve2Value / total) * 100 : 50
+                              
+                              return (
+                                <>
+                                  <div 
+                                    className="bg-gradient-to-r from-pink-500 to-pink-600 transition-all duration-300" 
+                                    style={{ width: `${percent1}%` }}
+                                    title={`${pool.asset1.symbol}: ${percent1.toFixed(2)}%`}
+                                  />
+                                  <div 
+                                    className="bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300" 
+                                    style={{ width: `${percent2}%` }}
+                                    title={`${pool.asset2.symbol}: ${percent2.toFixed(2)}%`}
+                                  />
+                                </>
+                              )
+                            })()}
+                          </div>
+                          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                            <span>{pool?.reserve1 && pool?.reserve2 ? 
+                              `${((Number(pool.reserve1) / Math.pow(10, pool.asset1.decimals)) / 
+                                ((Number(pool.reserve1) / Math.pow(10, pool.asset1.decimals)) + 
+                                 (Number(pool.reserve2) / Math.pow(10, pool.asset2.decimals))) * 100).toFixed(1)}%` 
+                              : '50%'}
+                            </span>
+                            <span>{pool?.reserve1 && pool?.reserve2 ? 
+                              `${((Number(pool.reserve2) / Math.pow(10, pool.asset2.decimals)) / 
+                                ((Number(pool.reserve1) / Math.pow(10, pool.asset1.decimals)) + 
+                                 (Number(pool.reserve2) / Math.pow(10, pool.asset2.decimals))) * 100).toFixed(1)}%` 
+                              : '50%'}
+                            </span>
                           </div>
                         </div>
-                      </div>
+                      </div> 
 
                       {/* TVL */}
                       <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
@@ -345,12 +492,12 @@ export default function PoolDetailPage() {
                       </div>
 
                       {/* 24H Fees */}
-                      <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
+                       <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
                         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">24H fees</p>
                         <p className="text-3xl font-bold">{md?.fees24hUSD != null ? `$${Number(md.fees24hUSD).toLocaleString()}` : ''}</p>
                       </div>
                     </CardContent>
-                  </Card>
+                  </Card> 
                   {/* Links card removed as requested */}
                 </div>
               </div>
