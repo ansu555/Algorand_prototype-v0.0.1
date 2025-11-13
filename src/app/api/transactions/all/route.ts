@@ -16,72 +16,117 @@ export async function GET(request: Request) {
     // Fetch all logs (global transactions across all actions)
     const allLogs = await tursoDriver.getLogs()
 
+    // Filter out system events - only show actual transactions
+    const excludedActions = [
+      'POLLER_CHECKED',
+      'POLLER_TRIGGER_FAILED',
+      'RULE_CREATED',
+      'RULE_DELETED',
+      'EXECUTION_FAILED'
+    ]
+    
+    const actualTransactions = allLogs.filter((log: any) => {
+      const action = (log.action || '').toUpperCase()
+      // Exclude configured system actions
+      if (excludedActions.includes(action)) return false
+
+      // Also exclude failed execute_rule logs (we only want successful executions)
+      if (action === 'EXECUTE_RULE') {
+        const status = (log.status || '').toLowerCase()
+        if (status !== 'success') return false
+      }
+
+      return true
+    })
+
     // Sort by creation time (newest first)
-    allLogs.sort((a: any, b: any) => {
+    actualTransactions.sort((a: any, b: any) => {
       const timeA = new Date(a.createdAt).getTime()
       const timeB = new Date(b.createdAt).getTime()
       return timeB - timeA
     })
 
     // Apply pagination
-    const paginatedTransactions = allLogs.slice(offset, offset + limit)
+    const paginatedTransactions = actualTransactions.slice(offset, offset + limit)
 
     // Format the response
     const formattedTransactions = paginatedTransactions.map((tx: any) => {
       const details = tx.details || {}
+      const isExecuteRule = tx.action === 'execute_rule'
+      
+      // For EXECUTE_RULE, data is in details.swap, details.plan, and details.txHash
+      const swapDetails = isExecuteRule ? (details.swap || {}) : details
+      const txId = isExecuteRule ? (details.txHash || swapDetails.txId) : details.txId
       
       // Debug logging for first transaction
       if (paginatedTransactions.indexOf(tx) === 0) {
         console.log('🔍 First transaction raw data:')
+        console.log('  action:', tx.action)
+        console.log('  isExecuteRule:', isExecuteRule)
         console.log('  details:', JSON.stringify(details, null, 2))
-        console.log('  details.poolAddress:', details.poolAddress)
-        console.log('  details.poolId:', details.poolId)
-        console.log('  details.routePath:', details.routePath)
-        console.log('  details.routePath[0]?.poolId:', Array.isArray(details.routePath) && details.routePath[0]?.poolId)
+        console.log('  swapDetails:', JSON.stringify(swapDetails, null, 2))
+        console.log('  txId:', txId)
       }
       
+      // For EXECUTE_RULE: details.plan contains assetId, assetSymbol, amount, decimals
+      const plan = isExecuteRule ? details.plan : null
+      
+      // compute base units for execute_rule when plan exists
+      const fromAmountBaseUnits = isExecuteRule && plan?.totalSpendAmount != null
+        ? Math.round(Number(plan.totalSpendAmount) * Math.pow(10, plan.decimals ?? 6))
+        : (swapDetails.fromAmountBaseUnits ?? swapDetails.fromAmountBaseUnits)
+
       return {
         id: tx.id,
         createdAt: tx.createdAt,
         status: tx.status,
         action: tx.action,
-        txId: details.txId,
-        ownerAddress: tx.ownerAddress || details.ownerAddress,
-        fromAssetId: details.fromAssetId,
-        toAssetId: details.toAssetId,
-        fromAssetName: details.fromAssetName,
-        toAssetName: details.toAssetName,
-        fromAssetUnitName: details.fromAssetUnitName,
-        toAssetUnitName: details.toAssetUnitName,
-        fromAmount: details.fromAmount,
-        toAmount: details.toAmount,
-        slippage: details.slippage,
-        routePath: details.routePath || details.route || [],
-        poolAddress: details.poolAddress || 
-                    (Array.isArray(details.routePath) && details.routePath.length > 0 && details.routePath[0]?.poolAddress) ||
-                    details.poolId || 
-                    (Array.isArray(details.routePath) && details.routePath.length > 0 && details.routePath[0]?.poolId) || 
+        txId: txId,
+        ownerAddress: tx.ownerAddress || swapDetails.ownerAddress,
+        
+        // For EXECUTE_RULE, use plan data; for swap, use details directly
+        fromAssetId: isExecuteRule ? plan?.assetId : swapDetails.fromAssetId,
+        toAssetId: isExecuteRule ? undefined : swapDetails.toAssetId,
+        fromAssetName: isExecuteRule ? plan?.assetSymbol : swapDetails.fromAssetName,
+        toAssetName: isExecuteRule ? undefined : swapDetails.toAssetName,
+        fromAssetUnitName: isExecuteRule ? plan?.assetSymbol : swapDetails.fromAssetUnitName,
+        toAssetUnitName: isExecuteRule ? undefined : swapDetails.toAssetUnitName,
+        // keep human-readable amount for backwards compatibility
+        fromAmount: isExecuteRule ? plan?.totalSpendAmount : swapDetails.fromAmount,
+        // also expose base units when available so frontend can format consistently
+        fromAmountBaseUnits: fromAmountBaseUnits ?? swapDetails.fromAmountBaseUnits,
+        toAmount: isExecuteRule ? undefined : swapDetails.toAmount,
+        
+        slippage: swapDetails.slippage,
+        routePath: swapDetails.routePath || swapDetails.route || [],
+        poolAddress: swapDetails.poolAddress || 
+                    (Array.isArray(swapDetails.routePath) && swapDetails.routePath.length > 0 && swapDetails.routePath[0]?.poolAddress) ||
+                    swapDetails.poolId || 
+                    (Array.isArray(swapDetails.routePath) && swapDetails.routePath.length > 0 && swapDetails.routePath[0]?.poolId) || 
                     undefined,
-        confirmedRound: details.confirmedRound,
+        confirmedRound: swapDetails.confirmedRound,
+        
+        // Add execute-specific fields
+        decimals: isExecuteRule ? plan?.decimals : undefined,
       }
     })
 
     // Derive quick stats
     const now = Date.now()
     const dayMs = 24 * 60 * 60 * 1000
-    const tx1d = allLogs.filter((l: any) => now - new Date(l.createdAt).getTime() <= dayMs).length
-    const tx30d = allLogs.filter((l: any) => now - new Date(l.createdAt).getTime() <= 30 * dayMs).length
+    const tx1d = actualTransactions.filter((l: any) => now - new Date(l.createdAt).getTime() <= dayMs).length
+    const tx30d = actualTransactions.filter((l: any) => now - new Date(l.createdAt).getTime() <= 30 * dayMs).length
 
-    console.log(`📊 Fetched ${formattedTransactions.length} global transactions (total: ${allLogs.length})`)
+    console.log(`📊 Fetched ${formattedTransactions.length} global transactions (total: ${actualTransactions.length})`)
 
     return NextResponse.json({
       success: true,
       data: formattedTransactions,
-      total: allLogs.length,
+      total: actualTransactions.length,
       limit,
       offset,
       stats: {
-        total: allLogs.length,
+        total: actualTransactions.length,
         last1d: tx1d,
         last30d: tx30d,
       }

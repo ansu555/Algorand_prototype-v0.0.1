@@ -24,11 +24,13 @@ type Transaction = {
   fromAssetUnitName: string
   toAssetUnitName: string
   fromAmount: string
+  fromAmountBaseUnits?: number | string
   toAmount: string
   slippage: string
   routePath: any[]
   poolAddress?: string
   confirmedRound?: number
+  decimals?: number
 }
 
 export default function TransactionsPage() {
@@ -154,7 +156,7 @@ export default function TransactionsPage() {
                       <SelectValue placeholder="Type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="all">All Transactions</SelectItem>
                       <SelectItem value="swap">Swap</SelectItem>
                       <SelectItem value="send">Send</SelectItem>
                       <SelectItem value="receive">Receive</SelectItem>
@@ -267,6 +269,10 @@ export default function TransactionsPage() {
                     </TableRow>
                   ) : (
                     filteredTransactions.map((tx) => {
+                      const isExecuteRule = tx.action === 'execute_rule'
+                      
+                      // For EXECUTE_RULE, show only the single token being executed
+                      // For SWAP, show the from -> to format
                       const fromSymbol = tx.fromAssetUnitName || tx.fromAssetName || `#${tx.fromAssetId}`
                       const toSymbol = tx.toAssetUnitName || tx.toAssetName || `#${tx.toAssetId}`
                       
@@ -275,6 +281,18 @@ export default function TransactionsPage() {
                                       (Array.isArray(tx.routePath) && tx.routePath.length > 0 && tx.routePath[0]?.poolId) || 
                                       (Array.isArray(tx.routePath) && tx.routePath.length > 0 && tx.routePath[0]?.poolAddress) ||
                                       null
+                      
+                      // Calculate display amount for EXECUTE_RULE
+                      let displayAmountNumber: number | null = null
+                      if (isExecuteRule) {
+                        if (tx.fromAmountBaseUnits != null && tx.decimals != null) {
+                          displayAmountNumber = Number(tx.fromAmountBaseUnits) / Math.pow(10, tx.decimals)
+                        } else if (tx.fromAmount != null) {
+                          // fromAmount may already be a human-readable number for execute_rule
+                          displayAmountNumber = Number(tx.fromAmount)
+                        }
+                      }
+                      const executeAmount = displayAmountNumber != null ? displayAmountNumber.toFixed(6) : null
                       
                       return (
                         <TableRow key={tx.id} className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors">
@@ -289,17 +307,28 @@ export default function TransactionsPage() {
                               <span className="text-xs text-muted-foreground uppercase tracking-wide">
                                 {tx.action ? String(tx.action).toUpperCase().replace(/_/g, ' ') : 'EVENT'}
                               </span>
-                              <span className="font-medium text-sm">{fromSymbol} → {toSymbol}</span>
+                              {isExecuteRule ? (
+                                <span className="font-medium text-sm">{fromSymbol}</span>
+                              ) : (
+                                <span className="font-medium text-sm">{fromSymbol} → {toSymbol}</span>
+                              )}
                             </div>
                           </TableCell>
 
                           {/* Token Amount */}
                           <TableCell className="text-left py-4">
-                            <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">—</span>
-                              <span className="font-medium">→</span>
-                              <span className="text-muted-foreground">—</span>
-                            </div>
+                            {isExecuteRule && executeAmount ? (
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{executeAmount}</span>
+                                <span className="text-xs text-muted-foreground">{fromSymbol}</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground">—</span>
+                                <span className="font-medium">→</span>
+                                <span className="text-muted-foreground">—</span>
+                              </div>
+                            )}
                           </TableCell>
 
                           {/* Pool Address */}
