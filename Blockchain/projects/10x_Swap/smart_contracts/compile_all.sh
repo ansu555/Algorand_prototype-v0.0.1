@@ -18,6 +18,7 @@ echo
 # Create artifacts directory structure
 mkdir -p "$ARTIFACTS_DIR/multihop_swap"
 mkdir -p "$ARTIFACTS_DIR/autopilot_rule"
+mkdir -p "$ARTIFACTS_DIR/liquidity_pool"
 
 # Compile MultihopSwapRouter
 echo "📦 Compiling MultihopSwapRouter..."
@@ -90,6 +91,19 @@ else
     echo "❌ AutoPilotRuleContract compilation failed"
 fi
 
+# Compile LiquidityPoolContract
+echo "📦 Compiling LiquidityPoolContract..."
+cd "$SCRIPT_DIR/liquidity_pool"
+algokit compile py contract.py
+
+# Move artifacts
+if [ -f "LiquidityPoolContract.approval.teal" ]; then
+    mv LiquidityPoolContract.* "$ARTIFACTS_DIR/liquidity_pool/"
+    echo "✅ LiquidityPoolContract compiled and moved to artifacts/liquidity_pool/"
+else
+    echo "❌ LiquidityPoolContract compilation failed"
+fi
+
 echo
 echo "=================================================="
 echo "  ✅ Compilation Complete!"
@@ -98,4 +112,5 @@ echo
 echo "Artifacts organized in:"
 echo "  $ARTIFACTS_DIR/multihop_swap/"
 echo "  $ARTIFACTS_DIR/autopilot_rule/"
+echo "  $ARTIFACTS_DIR/liquidity_pool/"
 echo
