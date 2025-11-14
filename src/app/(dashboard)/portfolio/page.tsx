@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { formatTrigger, type Rule, describeRule } from "@/lib/shared/rules"
 import { forceRunPoller, useAgentData } from "@/features/agent/hooks/useAgentData"
 import { deleteRule as apiDeleteRule, createRule } from "@/features/agent/api/client"
-import { ChevronDown, ChevronUp, Play, Trash2, Eye, RefreshCw, Zap, Activity, Clock, Target, TrendingUp, AlertCircle, CheckCircle2, XCircle, Pause, DollarSign, TrendingDown, BarChart3 } from "lucide-react"
+import { ChevronDown, ChevronUp, Play, Trash2, Eye, RefreshCw, Zap, Activity, Clock, Target, TrendingUp, AlertCircle, CheckCircle2, XCircle, Pause, DollarSign, TrendingDown, BarChart3, Lock } from "lucide-react"
 import { useWalletConnection } from '@/components/providers/txnlab-wallet-provider'
 import RuleBuilderModal from "@/components/features/rules/rule-builder-modal"
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
@@ -254,253 +254,236 @@ export default function PortfolioPage() {
         <SearchBar />
         
         {/* Header Section */}
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
-                Portfolio & Agent Dashboard
-              </h1>
-              <p className="text-muted-foreground mt-2">
-                Manage your automated trading rules and monitor activity
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2 w-full lg:w-auto">
-              <RuleBuilderModal
-                trigger={
-                  <Button 
-                    size="lg"
-                    className="group relative overflow-hidden transition-all duration-300 hover:scale-105 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg shadow-red-500/25"
-                  >
-                    <Zap className="h-4 w-4 mr-2" />
-                    <span className="relative z-10">Create Auto-Pilot Rule</span>
-                  </Button>
-                }
-                availableCoins={[
-                  { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
-                  { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
-                ]}
-                onPreview={(rule) => {
-                  toast({ title: "Preview", description: describeRule(rule) })
-                }}
-                onSave={(rule) => {
-                  saveRule(rule)
-                  toast({ title: "Rule saved", description: describeRule(rule) })
-                }}
-              />
-              <Button 
-                variant="outline" 
-                size="lg"
-                onClick={() => address && refresh()} 
-                disabled={loading || !address}
-                className="transition-all duration-200 hover:scale-105"
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
-              <Button 
-                size="lg"
-                onClick={forceRun} 
-                disabled={!address}
-                className="transition-all duration-200 hover:scale-105"
-              >
-                <Play className="h-4 w-4 mr-2" />
-                Force Run
-              </Button>
-            </div>
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+              Portfolio & Agent Dashboard
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Manage your automated trading rules and monitor activity
+            </p>
           </div>
+          <div className="flex flex-wrap gap-2 w-full lg:w-auto">
+            <RuleBuilderModal
+              trigger={
+                <Button 
+                  size="lg"
+                  className="group relative overflow-hidden transition-all duration-300 hover:scale-105 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg shadow-red-500/25"
+                >
+                  <Zap className="h-4 w-4 mr-2" />
+                  <span className="relative z-10">Create Auto-Pilot Rule</span>
+                </Button>
+              }
+              availableCoins={[
+                { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
+                { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
+              ]}
+              onPreview={(rule) => {
+                toast({ title: "Preview", description: describeRule(rule) })
+              }}
+              onSave={(rule) => {
+                saveRule(rule)
+                toast({ title: "Rule saved", description: describeRule(rule) })
+              }}
+            />
+            <Button 
+              variant="outline" 
+              size="lg"
+              onClick={() => address && refresh()} 
+              disabled={loading || !address}
+              className="transition-all duration-200 hover:scale-105"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button 
+              size="lg"
+              onClick={forceRun} 
+              disabled={!address}
+              className="transition-all duration-200 hover:scale-105"
+            >
+              <Play className="h-4 w-4 mr-2" />
+              Force Run
+            </Button>
+          </div>
+        </div>
 
-          {/* Stats Overview - Only show when wallet is connected and has data */}
-          {address && rules.length > 0 && (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Total Profit</p>
-                      <p className={`text-3xl font-bold mt-2 ${totalProfit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        ${totalProfit.toFixed(2)}
-                      </p>
-                    </div>
-                    <div className={`h-12 w-12 rounded-full flex items-center justify-center ${totalProfit >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
-                      {totalProfit >= 0 ? (
-                        <TrendingUp className="h-6 w-6 text-green-500" />
-                      ) : (
-                        <TrendingDown className="h-6 w-6 text-red-500" />
-                      )}
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column - Net Worth Card */}
+          <Card className="shadow-xl border-border/50 bg-gradient-to-br from-card to-card/50">
+            <CardContent className="p-5">
+              {address ? (
+                <div className="space-y-4">
+                  {/* Net Worth Header & Amount */}
+                  <div className="space-y-1.5">
+                    <h3 className="text-xs font-medium text-muted-foreground">Net Worth</h3>
+                    <div className="space-y-0.5">
+                      <p className="text-3xl md:text-4xl font-bold tracking-tight">${totalProfit.toFixed(2)}</p>
+                      <p className="text-xs text-muted-foreground/70">$ Total Algo</p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
 
-              <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Active Rules</p>
-                      <p className="text-3xl font-bold mt-2">{activeRules}</p>
+                  {/* Holdings PNL */}
+                  <div className="flex items-center justify-between pb-2.5 border-b border-border/40">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      <span className="text-xs font-medium">Holdings PnL</span>
                     </div>
-                    <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center">
-                      <Activity className="h-6 w-6 text-green-500" />
+                    <div className="text-right">
+                      <span className={`text-sm font-bold block ${totalProfit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                        $ {Math.abs(totalProfit).toFixed(2)}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">Amount</span>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Successful Trades</p>
-                      <p className="text-3xl font-bold mt-2">{successfulExecutions}</p>
+                  
+                  {/* Token Holdings */}
+                  <div className="flex items-center justify-between pb-2.5 border-b border-border/40">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                      <span className="text-xs font-medium">Token Holdings</span>
                     </div>
-                    <div className="h-12 w-12 rounded-full bg-blue-500/10 flex items-center justify-center">
-                      <CheckCircle2 className="h-6 w-6 text-blue-500" />
+                    <div className="text-right">
+                      <span className="text-sm font-semibold block">{activeRules}</span>
+                      <span className="text-[10px] text-muted-foreground">Number</span>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
 
-              <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <CardContent className="p-6">
+                  {/* Token Staked */}
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Avg Profit/Trade</p>
-                      <p className={`text-3xl font-bold mt-2 ${avgProfitPerTrade >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        ${avgProfitPerTrade.toFixed(2)}
-                      </p>
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                      <span className="text-xs font-medium">Token Staked</span>
                     </div>
-                    <div className="h-12 w-12 rounded-full bg-purple-500/10 flex items-center justify-center">
-                      <BarChart3 className="h-6 w-6 text-purple-500" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {/* Profit Chart - Only show when there's trading data */}
-          {address && profitOverTime.length > 0 && (
-            <Card className="shadow-xl border-primary/20">
-              <CardHeader className="border-b bg-gradient-to-r from-muted/50 to-muted/30">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <TrendingUp className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-2xl">Trading Performance</CardTitle>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Cumulative profit over time from automated trades
-                      </p>
+                    <div className="text-right">
+                      <span className="text-sm font-semibold block">$ {avgProfitPerTrade.toFixed(2)}</span>
+                      <span className="text-[10px] text-muted-foreground">Amount %</span>
                     </div>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-6">
-                  {/* Cumulative Profit Chart */}
-                  <div>
-                    <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-green-500" />
-                      Cumulative Profit
-                    </h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <AreaChart data={profitOverTime}>
-                        <defs>
-                          <linearGradient id="profitGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                        <XAxis 
-                          dataKey="date" 
-                          className="text-xs"
-                          tick={{ fill: 'currentColor' }}
-                        />
-                        <YAxis 
-                          className="text-xs"
-                          tick={{ fill: 'currentColor' }}
-                          tickFormatter={(value) => `$${value.toFixed(0)}`}
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: 'hsl(var(--background))',
-                            border: '1px solid hsl(var(--border))',
-                            borderRadius: '8px',
-                            padding: '8px'
-                          }}
-                          formatter={(value: any) => [`$${value.toFixed(2)}`, 'Cumulative Profit']}
-                        />
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-sm text-muted-foreground text-center">
+                    Connect wallet to view net worth
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Right Column - Burst the Chart */}
+          <Card className="shadow-xl border-border/40 bg-card/95">
+            <CardHeader className="pb-2 px-4 pt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full hover:bg-muted/50">
+                    <Eye className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full hover:bg-muted/50">
+                    <Activity className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 px-2 rounded-full bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20 text-[10px]"
+                  >
+                    <BarChart3 className="h-3 w-3 mr-1" />
+                    Chart
+                  </Button>
+                </div>
+                <div className="flex items-center gap-0.5">
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] hover:bg-muted/50">1D</Button>
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] hover:bg-muted/50">1W</Button>
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] hover:bg-muted/50">1M</Button>
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20">3M</Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-2">
+              {address && profitOverTime.length > 0 ? (
+                <div className="space-y-2">
+                  <ResponsiveContainer width="100%" height={220}>
+                    <AreaChart data={profitOverTime}>
+                      <defs>
+                        <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#6b7280" stopOpacity={0.2}/>
+                          <stop offset="95%" stopColor="#6b7280" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                      <XAxis 
+                        dataKey="date" 
+                        stroke="#6b7280"
+                        fontSize={11}
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <YAxis 
+                        stroke="#6b7280"
+                        fontSize={11}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(value) => `$${value.toFixed(0)}`}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: '#1a1a1a',
+                          border: '1px solid #374151',
+                          borderRadius: '8px',
+                          padding: '8px'
+                        }}
+                        formatter={(value: any) => [`$${value.toFixed(2)}`, 'Value']}
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="cumulativeProfit" 
+                        stroke="#6b7280" 
+                        strokeWidth={1.5}
+                        fill="url(#chartGradient)" 
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="relative flex flex-col items-center justify-center h-[220px]">
+                  {/* Chart Locked Overlay */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+                    <div className="bg-card/95 backdrop-blur-sm rounded-lg p-4 border border-border/40 text-center space-y-2">
+                      <div className="flex items-center justify-center gap-2">
+                        <Lock className="h-4 w-4 text-muted-foreground" />
+                        <h3 className="text-sm font-semibold">Can't show Chart in testnet</h3>
+                      </div>
+                      <p className="text-xs text-muted-foreground max-w-xs">
+                        {address ? 'Chart visualization is not available for testnet data' : 'Connect wallet to access portfolio features'}
+                      </p>
+                    </div>
+                  </div>
+                  {/* Blurred background chart */}
+                  <div className="absolute inset-0 blur-sm opacity-30">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={[
+                        { date: '2025-08-16', value: 10 },
+                        { date: '2025-09-03', value: 30 },
+                        { date: '2025-09-21', value: 25 },
+                        { date: '2025-10-09', value: 40 },
+                        { date: '2025-10-27', value: 35 },
+                        { date: '2025-11-14', value: 45 }
+                      ]}>
                         <Area 
                           type="monotone" 
-                          dataKey="cumulativeProfit" 
-                          stroke="#10b981" 
-                          strokeWidth={2}
-                          fill="url(#profitGradient)" 
+                          dataKey="value" 
+                          stroke="#6b7280" 
+                          fill="#374151" 
                         />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
-
-                  {/* Daily Profit Bar Chart */}
-                  <div>
-                    <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                      <BarChart3 className="h-4 w-4 text-blue-500" />
-                      Daily Profit/Loss
-                    </h3>
-                    <ResponsiveContainer width="100%" height={250}>
-                      <BarChart data={profitOverTime}>
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                        <XAxis 
-                          dataKey="date" 
-                          className="text-xs"
-                          tick={{ fill: 'currentColor' }}
-                        />
-                        <YAxis 
-                          className="text-xs"
-                          tick={{ fill: 'currentColor' }}
-                          tickFormatter={(value) => `$${value.toFixed(0)}`}
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: 'hsl(var(--background))',
-                            border: '1px solid hsl(var(--border))',
-                            borderRadius: '8px',
-                            padding: '8px'
-                          }}
-                          formatter={(value: any) => [`$${value.toFixed(2)}`, 'Daily Profit']}
-                        />
-                        <Bar 
-                          dataKey="profit" 
-                          fill="#3b82f6"
-                          radius={[4, 4, 0, 0]}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {/* Trading Summary */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs font-medium text-muted-foreground">Total Trades</span>
-                      <span className="text-2xl font-bold">{profitData.length}</span>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs font-medium text-muted-foreground">Trading Days</span>
-                      <span className="text-2xl font-bold">{profitOverTime.length}</span>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs font-medium text-muted-foreground">Win Rate</span>
-                      <span className="text-2xl font-bold text-green-600 dark:text-green-400">
-                        {profitData.length > 0 ? ((profitData.filter(p => p.profit > 0).length / profitData.length) * 100).toFixed(1) : 0}%
-                      </span>
-                    </div>
-                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* No Wallet Connected State */}
