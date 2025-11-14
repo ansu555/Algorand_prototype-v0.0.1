@@ -169,9 +169,14 @@ export class LiquidityPoolClient {
     const unitNameType = algosdk.ABIType.from('string');
     appArgs.push(unitNameType.encode(unitName));
 
+    // Increase fee to cover inner transaction (creating the LP token)
+    const modifiedParams = { ...suggestedParams };
+    modifiedParams.fee = BigInt(2000); // 1000 for this txn + 1000 for inner txn (asset creation)
+    modifiedParams.flatFee = true;
+
     const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
       sender: userAddress,
-      suggestedParams,
+      suggestedParams: modifiedParams,
       appIndex: this.poolAppId,
       onComplete: algosdk.OnApplicationComplete.NoOpOC,
       appArgs,
@@ -215,14 +220,26 @@ export class LiquidityPoolClient {
     }
 
     // Transaction 2: Transfer asset 2 to pool
-    const assetTxn2 = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
-      sender: params.userAddress,
-      receiver: poolAddress,
-      assetIndex: params.asset2Id,
-      amount: Number(params.amount2),
-      suggestedParams,
-    });
-    transactions.push(assetTxn2);
+    if (params.asset2Id === 0) {
+      // ALGO payment
+      const paymentTxn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+        sender: params.userAddress,
+        receiver: poolAddress,
+        amount: Number(params.amount2),
+        suggestedParams,
+      });
+      transactions.push(paymentTxn);
+    } else {
+      // Asset transfer
+      const assetTxn2 = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
+        sender: params.userAddress,
+        receiver: poolAddress,
+        assetIndex: params.asset2Id,
+        amount: Number(params.amount2),
+        suggestedParams,
+      });
+      transactions.push(assetTxn2);
+    }
 
     // Transaction 3: Application call to add_liquidity
     // Create ARC-4 method for proper encoding
@@ -242,9 +259,14 @@ export class LiquidityPoolClient {
     const minLpTokensType = algosdk.ABIType.from('uint64');
     appArgs.push(minLpTokensType.encode(params.minLpTokens));
 
+    // Increase fee to cover inner transaction (sending LP tokens back)
+    const modifiedParams = { ...suggestedParams };
+    modifiedParams.fee = BigInt(2000); // 1000 for this txn + 1000 for inner txn
+    modifiedParams.flatFee = true;
+
     const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
       sender: params.userAddress,
-      suggestedParams,
+      suggestedParams: modifiedParams,
       appIndex: this.poolAppId,
       onComplete: algosdk.OnApplicationComplete.NoOpOC,
       appArgs,
@@ -298,9 +320,14 @@ export class LiquidityPoolClient {
     const minAsset2Type = algosdk.ABIType.from('uint64');
     appArgs.push(minAsset2Type.encode(params.minAsset2));
 
+    // Increase fee to cover inner transactions (sending both assets back)
+    const modifiedParams = { ...suggestedParams };
+    modifiedParams.fee = BigInt(3000); // 1000 for this txn + 2000 for 2 inner txns (2 asset transfers)
+    modifiedParams.flatFee = true;
+
     const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
       sender: params.userAddress,
-      suggestedParams,
+      suggestedParams: modifiedParams,
       appIndex: this.poolAppId,
       onComplete: algosdk.OnApplicationComplete.NoOpOC,
       appArgs,
@@ -366,9 +393,14 @@ export class LiquidityPoolClient {
     const minAmountOutType = algosdk.ABIType.from('uint64');
     appArgs.push(minAmountOutType.encode(params.minAmountOut));
 
+    // Increase fee to cover inner transaction (sending output asset back)
+    const modifiedParams = { ...suggestedParams };
+    modifiedParams.fee = BigInt(2000); // 1000 for this txn + 1000 for inner txn (asset transfer)
+    modifiedParams.flatFee = true;
+
     const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
       sender: params.userAddress,
-      suggestedParams,
+      suggestedParams: modifiedParams,
       appIndex: this.poolAppId,
       onComplete: algosdk.OnApplicationComplete.NoOpOC,
       appArgs,
@@ -390,7 +422,7 @@ export class LiquidityPoolClient {
 
     try {
       const appInfo = await this.algodClient.getApplicationByID(this.poolAppId).do();
-      const globalState = appInfo.params['global-state'];
+      const globalState = (appInfo.params as any)['global-state'] || appInfo.params.globalState;
 
       // Parse global state
       const parsedState: any = {};
@@ -466,7 +498,7 @@ export class LiquidityPoolClient {
     if (this.poolAppId === 0) {
       return '';
     }
-    return algosdk.getApplicationAddress(this.poolAppId);
+    return algosdk.getApplicationAddress(this.poolAppId).toString();
   }
 
   /**

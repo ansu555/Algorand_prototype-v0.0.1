@@ -115,6 +115,15 @@ export async function POST(request: NextRequest) {
       confirmedRound: Number(confirmedRound),
       lpTokenId,
       poolAddress: poolMetadata?.poolAddress,
+      
+      // Guide user to next steps
+      message: lpTokenId 
+        ? 'Pool and LP token created successfully! Next: Opt-in to the LP token and add initial liquidity.'
+        : 'Pool created successfully!',
+      nextSteps: lpTokenId ? [
+        `1. Opt-in to LP token (Asset ID: ${lpTokenId})`,
+        '2. Add initial liquidity to the pool'
+      ] : [],
     })
 
   } catch (error: any) {

@@ -76,6 +76,6 @@ if __name__ == "__main__":
         asset_id = int(sys.argv[1])
     else:
         # Default to USDC testnet
-        asset_id = 79929599
+        asset_id = 70283957
 
     opt_in_asset(asset_id, user_mnemonic)

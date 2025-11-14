@@ -53,6 +53,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // TEMPORARY LIMITATION: Current contract version doesn't support ALGO pools
+    // The add_liquidity method expects AssetTransferTransaction for both assets
+    // but ALGO uses PaymentTransaction. This will be fixed in the next contract version.
+    if (asset1Id === 0 || asset2Id === 0) {
+      return NextResponse.json(
+        { 
+          error: 'ALGO pools are not supported in the current contract version',
+          details: 'Please create a pool with two ASA tokens. ALGO support will be added in a future update.'
+        },
+        { status: 400 }
+      )
+    }
+
     if (!amount1 || !amount2 || Number(amount1) <= 0 || Number(amount2) <= 0) {
       return NextResponse.json(
         { error: 'Both amounts must be positive' },
@@ -194,7 +207,7 @@ export async function POST(request: NextRequest) {
             const info = await algodClient.getAssetByID(asset1Id).do()
             return {
               name: info.params.name || `Asset ${asset1Id}`,
-              unit: info.params['unit-name'] || 'ASA',
+              unit: info.params.unitName || (info.params as any)['unit-name'] || 'ASA',
               decimals: info.params.decimals || 0,
             }
           } catch {
@@ -209,7 +222,7 @@ export async function POST(request: NextRequest) {
             const info = await algodClient.getAssetByID(asset2Id).do()
             return {
               name: info.params.name || `Asset ${asset2Id}`,
-              unit: info.params['unit-name'] || 'ASA',
+              unit: info.params.unitName || (info.params as any)['unit-name'] || 'ASA',
               decimals: info.params.decimals || 0,
             }
           } catch {
@@ -231,16 +244,14 @@ export async function POST(request: NextRequest) {
     )
     transactions.push(createLPTokenTxn)
 
-    // Step 4: Add initial liquidity
-    const addLiquidityTxns = await poolClient.buildAddLiquidityTxns({
-      asset1Id,
-      asset2Id,
-      amount1: BigInt(amount1),
-      amount2: BigInt(amount2),
-      minLpTokens: 0n, // First liquidity provision, no minimum
-      userAddress,
-    })
-    transactions.push(...addLiquidityTxns)
+    // NOTE: We CANNOT add liquidity in the same transaction group because:
+    // 1. The LP token is created in transaction 3 (create_lp_token)
+    // 2. The user needs to opt-in to the LP token before receiving it
+    // 3. We can't opt-in to an asset that doesn't exist yet in the same atomic group
+    // 
+    // Solution: Split into two transaction groups:
+    // Group 1 (this): Create pool + Fund pool + Create LP token
+    // Group 2 (separate call): Opt-in to LP token + Add initial liquidity
 
     // Assign group ID to all transactions
     algosdk.assignGroupID(transactions)
@@ -260,6 +271,21 @@ export async function POST(request: NextRequest) {
       lpTokenName,
       lpTokenUnit,
       estimatedLiquidity: Math.sqrt(Number(amount1) * Number(amount2)), // Rough estimate
+      
+      // Important: This is only STEP 1 of pool creation
+      // After these transactions are confirmed, you need to:
+      // 1. Get the LP token ID from the confirmed transaction
+      // 2. Opt-in to the LP token
+      // 3. Add initial liquidity
+      step: 'create_pool_and_token',
+      nextStep: 'opt_in_and_add_liquidity',
+      metadata: {
+        asset1Id,
+        asset2Id,
+        amount1,
+        amount2,
+        feeBps,
+      }
     })
 
   } catch (error: any) {
