@@ -127,11 +127,46 @@ src/components/
 │   ├── exchange/             # Swap interface
 │   ├── analytics/            # Charts and analytics
 │   ├── chat/                 # AI agent chat
-│   └── rules/                # Trading rules UI
+│   ├── rules/                # Trading rules UI
+│   └── trading/              # Trading components
+│       └── pool-liquidity-chart.tsx  # Pool liquidity visualization
 ├── layout/                    # Layout components
 ├── ui/                        # Base UI (Shadcn)
 └── providers/                 # React Context providers
 ```
+
+#### Liquidity Pool UI Pages
+
+**`/pool` - Pool Explorer**
+- Browse all available liquidity pools across DEXs
+- Network toggle (testnet/mainnet)
+- Sortable columns (TVL, volume, fee tier, APR)
+- Filter by DEX protocol (Tinyman, Pact)
+- Visual pool analytics:
+  - Total Value Locked (TVL) chart
+  - 24h Trading Volume chart
+  - Top 3 pools by TVL
+- Real-time pool data with 5-minute cache
+- Clickable rows navigate to pool details
+
+**`/pool/create` - Create Liquidity Position**
+- Two-step wizard interface:
+  - Step 1: Select token pair and fee tier
+  - Step 2: Set price range and deposit amounts
+- Token selector with available assets
+- Fee tier selection (0.05%, 0.30%, 1.00%)
+- Price range input (min/max) for concentrated liquidity
+- Deposit amount calculators for both tokens
+- Position preview before submission
+
+**`/pool/[id]` - Pool Details Page**
+- Detailed pool information and analytics
+- Liquidity depth charts
+- Price history graphs
+- Reserve ratio visualization
+- Recent transaction history
+- Add/remove liquidity interface
+- Pool statistics (created date, total trades, etc.)
 
 ### 2. API Routes
 
@@ -151,8 +186,39 @@ src/app/api/
 ├── price/                     # Price queries
 ├── rules/                     # Trading rules
 ├── trade/                     # Swap execution
-└── pool/                      # Pool data
+├── pool/                      # Pool data
+│   └── opt-in-pool/          # Opt user into pool assets
+└── pools/                     # Pool aggregation endpoints
+    ├── all/                   # Fetch all pools from DEXs
+    ├── market-data/           # Get TVL, volume, APR metrics
+    └── transactions/          # Pool transaction history
 ```
+
+#### Pool API Endpoints Details
+
+**`/api/pools/all`** - Aggregate pool discovery
+- Fetches pools from Tinyman and Pact in parallel
+- Implements 5-minute caching per network
+- Supports testnet and mainnet
+- Returns: pool ID, assets, reserves, fees, DEX name
+
+**`/api/pools/market-data`** - Market analytics
+- Fetches from external data sources (Vestige, DeFiLlama)
+- Calculates pool APR from fees and volume
+- Returns: TVL in USD, 24h volume, reward APR
+- 5-minute cache TTL
+
+**`/api/pools/transactions`** - Historical data
+- Queries Algorand indexer for pool transactions
+- Filters by pool ID
+- Returns swap events with amounts and timestamps
+- Pagination support
+
+**`/api/swap/opt-in-pool`** - Pool asset opt-in
+- Opts user wallet into required pool assets
+- Validates asset availability
+- Constructs opt-in transactions
+- Returns transaction group for signing
 
 ### 3. Core Libraries
 
@@ -357,10 +423,99 @@ The aggregator selects the best DEX based on:
 
 ### Supported DEXs
 
-| DEX | Protocol | Fee | Adapter Contract ID |
-|-----|----------|-----|---------------------|
-| **Tinyman V2** | AMM | 30 bps | 749360541 (testnet) |
-| **Pact Finance** | Stable AMM | 25 bps | 749341932 (testnet) |
+| DEX | Protocol | Fee | Adapter Contract ID | Pool Discovery |
+|-----|----------|-----|---------------------|----------------|
+| **Tinyman V2** | Constant Product AMM | 30 bps (0.3%) | 749360541 (testnet) | ✅ Tinyman Analytics API |
+| **Pact Finance** | Constant Product AMM | 25 bps (0.25%) | 749341932 (testnet) | ✅ Pact Pool API |
+
+### Liquidity Pool Integration
+
+10xSwap integrates with decentralized exchange liquidity pools to enable token swaps. Each supported DEX has dedicated pool adapter contracts that handle protocol-specific interactions.
+
+#### Pool Adapter Contracts
+
+**TinymanPoolAdapter (749360541)**
+- Enables interaction with Tinyman V2 constant product AMM pools
+- Handles Tinyman's specific ABI interface (method selector: `0xd71d146d`)
+- Supports all ASA-to-ASA and ALGO-to-ASA pool types
+- 0.30% fee tier on all swaps
+
+**PactPoolAdapter (749341932)**
+- Connects to Pact Finance constant product AMM pools  
+- Implements Pact's unique swap interface (method selector: `0xf4b4e0f4`)
+- Includes special handlers for native ALGO swaps
+- 0.25% fee tier (lower than Tinyman)
+
+#### Pool Discovery Mechanism
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              POOL DISCOVERY & SELECTION                 │
+└──────────────────┬──────────────────────────────────────┘
+                   │
+      ┌────────────▼─────────────┐
+      │   Fetch All Pools        │
+      │   - Tinyman Analytics    │
+      │   - Pact Pool API        │
+      │   - Vestige (optional)   │
+      └────────────┬─────────────┘
+                   │
+      ┌────────────▼─────────────┐
+      │   Filter & Validate      │
+      │   - Min liquidity check  │
+      │   - Asset availability   │
+      │   - Network compatibility│
+      └────────────┬─────────────┘
+                   │
+      ┌────────────▼─────────────┐
+      │   Get Quotes from Pools  │
+      │   - Calculate outputs    │
+      │   - Estimate price impact│
+      │   - Consider fees        │
+      └────────────┬─────────────┘
+                   │
+      ┌────────────▼─────────────┐
+      │   Rank & Select Best     │
+      │   1. Price impact < 5%   │
+      │   2. User preference     │
+      │   3. Highest output      │
+      │   4. Liquidity depth     │
+      └────────────┬─────────────┘
+                   │
+      ┌────────────▼─────────────┐
+      │   Return Selected Pool   │
+      │   + Adapter Contract ID  │
+      └──────────────────────────┘
+```
+
+#### Liquidity Pool Data Structure
+
+Each pool contains:
+- **Pool ID**: Unique identifier (typically DEX pool app ID)
+- **Token Pair**: Two assets (e.g., ALGO/USDC)
+- **Reserves**: Token balances in the pool
+- **Fee Tier**: Trading fee percentage (30 bps or 25 bps)
+- **DEX Name**: Source protocol (tinyman, pact)
+- **Pool Address**: Algorand address of pool contract
+- **Market Data**: TVL, volume, APR (mainnet only)
+
+#### Pool APIs
+
+**`GET /api/pools/all`** - Fetch all pools
+- Network parameter: testnet or mainnet
+- Returns pools from all supported DEXs
+- 5-minute cache to avoid rate limits
+
+**`GET /api/pools/market-data`** - Get market metrics
+- TVL (Total Value Locked)
+- 24h/1d/30d trading volume
+- Pool APR and reward APR
+- Fee revenue statistics
+
+**`GET /api/pools/transactions`** - Pool transaction history
+- Recent swaps and liquidity changes
+- Per-pool filtering
+- Pagination support
 
 ---
 
@@ -397,24 +552,74 @@ The aggregator selects the best DEX based on:
 ```
 ┌────────────────────────────────────────────────────┐
 │         MultihopSwapRouter (Main Contract)         │
+│                  App ID: 749360450                 │
 │                                                    │
 │  Methods:                                          │
-│  • execute_swap_2hop(pool1, pool2, adapter)       │
+│  • execute_swap_2hop(pool1, pool2, adapter1,      │
+│                      adapter2)                     │
 │  • execute_swap_1hop(pool, adapter)               │
+│  • execute_swap_3hop(pool1, pool2, pool3)         │
 │                                                    │
 │  Responsibilities:                                 │
-│  • Receives user assets                           │
-│  • Routes to appropriate adapter                  │
-│  • Validates minimum output                       │
+│  • Receives user assets via atomic group          │
+│  • Routes to appropriate adapter based on DEX     │
+│  • Validates minimum output (slippage protection) │
 │  • Returns swapped assets to user                 │
+│  • Supports multi-hop routing (1, 2, or 3 hops)   │
 └────────────┬───────────────────┬────────────────────┘
              │                   │
     ┌────────▼────────┐  ┌──────▼─────────┐
     │ TinymanAdapter  │  │  PactAdapter   │
+    │  (749360541)    │  │  (749341932)   │
     │                 │  │                │
-    │ • Tinyman ABI   │  │ • Pact ABI     │
-    │ • Pool calls    │  │ • Pool calls   │
-    └─────────────────┘  └────────────────┘
+    │ Methods:        │  │ Methods:       │
+    │ • swap_fixed_   │  │ • swap_fixed_  │
+    │   input()       │  │   input()      │
+    │                 │  │ • swap_algo_   │
+    │ Responsibilities│  │   to_asa()     │
+    │ • Tinyman ABI   │  │ • swap_asa_    │
+    │   (0xd71d146d)  │  │   to_algo()    │
+    │ • Pool calls    │  │                │
+    │ • Asset routing │  │ Responsibilities│
+    │ • Fee: 0.30%    │  │ • Pact ABI     │
+    │                 │  │   (0xf4b4e0f4) │
+    │                 │  │ • Pool calls   │
+    │                 │  │ • Asset routing │
+    │                 │  │ • Fee: 0.25%   │
+    └─────────┬───────┘  └────────┬────────┘
+              │                   │
+    ┌─────────▼──────────┐ ┌─────▼──────────┐
+    │  Tinyman V2 Pools  │ │  Pact Finance  │
+    │                    │ │  Pools         │
+    │ • 100+ pools       │ │ • 50+ pools    │
+    │ • Testnet/Mainnet  │ │ • Mainnet only │
+    │ • Constant Product │ │ • Constant     │
+    │   AMM (x*y=k)      │ │   Product AMM  │
+    └────────────────────┘ └────────────────┘
+```
+
+#### Pool Adapter Design Pattern
+
+The adapter pattern provides:
+
+1. **Protocol Abstraction** - Router doesn't need DEX-specific knowledge
+2. **Extensibility** - New DEXs require only new adapter contracts
+3. **Optimal Routing** - Can mix adapters in multi-hop swaps
+4. **Unified Interface** - Consistent `swap_fixed_input()` method
+5. **Gas Efficiency** - Fee pooling across all inner transactions
+
+#### Adapter Selection Flow
+
+```
+User Request → Aggregator → Quote All DEXs → Rank by Output
+                                                     ↓
+                                        Select Best Pool & Adapter
+                                                     ↓
+Router.execute_swap_2hop(pool_id, adapter_id, ...) 
+                                                     ↓
+                      Adapter executes swap on selected pool
+                                                     ↓
+                            Output returned to user
 ```
 
 ---

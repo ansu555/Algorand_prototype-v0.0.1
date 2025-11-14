@@ -423,6 +423,350 @@ npx tsx scripts/test-price-oracle.ts
 
 ---
 
+## Liquidity Pool Integration
+
+### Working with Pool Adapters
+
+The 10xSwap platform uses pool adapter contracts to interact with different DEX protocols (Tinyman, Pact). This section covers how to work with pools in your development workflow.
+
+### Fetching Available Pools
+
+**Example: Get all pools from API**
+
+```typescript
+// Client-side fetching
+async function fetchPools(network: 'testnet' | 'mainnet') {
+  const response = await fetch(`/api/pools/all?network=${network}`);
+  const data = await response.json();
+  
+  if (data.success) {
+    console.log(`Found ${data.pools.length} pools`);
+    console.log(`Tinyman: ${data.stats.tinyman}, Pact: ${data.stats.pact}`);
+    return data.pools;
+  }
+  
+  throw new Error(data.error);
+}
+
+// Usage
+const pools = await fetchPools('testnet');
+```
+
+**Example: Filter pools by token pair**
+
+```typescript
+function findPoolsForPair(
+  pools: PoolInfo[],
+  asset1Symbol: string,
+  asset2Symbol: string
+) {
+  return pools.filter(pool => 
+    (pool.asset1.symbol === asset1Symbol && pool.asset2.symbol === asset2Symbol) ||
+    (pool.asset1.symbol === asset2Symbol && pool.asset2.symbol === asset1Symbol)
+  );
+}
+
+// Usage
+const usdcAlgoPools = findPoolsForPair(pools, 'ALGO', 'USDC');
+console.log(`Found ${usdcAlgoPools.length} ALGO/USDC pools`);
+```
+
+### Executing Swaps via Pool Adapters
+
+**Example: Swap using MultihopSwapRouter**
+
+```typescript
+import algosdk from 'algosdk';
+import { getContracts } from '@/lib/config/contracts';
+
+async function executePoolSwap(
+  inputAsset: number,
+  outputAsset: number,
+  poolAppId: number,
+  adapterAppId: number,
+  amountIn: bigint,
+  minAmountOut: bigint,
+  userAddress: string
+) {
+  const algodClient = new algosdk.Algodv2(
+    '',
+    process.env.ALGOD_SERVER || 'https://testnet-api.algonode.cloud',
+    ''
+  );
+  
+  const contracts = getContracts();
+  const suggestedParams = await algodClient.getTransactionParams().do();
+  
+  // Transaction 0: Asset transfer to router
+  const assetTransferTxn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
+    from: userAddress,
+    to: contracts.multihopRouter.address,
+    assetIndex: inputAsset,
+    amount: amountIn,
+    suggestedParams,
+  });
+  
+  // Transaction 1: Application call to router
+  const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
+    from: userAddress,
+    appIndex: contracts.multihopRouter.appId,
+    onComplete: algosdk.OnApplicationComplete.NoOpOC,
+    appArgs: [
+      // ABI method selector for execute_swap_1hop
+      new Uint8Array(Buffer.from('execute_swap_1hop')),
+      algosdk.encodeUint64(poolAppId),
+      algosdk.encodeUint64(adapterAppId),
+      algosdk.encodeUint64(minAmountOut),
+    ],
+    foreignAssets: [inputAsset, outputAsset],
+    foreignApps: [poolAppId, adapterAppId],
+    suggestedParams,
+  });
+  
+  // Group transactions atomically
+  const txnGroup = algosdk.assignGroupID([assetTransferTxn, appCallTxn]);
+  
+  return txnGroup;
+}
+```
+
+### Testing Pool Interactions
+
+**Example: Test script for pool discovery**
+
+Create `scripts/test-pool-discovery.ts`:
+
+```typescript
+import { getAlgodClient } from '../src/lib/algorand';
+import { TinymanV2Client } from '../src/lib/dex/tinyman-client';
+import { PactClient } from '../src/lib/dex/pact-client';
+
+async function testPoolDiscovery() {
+  const algodClient = getAlgodClient();
+  
+  console.log('🔍 Discovering pools...\n');
+  
+  // Test Tinyman pools
+  const tinymanClient = new TinymanV2Client(algodClient, 'testnet');
+  const tinymanPools = await tinymanClient.fetchPools();
+  
+  console.log(`✅ Found ${tinymanPools.length} Tinyman pools`);
+  tinymanPools.slice(0, 3).forEach(pool => {
+    console.log(`   ${pool.asset1.symbol}/${pool.asset2.symbol} - Fee: ${pool.fee}bps`);
+  });
+  
+  // Test Pact pools (mainnet only)
+  console.log('\n🔍 Discovering Pact pools (mainnet)...\n');
+  const pactClient = new PactClient(algodClient, 'mainnet');
+  const pactPools = await pactClient.fetchPools();
+  
+  console.log(`✅ Found ${pactPools.length} Pact pools`);
+  pactPools.slice(0, 3).forEach(pool => {
+    console.log(`   ${pool.asset1.symbol}/${pool.asset2.symbol} - Fee: ${pool.fee}bps`);
+  });
+}
+
+testPoolDiscovery().catch(console.error);
+```
+
+**Run the test:**
+```bash
+npx tsx scripts/test-pool-discovery.ts
+```
+
+### Adding a New DEX Pool Adapter
+
+To integrate a new DEX protocol:
+
+1. **Create adapter smart contract** in `Blockchain/projects/10x_Swap/smart_contracts/`
+
+```python
+# Example: new_dex_adapter.py
+from algopy import ARC4Contract, Asset, Application, UInt64
+from algopy.arc4 import abimethod, UInt64 as ARC4UInt64
+
+class NewDexAdapter(ARC4Contract):
+    @abimethod
+    def swap_fixed_input(
+        self,
+        pool_app_id: Application,
+        asset_in: Asset,
+        asset_out: Asset,
+        amount_in: UInt64,
+        min_amount_out: UInt64,
+    ) -> ARC4UInt64:
+        # Implement DEX-specific swap logic
+        # ...
+        return ARC4UInt64(output_amount)
+```
+
+2. **Compile the contract:**
+
+```bash
+cd Blockchain/projects/10x_Swap
+algokit compile smart_contracts/new_dex_adapter.py
+```
+
+3. **Deploy the adapter:**
+
+```bash
+python smart_contracts/deploy_new_dex_adapter.py
+```
+
+4. **Add client library** in `src/lib/dex/new-dex-client.ts`:
+
+```typescript
+import algosdk from 'algosdk';
+import type { PoolInfo } from './types';
+
+export class NewDexClient {
+  constructor(
+    private algodClient: algosdk.Algodv2,
+    private network: 'testnet' | 'mainnet'
+  ) {}
+  
+  async fetchPools(): Promise<PoolInfo[]> {
+    // Fetch pools from DEX API
+    // Convert to PoolInfo format
+    return pools;
+  }
+  
+  async getQuote(
+    poolId: number,
+    assetIn: number,
+    assetOut: number,
+    amountIn: bigint
+  ): Promise<bigint> {
+    // Get quote from pool
+    return outputAmount;
+  }
+}
+```
+
+5. **Update aggregator** in `src/lib/dex/aggregator.ts`:
+
+```typescript
+import { NewDexClient } from './new-dex-client';
+
+// Add to MultiDexAggregator class
+async fetchAllPools() {
+  const [tinymanPools, pactPools, newDexPools] = await Promise.all([
+    this.tinymanClient.fetchPools(),
+    this.pactClient.fetchPools(),
+    this.newDexClient.fetchPools(), // Add new DEX
+  ]);
+  
+  return [...tinymanPools, ...pactPools, ...newDexPools];
+}
+```
+
+6. **Update contract configuration:**
+
+```typescript
+// src/lib/config/contracts.ts
+export function getContracts() {
+  return {
+    adapters: {
+      tinyman: { appId: 749360541, enabled: true },
+      pact: { appId: 749341932, enabled: true },
+      newDex: { appId: YOUR_NEW_ADAPTER_ID, enabled: true }, // Add here
+    }
+  };
+}
+```
+
+### Pool UI Development
+
+**Example: Create custom pool component**
+
+```tsx
+// src/components/features/pool/pool-card.tsx
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { PoolInfo } from '@/lib/dex/types';
+
+interface PoolCardProps {
+  pool: PoolInfo;
+  onClick?: () => void;
+}
+
+export function PoolCard({ pool, onClick }: PoolCardProps) {
+  const reserve1Formatted = Number(pool.reserve1) / Math.pow(10, pool.asset1.decimals);
+  const reserve2Formatted = Number(pool.reserve2) / Math.pow(10, pool.asset2.decimals);
+  
+  return (
+    <Card 
+      className="cursor-pointer hover:shadow-lg transition-shadow"
+      onClick={onClick}
+    >
+      <CardHeader>
+        <CardTitle>
+          {pool.asset1.symbol}/{pool.asset2.symbol}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">DEX:</span>
+            <span className="font-medium">{pool.dexName}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Fee:</span>
+            <span>{pool.fee / 100}%</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Reserves:</span>
+            <span className="font-mono text-xs">
+              {reserve1Formatted.toFixed(2)} / {reserve2Formatted.toFixed(2)}
+            </span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+**Usage:**
+
+```tsx
+import { PoolCard } from '@/components/features/pool/pool-card';
+
+export default function PoolsPage() {
+  const [pools, setPools] = useState<PoolInfo[]>([]);
+  
+  useEffect(() => {
+    fetchPools('testnet').then(setPools);
+  }, []);
+  
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {pools.map(pool => (
+        <PoolCard 
+          key={pool.poolId} 
+          pool={pool}
+          onClick={() => router.push(`/pool/${pool.poolId}`)}
+        />
+      ))}
+    </div>
+  );
+}
+```
+
+### Pool Testing Checklist
+
+- [ ] Fetch pools from all supported DEXs
+- [ ] Filter pools by token pair
+- [ ] Get quotes from different pools
+- [ ] Compare outputs and select best pool
+- [ ] Execute test swap via adapter
+- [ ] Verify transaction on explorer
+- [ ] Check pool reserves before/after
+- [ ] Validate slippage protection
+- [ ] Test pool UI pages (/pool, /pool/create)
+- [ ] Verify pool data caching (5min TTL)
+
+---
+
 ## Development Workflow
 
 ### Project Structure

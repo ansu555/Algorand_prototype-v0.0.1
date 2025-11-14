@@ -282,7 +282,7 @@ export async function buildUserAgentWallet(userAddress: string) {
           assetId,
           note,
           network,
-          explorerUrl: `https://${network === 'mainnet' ? '' : 'testnet.'}algoexplorer.io/tx/${txId}`
+          explorerUrl: `https://lora.algokit.io/${network === 'mainnet' ? 'mainnet' : 'testnet'}/transaction/${txId}`
         }
       }
     } catch (e: any) {

@@ -21,9 +21,12 @@ import { createRule } from "@/features/agent/api/client"
 type SwapCardProps = {
   onPairChange?: (from: AssetInfo | null, to: AssetInfo | null) => void
   onSwapSuccess?: () => void
+  initialFromAssetId?: number
+  initialToAssetId?: number
+  showBuySell?: boolean
 }
 
-export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
+export function SwapCard({ onPairChange, onSwapSuccess, initialFromAssetId, initialToAssetId, showBuySell = true }: SwapCardProps) {
   const { activeAccount } = useWalletConnection()
   const { signTransactions } = useWalletActions()
   const { assets, loading: assetsLoading } = useTradeableAssets()
@@ -46,16 +49,25 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
 
   const isConnected = !!activeAccount
 
-  // Set default assets once loaded
+  // Initialize from pool-provided asset IDs if given
   useEffect(() => {
-    if (assets.length > 0 && !fromToken) {
-      // Default to ALGO if available
-      const algoAsset = assets.find(a => a.id === 0)
-      if (algoAsset) {
-        setFromToken(algoAsset)
-      }
+    if (assets.length === 0) return
+
+    if (initialFromAssetId != null) {
+      const match = assets.find(a => a.id === initialFromAssetId)
+      if (match) setFromToken(match)
     }
-  }, [assets, fromToken])
+    if (initialToAssetId != null) {
+      const match = assets.find(a => a.id === initialToAssetId)
+      if (match) setToToken(match)
+    }
+
+    // If still no from token, default to ALGO or first asset
+    if (!fromToken) {
+      const algo = assets.find(a => a.id === 0) || assets[0]
+      if (algo) setFromToken(algo)
+    }
+  }, [assets, initialFromAssetId, initialToAssetId, fromToken])
 
   // Fetch quote when amount or assets change
   useEffect(() => {
@@ -311,7 +323,7 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
               Round: {confirmedRound}
             </div>
             <a 
-              href={`https://testnet.algoexplorer.io/tx/${txId}`}
+              href={`https://lora.algokit.io/testnet/transaction/${txId}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-500 hover:underline text-xs block"
@@ -362,18 +374,18 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
 
   return (
     <>
-      <Card className="w-full rounded-xl border border-border shadow-lg bg-card relative z-10">
-        <CardContent className="p-3 space-y-3.5">
+      <Card className="w-full max-w-full rounded-xl border border-border shadow-lg bg-card relative z-10">
+        <CardContent className="p-2 sm:p-3 space-y-3.5">
           {/* Tab Buttons */}
-          <div className="flex items-center p-1 bg-muted/30 rounded-md h-[42px] relative">
+          <div className="flex items-center p-1 bg-muted/30 rounded-md min-h-[42px] relative">
             {/* Background slider */}
             <div 
               className={cn(
                 "absolute h-8 rounded-md bg-background shadow-sm transition-all duration-300 ease-in-out",
-                activeTab === 'swap' && "w-[72px] left-1",
-                activeTab === 'limit' && "w-[72px] left-[76px]",
-                activeTab === 'buy' && "w-[72px] left-[148px]",
-                activeTab === 'sell' && "w-[72px] left-[220px]"
+                activeTab === 'swap' && "w-[60px] sm:w-[72px] left-1",
+                activeTab === 'limit' && "w-[60px] sm:w-[72px] left-[62px] sm:left-[76px]",
+                activeTab === 'buy' && "w-[60px] sm:w-[72px] left-[123px] sm:left-[148px]",
+                activeTab === 'sell' && "w-[60px] sm:w-[72px] left-[184px] sm:left-[220px]"
               )}
             />
             
@@ -381,7 +393,7 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
             <button
               onClick={() => setActiveTab('swap')}
               className={cn(
-                "relative z-10 px-0 py-2 text-sm font-medium rounded-full transition-colors duration-200 min-w-[72px] justify-center",
+                "relative z-10 px-0 py-2 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200 min-w-[60px] sm:min-w-[72px] justify-center flex-shrink-0",
                 activeTab === 'swap' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -390,92 +402,94 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
             <button
               onClick={() => setActiveTab('limit')}
               className={cn(
-                "relative z-10 px-0 py-2 text-sm font-medium rounded-full transition-colors duration-200 min-w-[72px] justify-center",
+                "relative z-10 px-0 py-2 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200 min-w-[60px] sm:min-w-[72px] justify-center flex-shrink-0",
                 activeTab === 'limit' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
               Limit
             </button>
-            <button
-            disabled={true}
-              //onClick={() => setActiveTab('buy')}
-              className={cn(
-                "relative z-10 px-0 py-2 text-sm font-medium rounded-full transition-colors duration-200 min-w-[72px] justify-center transition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foreground",
-                activeTab === 'buy' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Buy
-            </button>
-            <button
-            disabled={true}
-             // onClick={() => setActiveTab('sell')}
-              className={cn(
-                "relative z-10 px-0 py-2 text-sm font-medium rounded-full transition-colors duration-200 min-w-[72px] justify-center transition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foregroundtransition-colors opacity-50 cursor-not-allowed border border-transparent bg-transparent text-muted-foreground",
-                activeTab === 'sell' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Sell
-            </button>
+            {showBuySell && (
+              <button
+                onClick={() => setActiveTab('buy')}
+                className={cn(
+                  "relative z-10 px-0 py-2 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200 min-w-[60px] sm:min-w-[72px] justify-center flex-shrink-0",
+                  activeTab === 'buy' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Buy
+              </button>
+            )}
+            {showBuySell && (
+              <button
+                onClick={() => setActiveTab('sell')}
+                className={cn(
+                  "relative z-10 px-0 py-2 text-xs sm:text-sm font-medium rounded-full transition-colors duration-200 min-w-[60px] sm:min-w-[72px] justify-center flex-shrink-0",
+                  activeTab === 'sell' ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Sell
+              </button>
+            )}
 
             {/* Auto-Pilot Button */}
-            <RuleBuilderModal
-              trigger={
-                <Button 
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 relative z-10 text-xs px-2 group overflow-hidden transition-all duration-300 hover:scale-105 border border-red-500 dark:border-red-400"
-                >
-                  <span className="relative z-10 transition-colors duration-300 text-red-600 dark:text-red-400 group-hover:text-white dark:group-hover:text-black">
-                    Auto-Pilot
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-red-600 dark:from-red-500 dark:to-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
-                </Button>
-              }
-              availableCoins={[
-                { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
-                { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
-              ]}
-              onPreview={(rule) => {
-                toast({ title: "Preview", description: describeRule(rule) })
-              }}
-              onSave={(rule) => {
-                saveRule(rule)
-                toast({ title: "Rule saved", description: describeRule(rule) })
-              }}
-            />
+            <div className="ml-auto flex items-center gap-1 flex-shrink-0">
+              <RuleBuilderModal
+                trigger={
+                  <button 
+                    className="h-auto min-h-[32px] relative z-10 text-[10px] sm:text-xs px-2 sm:px-3 py-2 group transition-all duration-300 hover:scale-105 border-2 border-red-500 dark:border-red-400 whitespace-nowrap flex items-center justify-center rounded-lg bg-transparent font-semibold text-red-600 dark:text-red-400 hover:text-white dark:hover:text-black"
+                  >
+                    <span className="relative z-10">
+                      Auto-Pilot
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-red-600 dark:from-red-500 dark:to-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-lg -z-10"></div>
+                  </button>
+                }
+                availableCoins={[
+                  { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
+                  { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
+                ]}
+                onPreview={(rule) => {
+                  toast({ title: "Preview", description: describeRule(rule) })
+                }}
+                onSave={(rule) => {
+                  saveRule(rule)
+                  toast({ title: "Rule saved", description: describeRule(rule) })
+                }}
+              />
 
-            {/* Settings Button moved inside tab bar */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 ml-auto relative z-10"
-              onClick={() => setShowSettings(true)}
-              aria-label="Open settings"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
+              {/* Settings Button moved inside tab bar */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 relative z-10 flex-shrink-0"
+                onClick={() => setShowSettings(true)}
+                aria-label="Open settings"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           {activeTab === 'swap' && (
           <div className="flex flex-col gap-y-2">
             <div className="flex flex-col items-center -space-y-3">
               {/* Pay Token Input */}
-              <div className="flex w-full gap-2 px-3 py-3 min-h-24 items-center justify-between group transition-all duration-300 bg-muted/50 rounded-lg border border-border focus-within:border-primary focus-within:bg-background h-[7.5rem]">
-                <div className="space-y-2 flex flex-col grow text-muted-foreground">
-                  <span className="text-sm font-medium">Pay</span>
+              <div className="flex w-full gap-1 sm:gap-2 px-2 sm:px-3 py-2 sm:py-3 min-h-20 sm:min-h-24 items-center justify-between group transition-all duration-300 bg-muted/50 rounded-lg border border-border focus-within:border-primary focus-within:bg-background">
+                <div className="space-y-1 sm:space-y-2 flex flex-col grow text-muted-foreground min-w-0">
+                  <span className="text-xs sm:text-sm font-medium">Pay</span>
                   <Input
                     type="number"
                     placeholder="0"
                     value={fromAmount}
                     onChange={(e) => setFromAmount(e.target.value)}
-                    className="h-9 w-full bg-transparent px-0 py-0 border-0 focus-visible:outline-none focus-visible:ring-0 text-3xl placeholder:text-muted-foreground/50"
+                    className="h-8 sm:h-9 w-full bg-transparent px-0 py-0 border-0 focus-visible:outline-none focus-visible:ring-0 text-xl sm:text-2xl md:text-3xl placeholder:text-muted-foreground/50"
                   />
-                  <span className="h-5 inline-flex items-center whitespace-nowrap text-sm">
+                  <span className="h-4 sm:h-5 inline-flex items-center whitespace-nowrap text-xs sm:text-sm">
                     ${fromAmount && fromToken ? (parseFloat(fromAmount) * 0.18).toFixed(2) : '0.00'}
                   </span>
                 </div>
                 
-                <div className="w-[180px]">
+                <div className="w-[120px] sm:w-[140px] md:w-[180px] flex-shrink-0">
                   <AssetSelector
                     assets={assets}
                     selected={fromToken}
@@ -490,31 +504,31 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
               <Button
                 variant="secondary"
                 size="icon"
-                className="h-8 w-8 shrink-0 flex z-10 rounded-md active:scale-[0.99] transition-all duration-300"
+                className="h-7 w-7 sm:h-8 sm:w-8 shrink-0 flex z-10 rounded-md active:scale-[0.99] transition-all duration-300"
                 onClick={handleSwapTokens}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20" className="h-5">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20" className="h-4 sm:h-5">
                   <path d="M14.502 16.884a.757.757 0 0 0 .776-.764V6.415l2.4 2.36a.7.7 0 0 0 .525.212q.315 0 .556-.22A.75.75 0 0 0 19 8.221a.74.74 0 0 0-.241-.544l-3.592-3.533a.9.9 0 0 0-.308-.202 1.05 1.05 0 0 0-.702 0 .84.84 0 0 0-.31.202l-3.619 3.558a.7.7 0 0 0-.228.527q.003.3.244.538.24.22.546.227a.73.73 0 0 0 .545-.229l2.39-2.35v9.715q0 .32.223.537a.76.76 0 0 0 .554.217m-9.012 0q.185 0 .353-.06a.84.84 0 0 0 .31-.2l3.619-3.559A.7.7 0 0 0 10 12.54.75.75 0 0 0 9.756 12a.82.82 0 0 0-.546-.227.73.73 0 0 0-.545.23l-2.39 2.349V4.638a.72.72 0 0 0-.223-.538.76.76 0 0 0-.554-.216.757.757 0 0 0-.776.763v9.705l-2.4-2.36a.7.7 0 0 0-.525-.211.8.8 0 0 0-.556.219.75.75 0 0 0-.241.546q0 .308.24.545l3.593 3.532q.146.143.308.202.163.06.349.059"></path>
                 </svg>
               </Button>
 
               {/* Receive Token Input */}
-              <div className="flex w-full gap-2 px-3 py-3 min-h-24 items-center justify-between group transition-all duration-300 bg-muted/50 rounded-lg border border-border focus-within:border-primary focus-within:bg-background h-[7.5rem]">
-                <div className="space-y-2 flex flex-col grow text-muted-foreground">
-                  <span className="text-sm font-medium">Receive</span>
+              <div className="flex w-full gap-1 sm:gap-2 px-2 sm:px-3 py-2 sm:py-3 min-h-20 sm:min-h-24 items-center justify-between group transition-all duration-300 bg-muted/50 rounded-lg border border-border focus-within:border-primary focus-within:bg-background">
+                <div className="space-y-1 sm:space-y-2 flex flex-col grow text-muted-foreground min-w-0">
+                  <span className="text-xs sm:text-sm font-medium">Receive</span>
                   <Input
                     type="number"
                     placeholder="0"
                     value={toAmount}
                     readOnly
-                    className="h-9 w-full bg-transparent px-0 py-0 border-0 focus-visible:outline-none focus-visible:ring-0 text-3xl placeholder:text-muted-foreground/50 cursor-not-allowed"
+                    className="h-8 sm:h-9 w-full bg-transparent px-0 py-0 border-0 focus-visible:outline-none focus-visible:ring-0 text-xl sm:text-2xl md:text-3xl placeholder:text-muted-foreground/50 cursor-not-allowed"
                   />
-                  <span className="h-5 inline-flex items-center whitespace-nowrap text-sm">
+                  <span className="h-4 sm:h-5 inline-flex items-center whitespace-nowrap text-xs sm:text-sm">
                     ${toAmount && toToken ? (parseFloat(toAmount) * 1.0).toFixed(2) : '0.00'}
                   </span>
                 </div>
                 
-                <div className="w-[180px]">
+                <div className="w-[120px] sm:w-[140px] md:w-[180px] flex-shrink-0">
                   <AssetSelector
                     assets={assets}
                     selected={toToken}
@@ -542,25 +556,25 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
             <div className="flex flex-col items-center space-y-3.5">
               {/* Quote Info */}
               {fromToken && toToken && toAmount && !quoteLoading && routeData && (
-                <div className="w-full p-3 bg-muted/50 rounded-lg space-y-2 text-sm">
-                  <div className="flex justify-between">
+                <div className="w-full p-2 sm:p-3 bg-muted/50 rounded-lg space-y-2 text-xs sm:text-sm">
+                  <div className="flex justify-between items-start gap-2">
                     <span className="text-muted-foreground">Rate</span>
-                    <span className="font-medium">
+                    <span className="font-medium text-right break-all">
                       1 {fromToken.unitName} = {(parseFloat(toAmount) / parseFloat(fromAmount || '1')).toFixed(6)} {toToken.unitName}
                     </span>
                   </div>
                   {routeData.route?.dex && (
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-start gap-2">
                       <span className="text-muted-foreground">Route</span>
-                      <span className="font-medium">{routeData.route.dex}</span>
+                      <span className="font-medium text-right">{routeData.route.dex}</span>
                     </div>
                   )}
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-start gap-2">
                     <span className="text-muted-foreground">Slippage</span>
                     <span className="font-medium">{slippage}%</span>
                   </div>
                   {routeData.priceImpact && (
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-start gap-2">
                       <span className="text-muted-foreground">Price Impact</span>
                       <span className={cn(
                         "font-medium",
@@ -576,7 +590,7 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
               {!isConnected ? (
                 <Button
                   className={cn(
-                    "w-full h-11 text-base font-semibold rounded-md px-4 py-2.5 active:scale-[0.99] transition-all duration-300",
+                    "w-full h-10 sm:h-11 text-sm sm:text-base font-semibold rounded-md px-4 py-2.5 active:scale-[0.99] transition-all duration-300",
                     "bg-primary hover:bg-primary/90 dark:bg-[#F3C623] dark:hover:bg-[#F3C623]/90",
                     "dark:text-black"
                   )}
@@ -589,7 +603,7 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
               ) : (
                 <Button
                   className={cn(
-                    "w-full h-11 text-base font-semibold rounded-md px-4 py-2.5 active:scale-[0.99] transition-all duration-300",
+                    "w-full h-10 sm:h-11 text-sm sm:text-base font-semibold rounded-md px-4 py-2.5 active:scale-[0.99] transition-all duration-300",
                     "bg-primary hover:bg-primary/90 dark:bg-[#F3C623] dark:hover:bg-[#F3C623]/90",
                     "dark:text-black",
                     "disabled:opacity-50 disabled:cursor-not-allowed"
@@ -599,12 +613,12 @@ export function SwapCard({ onPairChange, onSwapSuccess }: SwapCardProps) {
                 >
                   {isSwapping ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
                       Swapping...
                     </>
                   ) : quoteLoading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
                       Getting Quote...
                     </>
                   ) : isSwapDisabled ? (
