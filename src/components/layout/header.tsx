@@ -89,6 +89,7 @@ export function Header() {
     { name: "Trade", href: "/trade" },
     { name: "Stake", href: "/stake" },
     { name: "Portfolio", href: "/portfolio" },
+    { name: "Rewards", href: "/rewards" },
   ];
 
   const exploreItems = [
