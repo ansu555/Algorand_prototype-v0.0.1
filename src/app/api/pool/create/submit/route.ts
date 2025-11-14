@@ -50,14 +50,22 @@ export async function POST(request: NextRequest) {
 
     // Extract LP token ID from inner transactions
     let lpTokenId = 0
-    if (confirmedTxn['inner-txns'] && confirmedTxn['inner-txns'].length > 0) {
-      for (const innerTxn of confirmedTxn['inner-txns']) {
-        if (innerTxn['asset-index']) {
-          lpTokenId = innerTxn['asset-index']
+    const innerTxns = (confirmedTxn as any)['inner-txns'] || confirmedTxn.innerTxns
+    if (innerTxns && innerTxns.length > 0) {
+      console.log('🔍 Searching for LP token in', innerTxns.length, 'inner transactions')
+      for (const innerTxn of innerTxns) {
+        const assetIndex = innerTxn['asset-index'] || innerTxn.assetIndex || (innerTxn as any)['created-asset-index']
+        if (assetIndex) {
+          lpTokenId = assetIndex
           console.log('🎟️ LP Token created with ID:', lpTokenId)
           break
         }
       }
+    }
+    
+    if (!lpTokenId) {
+      console.warn('⚠️ LP Token ID not found in inner transactions')
+      console.log('Confirmed transaction details:', JSON.stringify(confirmedTxn, null, 2))
     }
 
     // Store pool creation in database for tracking
