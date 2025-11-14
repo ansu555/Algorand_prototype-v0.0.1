@@ -208,6 +208,13 @@ export default function TransactionsPage() {
   const filteredTransactions = useMemo(() => {
     let filtered = transactions
 
+    // Filter out system/rule management events
+    const excludedActions = ['rule_updated', 'update_rule', 'rule_created', 'rule_deleted', 'poller_checked', 'poller_trigger_failed']
+    filtered = filtered.filter(tx => {
+      const action = (tx.action || '').toLowerCase()
+      return !excludedActions.includes(action)
+    })
+
     // Filter by type
     if (typeFilter !== 'all') {
       filtered = filtered.filter(tx => (tx.action || '').toLowerCase() === typeFilter)

@@ -22,6 +22,7 @@ export async function GET(request: Request) {
       'POLLER_TRIGGER_FAILED',
       'RULE_CREATED',
       'RULE_UPDATED',
+      'UPDATE_RULE',
       'RULE_DELETED',
       'EXECUTION_FAILED'
     ]
