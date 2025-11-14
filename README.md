@@ -87,11 +87,12 @@ Algorand_prototype-v0.0.1/
 
 ### 📚 Documentation
 
-**Core Documentation** (7 canonical guides):
+**Core Documentation** (8 canonical guides):
 
 - **[🏗️ System Overview](./docs/SYSTEM_OVERVIEW.md)** - Architecture, components, and data flows
 - **[👨‍💻 Developer Guide](./docs/DEVELOPER_GUIDE.md)** - Setup, installation, testing, and troubleshooting
 - **[📦 Smart Contracts & Deployment](./docs/CONTRACTS_AND_DEPLOYMENT.md)** - Contract details and deployment procedures
+- **[💧 Liquidity Pools](./docs/LIQUIDITY_POOLS.md)** - Pool adapters, DEX integration, and pool management
 - **[🤖 Autopilot Module](./docs/AUTOPILOT_MODULE.md)** - Automated trading rules and execution
 - **[⚙️ Backend & Agent Spec](./docs/BACKEND_AND_AGENT_SPEC.md)** - API endpoints and database schema
 - **[🧠 AI Agent & MCP/NCP](./docs/AI_AGENT_AND_MCP_NCP_SPEC.md)** - AI capabilities and analytics engine
