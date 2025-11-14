@@ -21,6 +21,7 @@ export async function GET(request: Request) {
       'POLLER_CHECKED',
       'POLLER_TRIGGER_FAILED',
       'RULE_CREATED',
+      'RULE_UPDATED',
       'RULE_DELETED',
       'EXECUTION_FAILED'
     ]
