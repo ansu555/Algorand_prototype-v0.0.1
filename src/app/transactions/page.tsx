@@ -6,8 +6,9 @@ import { SearchBar } from "@/components/shared/search-bar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
-import { Loader2, ArrowUpDown, Clock, CalendarClock, ExternalLink, Copy, Check } from "lucide-react"
+import { Loader2, ArrowUpDown, Clock, CalendarClock, ExternalLink, Copy, Check, TrendingUp, Activity } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
 type Transaction = {
   id: string
@@ -44,6 +45,47 @@ export default function TransactionsPage() {
   const [typeFilter, setTypeFilter] = useState<
     'all' | 'swap' | 'send' | 'receive' | 'stake' | 'add_liquidity'
   >('all')
+  const [prices, setPrices] = useState<Record<string, number>>({})
+  const [loadingPrices, setLoadingPrices] = useState(true)
+
+  // Fetch token prices
+  useEffect(() => {
+    const fetchPrices = async () => {
+      try {
+        const coinIdMap: Record<string, string> = {
+          ALGO: 'algorand',
+          USDC: 'usd-coin',
+          USDT: 'tether',
+        }
+        
+        const ids = Object.values(coinIdMap).join(',')
+        const res = await fetch(
+          `https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`
+        )
+        
+        if (res.ok) {
+          const data = await res.json()
+          const priceMap: Record<string, number> = {}
+          
+          Object.entries(coinIdMap).forEach(([symbol, coinId]) => {
+            if (data[coinId]?.usd) {
+              priceMap[symbol] = data[coinId].usd
+            }
+          })
+          
+          setPrices(priceMap)
+        }
+      } catch (error) {
+        console.error('Failed to fetch prices:', error)
+      } finally {
+        setLoadingPrices(false)
+      }
+    }
+    
+    fetchPrices()
+    const interval = setInterval(fetchPrices, 60000)
+    return () => clearInterval(interval)
+  }, [])
 
   // Fetch real transactions from all users
   useEffect(() => {
@@ -97,6 +139,71 @@ export default function TransactionsPage() {
       console.error('Failed to copy:', err)
     }
   }
+
+  // Calculate analytics with token-to-ALGO conversion
+  const analytics = useMemo(() => {
+    if (!transactions.length || loadingPrices || !prices.ALGO) {
+      return {
+        totalVolumeALGO: 0,
+        totalTransactions: 0,
+        volumeChart: [],
+        avgTransactionSize: 0
+      }
+    }
+
+    let totalVolumeALGO = 0
+    const volumeByDate: Record<string, number> = {}
+
+    transactions.forEach(tx => {
+      // Convert transaction amount to ALGO
+      let algoEquivalent = 0
+      
+      // Get the "from" asset details
+      const fromSymbol = (tx.fromAssetUnitName || tx.fromAssetName || '').toUpperCase()
+      
+      // Calculate amount
+      let amount = 0
+      if (tx.fromAmountBaseUnits != null && tx.fromDecimals != null) {
+        amount = Number(tx.fromAmountBaseUnits) / Math.pow(10, tx.fromDecimals)
+      } else if (tx.fromAmount != null) {
+        amount = Number(tx.fromAmount)
+      }
+
+      // Convert to ALGO equivalent
+      if (fromSymbol === 'ALGO') {
+        algoEquivalent = amount
+      } else if (fromSymbol === 'USDC' || fromSymbol === 'USDT') {
+        // Convert stablecoin to ALGO: (USDC amount) / (ALGO price in USD)
+        if (prices.ALGO) {
+          algoEquivalent = amount / prices.ALGO
+        }
+      } else {
+        // For unknown tokens, try to use ALGO as fallback
+        algoEquivalent = amount
+      }
+
+      totalVolumeALGO += algoEquivalent
+
+      // Group by date for chart
+      const date = new Date(tx.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      volumeByDate[date] = (volumeByDate[date] || 0) + algoEquivalent
+    })
+
+    // Convert volume by date to chart data
+    const volumeChart = Object.entries(volumeByDate)
+      .map(([date, volume]) => ({ date, volume: Number(volume.toFixed(2)) }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(-14) // Last 14 days
+
+    const avgTransactionSize = transactions.length > 0 ? totalVolumeALGO / transactions.length : 0
+
+    return {
+      totalVolumeALGO,
+      totalTransactions: transactions.length,
+      volumeChart,
+      avgTransactionSize
+    }
+  }, [transactions, prices, loadingPrices])
 
   const filteredTransactions = useMemo(() => {
     let filtered = transactions
@@ -194,58 +301,108 @@ export default function TransactionsPage() {
             </CardHeader>
 
             <CardContent className="space-y-6">
-              {/* Statistics Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* 1D Volume */}
-                <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base sm:text-lg">1D volume</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl sm:text-3xl font-bold font-mono">$3.15B</div>
-                <div className="text-xs sm:text-sm text-red-500 flex items-center gap-1">
-                  <span>▼</span>
-                  <span>27.21% today</span>
-                </div>
-              </CardContent>
-            </Card>
+              {/* Analytics Overview Card */}
+              <Card className="bg-gradient-to-br from-red-500/5 to-amber-500/5 border-red-200/20 dark:border-red-800/20">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-red-500" />
+                    Transaction Analytics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loadingPrices ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-red-600 dark:text-[#F3C623]" />
+                      <span className="ml-2 text-sm text-muted-foreground">Loading analytics...</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div className="space-y-0.5">
+                          <p className="text-xs text-muted-foreground">Total Volume</p>
+                          <p className="text-xl font-bold font-mono">{analytics.totalVolumeALGO.toFixed(2)} ALGO</p>
+                          <p className="text-[10px] text-muted-foreground">≈ ${(analytics.totalVolumeALGO * (prices.ALGO || 0)).toFixed(2)} USD</p>
+                        </div>
+                        <div className="space-y-0.5">
+                          <p className="text-xs text-muted-foreground">Total Transactions</p>
+                          <p className="text-xl font-bold font-mono">{analytics.totalTransactions}</p>
+                          <p className="text-[10px] text-muted-foreground">All-time on this site</p>
+                        </div>
+                        <div className="space-y-0.5">
+                          <p className="text-xs text-muted-foreground">24h Transactions</p>
+                          <p className="text-xl font-bold font-mono">{stats?.last1d ?? 0}</p>
+                          <p className="text-[10px] text-muted-foreground">Last 24 hours</p>
+                        </div>
+                        <div className="space-y-0.5">
+                          <p className="text-xs text-muted-foreground">Avg Transaction</p>
+                          <p className="text-xl font-bold font-mono">{analytics.avgTransactionSize.toFixed(2)} ALGO</p>
+                          <p className="text-[10px] text-muted-foreground">Per transaction</p>
+                        </div>
+                      </div>
 
-            {/* Total 10xSwap TVL */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base sm:text-lg">Total 10xSwap TVL</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl sm:text-3xl font-bold font-mono">{stats?.total ?? 0}</div>
-                <div className="text-xs sm:text-sm text-muted-foreground">All-time on this site</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-base sm:text-lg">1D Transactions</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl sm:text-3xl font-bold font-mono">{stats?.last1d ?? 0}</div>
-                <div className="text-xs sm:text-sm text-muted-foreground">Last 24 hours</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                <CardTitle className="text-base sm:text-lg">30D Transactions</CardTitle>
-                <CalendarClock className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl sm:text-3xl font-bold font-mono">{stats?.last30d ?? 0}</div>
-                <div className="text-xs sm:text-sm text-muted-foreground">Last 30 days</div>
-              </CardContent>
-            </Card>
-          </div>
+                      {/* Volume Chart */}
+                      {analytics.volumeChart.length > 0 && (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-medium">Transaction Volume (Last 14 Days)</p>
+                            <TrendingUp className="h-3.5 w-3.5 text-green-500" />
+                          </div>
+                          <div className="h-[140px] w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart data={analytics.volumeChart}>
+                                <defs>
+                                  <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                                  </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
+                                <XAxis 
+                                  dataKey="date" 
+                                  stroke="#9ca3af" 
+                                  fontSize={10}
+                                  tickLine={false}
+                                />
+                                <YAxis 
+                                  stroke="#9ca3af" 
+                                  fontSize={10}
+                                  tickLine={false}
+                                  tickFormatter={(value) => `${value.toFixed(0)}`}
+                                />
+                                <Tooltip
+                                  contentStyle={{
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    border: '1px solid #374151',
+                                    borderRadius: '8px',
+                                    padding: '6px 8px',
+                                    fontSize: '11px'
+                                  }}
+                                  labelStyle={{ color: '#f3f4f6' }}
+                                  itemStyle={{ color: '#ef4444' }}
+                                  formatter={(value: any) => [`${Number(value).toFixed(2)} ALGO`, 'Volume']}
+                                />
+                                <Area
+                                  type="monotone"
+                                  dataKey="volume"
+                                  stroke="#ef4444"
+                                  strokeWidth={1.5}
+                                  fill="url(#volumeGradient)"
+                                />
+                              </AreaChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-          {/* Top-of-table summary and note */}
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
-            <span className="ml-auto text-muted-foreground">Note: Testnet - USD value not available</span>
-          </div>
+              {/* Top-of-table summary and note */}
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+                <span className="ml-auto text-muted-foreground">Note: Testnet data</span>
+              </div>
             </CardContent>
           </Card>
 
