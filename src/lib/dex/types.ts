@@ -134,3 +134,36 @@ export interface CachedPoolData {
   lastUpdated: number;
   ttl: number; // Time to live in milliseconds
 }
+
+/**
+ * Pool Creation Types
+ */
+export interface CreatePoolParams {
+  asset1Id: number;
+  asset2Id: number;
+  amount1: bigint;
+  amount2: bigint;
+  feeBps: number; // Fee in basis points (e.g., 30 = 0.3%)
+  userAddress: string;
+}
+
+export interface CreatePoolResult {
+  txId: string;
+  confirmedRound: number;
+  poolAddress: string;
+  lpTokenId: number;
+  lpTokensReceived: bigint;
+}
+
+export interface LiquidityPosition {
+  poolId: string;
+  poolAddress: string;
+  asset1: Asset;
+  asset2: Asset;
+  lpTokenId: number;
+  lpTokenAmount: bigint;
+  share: number; // Percentage of pool owned (e.g., 0.5 = 0.5%)
+  asset1Amount: bigint; // User's share of asset 1
+  asset2Amount: bigint; // User's share of asset 2
+  feeBps: number;
+}
