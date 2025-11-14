@@ -448,6 +448,239 @@ GET /api/price/10458941
 
 ---
 
+---
+
+### Liquidity Pool Endpoints
+
+#### GET /api/pools/all
+
+**Purpose:** Fetch all available liquidity pools from supported DEXs
+
+**Query Params:**
+- `network` - Network to query (`testnet` or `mainnet`)
+
+**Request:**
+```bash
+GET /api/pools/all?network=testnet
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "pools": [
+    {
+      "poolId": "552635992",
+      "asset1": {
+        "id": 0,
+        "symbol": "ALGO",
+        "name": "Algorand",
+        "decimals": 6,
+        "logoUrl": "https://..."
+      },
+      "asset2": {
+        "id": 10458941,
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "decimals": 6,
+        "logoUrl": "https://..."
+      },
+      "reserve1": "1000000000",
+      "reserve2": "500000000",
+      "totalLiquidity": "707106781",
+      "fee": 30,
+      "dexName": "tinyman",
+      "poolAddress": "ABC...XYZ"
+    }
+  ],
+  "network": "testnet",
+  "stats": {
+    "total": 150,
+    "tinyman": 100,
+    "pact": 50
+  },
+  "cached": false,
+  "timestamp": 1699564800000
+}
+```
+
+**Features:**
+- Parallel fetching from Tinyman and Pact APIs
+- 5-minute caching per network (testnet/mainnet)
+- Returns pools with reserve data and fees
+- Includes pool statistics
+
+**Implementation:**
+```typescript
+// src/app/api/pools/all/route.ts
+import { TinymanV2Client } from '@/lib/dex/tinyman-client';
+import { PactClient } from '@/lib/dex/pact-client';
+
+export async function GET(request: NextRequest) {
+  const network = searchParams.get('network') || 'testnet';
+  
+  // Check cache
+  if (cachedPools && now - cachedPools.timestamp < CACHE_TTL) {
+    return NextResponse.json({ success: true, pools: cachedPools.data });
+  }
+  
+  // Fetch from DEXs
+  const tinymanClient = new TinymanV2Client(algodClient, network);
+  const pactClient = new PactClient(algodClient, network);
+  
+  const [tinymanPools, pactPools] = await Promise.all([
+    tinymanClient.fetchPools(),
+    network === 'mainnet' ? pactClient.fetchPools() : []
+  ]);
+  
+  const allPools = [...tinymanPools, ...pactPools];
+  
+  // Cache and return
+  return NextResponse.json({ success: true, pools: allPools });
+}
+```
+
+---
+
+#### GET /api/pools/market-data
+
+**Purpose:** Fetch market data (TVL, volume, APR) for pools
+
+**Query Params:**
+- `network` - Network to query (`testnet` or `mainnet`)
+
+**Request:**
+```bash
+GET /api/pools/market-data?network=mainnet
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "552635992": {
+      "poolId": "552635992",
+      "tvlUSD": 1250000,
+      "volume24hUSD": 85000,
+      "volume1dUSD": 85000,
+      "volume30dUSD": 2550000,
+      "poolAPR": 12.5,
+      "rewardAPR": 0,
+      "fees24hUSD": 255
+    },
+    "792313023": {
+      "poolId": "792313023",
+      "tvlUSD": 890000,
+      "volume24hUSD": 45000,
+      "poolAPR": 8.2,
+      "fees24hUSD": 135
+    }
+  },
+  "cached": true,
+  "timestamp": 1699564800000
+}
+```
+
+**Notes:**
+- TVL and volume data available on **mainnet only**
+- Testnet returns empty data (no market analytics)
+- Data sourced from Vestige Analytics API and DeFiLlama
+- 5-minute cache TTL
+
+**Data Sources:**
+1. **Vestige Analytics API** - Primary source for Algorand DEX data
+2. **DeFiLlama API** - Backup for TVL data
+3. **On-chain calculation** - APR estimated from fees and volume
+
+---
+
+#### GET /api/pools/transactions
+
+**Purpose:** Fetch recent transactions for a specific pool
+
+**Query Params:**
+- `poolId` - Pool application ID
+- `network` - Network (`testnet` or `mainnet`)
+- `limit` - Max transactions to return (default: 50)
+
+**Request:**
+```bash
+GET /api/pools/transactions?poolId=552635992&network=testnet&limit=20
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "transactions": [
+    {
+      "id": "TXN123ABC...",
+      "type": "swap",
+      "timestamp": 1699564800,
+      "sender": "USER_ADDRESS_1",
+      "assetIn": "USDC",
+      "assetOut": "ALGO",
+      "amountIn": "10.5",
+      "amountOut": "5.234",
+      "fee": "0.0315"
+    },
+    {
+      "id": "TXN456DEF...",
+      "type": "add_liquidity",
+      "timestamp": 1699564700,
+      "sender": "USER_ADDRESS_2",
+      "amount1": "100.0",
+      "amount2": "50.0"
+    }
+  ],
+  "poolId": "552635992",
+  "count": 20
+}
+```
+
+**Transaction Types:**
+- `swap` - Token swap through pool
+- `add_liquidity` - Liquidity provision
+- `remove_liquidity` - Liquidity withdrawal
+
+---
+
+#### POST /api/swap/opt-in-pool
+
+**Purpose:** Opt user wallet into pool-required assets
+
+**Request:**
+```json
+{
+  "userAddress": "YOUR_ALGORAND_ADDRESS",
+  "assetIds": [10458941, 312769]
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "transactions": [
+    { "txn": "base64_encoded_opt_in_txn_1" },
+    { "txn": "base64_encoded_opt_in_txn_2" }
+  ],
+  "message": "Please sign opt-in transactions for USDC, USDT"
+}
+```
+
+**Features:**
+- Checks which assets user already holds
+- Creates opt-in transactions for missing assets
+- Returns unsigned transactions for wallet signing
+- Validates asset existence on network
+
+**Use Case:**
+Before swapping tokens via a pool, users must opt into the assets. This endpoint simplifies the opt-in process.
+
+---
+
 ### Swap Endpoints
 
 #### POST /api/swap/prepare
@@ -893,6 +1126,141 @@ CREATE INDEX idx_rules_status ON rules(status);
   "updatedAt": null
 }
 ```
+
+---
+
+#### pool_cache (In-Memory)
+
+**Purpose:** Cache pool data to reduce API calls and improve performance
+
+**Note:** This is an **in-memory cache** (not persisted to database) with TTL-based expiration.
+
+**Cache Structure:**
+```typescript
+interface PoolCache {
+  testnet: {
+    data: PoolInfo[];
+    timestamp: number;
+  } | null;
+  mainnet: {
+    data: PoolInfo[];
+    timestamp: number;
+  } | null;
+}
+
+const CACHE_TTL = 300 * 1000; // 5 minutes
+```
+
+**Cached Data:**
+```json
+{
+  "testnet": {
+    "data": [
+      {
+        "poolId": "552635992",
+        "asset1": { "id": 0, "symbol": "ALGO", "decimals": 6 },
+        "asset2": { "id": 10458941, "symbol": "USDC", "decimals": 6 },
+        "reserve1": "1000000000",
+        "reserve2": "500000000",
+        "fee": 30,
+        "dexName": "tinyman"
+      }
+    ],
+    "timestamp": 1699564800000
+  },
+  "mainnet": null
+}
+```
+
+**Cache Invalidation:**
+- **Time-based:** Expires after 5 minutes
+- **Manual:** Server restart clears cache
+- **Network-specific:** Testnet and mainnet caches are separate
+
+**Why Not Database?**
+- Pool data changes frequently (reserves update with each swap)
+- Read-heavy workload (many clients fetching same data)
+- TTL-based expiration is simpler than database cleanup
+- Reduces database load and query latency
+
+---
+
+#### market_data_cache (In-Memory)
+
+**Purpose:** Cache market analytics (TVL, volume, APR) from external APIs
+
+**Cache Structure:**
+```typescript
+interface MarketDataCache {
+  data: Record<string, PoolMarketData>;
+  timestamp: number;
+}
+
+const CACHE_TTL = 300 * 1000; // 5 minutes
+```
+
+**Cached Data:**
+```json
+{
+  "data": {
+    "552635992": {
+      "poolId": "552635992",
+      "tvlUSD": 1250000,
+      "volume24hUSD": 85000,
+      "poolAPR": 12.5,
+      "rewardAPR": 0
+    }
+  },
+  "timestamp": 1699564800000
+}
+```
+
+**Data Sources:**
+- Vestige Analytics API (primary)
+- DeFiLlama API (backup)
+- On-chain calculations (APR estimation)
+
+**Cache Benefits:**
+- Reduces external API calls (rate limit protection)
+- Faster response times (~10ms vs ~500ms)
+- Cost reduction (free tier API limits)
+
+---
+
+#### swap_history (Future Enhancement)
+
+**Purpose:** Store historical swap transactions for analytics
+
+**Proposed Schema:**
+```sql
+CREATE TABLE swap_history (
+  id TEXT PRIMARY KEY,
+  userAddress TEXT NOT NULL,
+  poolId TEXT NOT NULL,
+  dexName TEXT NOT NULL,
+  assetIn INTEGER NOT NULL,
+  assetOut INTEGER NOT NULL,
+  amountIn TEXT NOT NULL,
+  amountOut TEXT NOT NULL,
+  fee TEXT NOT NULL,
+  txId TEXT NOT NULL UNIQUE,
+  timestamp TEXT NOT NULL,
+  network TEXT NOT NULL CHECK(network IN ('testnet', 'mainnet'))
+);
+
+CREATE INDEX idx_swap_history_user ON swap_history(userAddress);
+CREATE INDEX idx_swap_history_pool ON swap_history(poolId);
+CREATE INDEX idx_swap_history_tx ON swap_history(txId);
+CREATE INDEX idx_swap_history_time ON swap_history(timestamp DESC);
+```
+
+**Use Cases:**
+- User swap history and portfolio tracking
+- Pool volume analytics
+- Fee revenue calculations
+- Trading pattern analysis
+
+**Status:** Not yet implemented (currently using Algorand Indexer for transaction history)
 
 ---
 

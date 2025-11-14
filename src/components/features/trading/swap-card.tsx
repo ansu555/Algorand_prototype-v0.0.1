@@ -323,7 +323,7 @@ export function SwapCard({ onPairChange, onSwapSuccess, initialFromAssetId, init
               Round: {confirmedRound}
             </div>
             <a 
-              href={`https://testnet.algoexplorer.io/tx/${txId}`}
+              href={`https://lora.algokit.io/testnet/transaction/${txId}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-500 hover:underline text-xs block"
