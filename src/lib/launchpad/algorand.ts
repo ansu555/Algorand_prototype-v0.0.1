@@ -64,47 +64,47 @@ export interface ARC20Metadata {
  */
 export async function createARC20Token(
   creator: string,
-  project: Omit<LaunchProject, 'id' | 'asa_id' | 'app_id'>,
+  project: Omit<LaunchProject, 'id' | 'asaId' | 'appId'>,
   signer: (txns: Uint8Array[]) => Promise<Uint8Array[]>
 ): Promise<number> {
-  console.log('🪙 Creating ARC-20 token:', project.token_name);
+  console.log('🪙 Creating ARC-20 token:', project.tokenName);
   
   // Get suggested params
   const suggestedParams = await algodClient.getTransactionParams().do();
   
   // Calculate total supply with decimals
-  const totalSupply = BigInt(project.total_supply) * BigInt(10 ** project.token_decimals);
+  const totalSupply = BigInt(project.totalSupply) * BigInt(10 ** project.tokenDecimals);
   
   // Prepare ARC-20 metadata
   const metadata: ARC20Metadata = {
-    name: project.token_name,
-    symbol: project.token_symbol,
-    decimals: project.token_decimals,
+    name: project.tokenName,
+    symbol: project.tokenSymbol,
+    decimals: project.tokenDecimals,
     totalSupply: totalSupply.toString(),
-    url: project.website_url || '',
+    url: project.websiteUrl || '',
     description: project.description,
-    image: project.logo_url,
+    image: project.logoUrl,
     properties: {
-      bondingCurve: project.curve_type as 'linear' | 'exponential' | 'sigmoid',
+      bondingCurve: project.curveType as 'linear' | 'exponential' | 'sigmoid',
       launchDate: new Date().toISOString(),
-      projectId: project.creator_address, // Temporary, will update after DB insert
-      website: project.website_url,
-      twitter: project.twitter_url,
-      telegram: project.telegram_url,
+      projectId: project.creatorAddress, // Temporary, will update after DB insert
+      website: project.websiteUrl,
+      twitter: project.twitterUrl,
+      telegram: project.telegramUrl,
     },
   };
   
   // Create asset configuration transaction
   const asaCreateTxn = algosdk.makeAssetCreateTxnWithSuggestedParamsFromObject({
-    from: creator,
+    sender: creator,
     total: Number(totalSupply),
-    decimals: project.token_decimals,
+    decimals: project.tokenDecimals,
     defaultFrozen: false,
     
     // ARC-20 Standard Fields
-    unitName: project.token_symbol.substring(0, 8), // Max 8 chars
-    assetName: project.token_name.substring(0, 32), // Max 32 chars
-    assetURL: project.website_url?.substring(0, 96) || '', // Max 96 chars
+    unitName: project.tokenSymbol.substring(0, 8), // Max 8 chars
+    assetName: project.tokenName.substring(0, 32), // Max 32 chars
+    assetURL: project.websiteUrl?.substring(0, 96) || '', // Max 96 chars
     assetMetadataHash: undefined, // Could add IPFS hash of metadata
     
     // Manager: Set to bonding curve contract (will transfer tokens)
@@ -120,12 +120,13 @@ export async function createARC20Token(
   const signedTxns = await signer([asaCreateTxn.toByte()]);
   
   // Submit to network
-  const { txId } = await algodClient.sendRawTransaction(signedTxns).do();
+  const txResponse = await algodClient.sendRawTransaction(signedTxns).do();
+  const txId = txResponse.txid;
   console.log('📤 Submitted ASA creation:', txId);
   
   // Wait for confirmation
   const confirmedTxn = await algosdk.waitForConfirmation(algodClient, txId, 4);
-  const assetId = confirmedTxn['asset-index'];
+  const assetId = Number(confirmedTxn.assetIndex);
   
   console.log('✅ Created ASA ID:', assetId);
   console.log(`🔗 View on TestNet: https://testnet.algoexplorer.io/asset/${assetId}`);
@@ -146,9 +147,9 @@ export async function deployBondingCurveContract(
   project: LaunchProject,
   signer: (txns: Uint8Array[]) => Promise<Uint8Array[]>
 ): Promise<number> {
-  console.log('📜 Deploying bonding curve contract for:', project.token_name);
+  console.log('📜 Deploying bonding curve contract for:', project.tokenName);
   
-  if (!project.asa_id) {
+  if (!project.asaId) {
     throw new Error('ASA must be created before deploying contract');
   }
   
@@ -168,7 +169,7 @@ export async function deployBondingCurveContract(
   
   // Create application transaction
   const appCreateTxn = algosdk.makeApplicationCreateTxnFromObject({
-    from: creator,
+    sender: creator,
     suggestedParams,
     onComplete: algosdk.OnApplicationComplete.NoOpOC,
     approvalProgram,
@@ -183,12 +184,13 @@ export async function deployBondingCurveContract(
   const signedTxns = await signer([appCreateTxn.toByte()]);
   
   // Submit to network
-  const { txId } = await algodClient.sendRawTransaction(signedTxns).do();
+  const txResponse = await algodClient.sendRawTransaction(signedTxns).do();
+  const txId = txResponse.txid;
   console.log('📤 Submitted app creation:', txId);
   
   // Wait for confirmation
   const confirmedTxn = await algosdk.waitForConfirmation(algodClient, txId, 4);
-  const appId = confirmedTxn['application-index'];
+  const appId = Number(confirmedTxn.applicationIndex);
   
   console.log('✅ Deployed App ID:', appId);
   console.log(`🔗 View on TestNet: https://testnet.algoexplorer.io/application/${appId}`);
@@ -224,21 +226,21 @@ export async function initializeBondingCurve(
   // Prepare app call arguments
   const appArgs = [
     new Uint8Array(Buffer.from('initialize')),
-    algosdk.encodeUint64(project.asa_id!),
-    algosdk.encodeUint64(curveTypeMap[project.curve_type]),
-    algosdk.encodeUint64(project.base_price),
-    algosdk.encodeUint64(project.max_price),
-    algosdk.encodeUint64(project.bonding_target),
-    algosdk.encodeUint64(project.tokens_for_sale),
-    algosdk.encodeUint64(project.liquidity_percentage || 80),
-    algosdk.encodeUint64(project.lp_lock_duration || 15552000),
+    algosdk.encodeUint64(Number(project.asaId!)),
+    algosdk.encodeUint64(curveTypeMap[project.curveType as CurveType]),
+    algosdk.encodeUint64(Number(project.basePrice)),
+    algosdk.encodeUint64(Number(project.maxPrice)),
+    algosdk.encodeUint64(Number(project.bondingTarget)),
+    algosdk.encodeUint64(Number(project.tokensForSale)),
+    algosdk.encodeUint64(project.liquidityPercentage || 80),
+    algosdk.encodeUint64(Number(project.lpLockDuration) || 15552000),
     algosdk.encodeUint64(1000000), // max_purchase_per_txn (1M tokens)
     algosdk.encodeUint64(10), // cooldown_rounds (10 rounds ~30 seconds)
   ];
   
   // Create app call transaction
   const appCallTxn = algosdk.makeApplicationNoOpTxnFromObject({
-    from: creator,
+    sender: creator,
     appIndex: appId,
     appArgs,
     suggestedParams,
@@ -246,7 +248,8 @@ export async function initializeBondingCurve(
   
   // Sign and submit
   const signedTxns = await signer([appCallTxn.toByte()]);
-  const { txId } = await algodClient.sendRawTransaction(signedTxns).do();
+  const txResponse = await algodClient.sendRawTransaction(signedTxns).do();
+  const txId = txResponse.txid;
   
   await algosdk.waitForConfirmation(algodClient, txId, 4);
   console.log('✅ Initialized bonding curve');
@@ -275,7 +278,7 @@ export async function fundBondingCurve(
   
   // Transaction 1: Opt contract into ASA
   const optInTxn = algosdk.makeApplicationNoOpTxnFromObject({
-    from: creator,
+    sender: creator,
     appIndex: appId,
     appArgs: [new Uint8Array(Buffer.from('opt_in_asset'))],
     foreignAssets: [asaId],
@@ -284,8 +287,8 @@ export async function fundBondingCurve(
   
   // Transaction 2: Transfer tokens to contract
   const transferTxn = algosdk.makeAssetTransferTxnWithSuggestedParamsFromObject({
-    from: creator,
-    to: appAddress,
+    sender: creator,
+    receiver: appAddress,
     assetIndex: asaId,
     amount,
     suggestedParams,
@@ -297,7 +300,8 @@ export async function fundBondingCurve(
   
   // Sign and submit
   const signedTxns = await signer(txns.map(txn => txn.toByte()));
-  const { txId } = await algodClient.sendRawTransaction(signedTxns).do();
+  const txResponse = await algodClient.sendRawTransaction(signedTxns).do();
+  const txId = txResponse.txid;
   
   await algosdk.waitForConfirmation(algodClient, txId, 4);
   console.log('✅ Funded bonding curve contract');
@@ -320,14 +324,15 @@ export async function activateBondingCurve(
   const suggestedParams = await algodClient.getTransactionParams().do();
   
   const appCallTxn = algosdk.makeApplicationNoOpTxnFromObject({
-    from: creator,
+    sender: creator,
     appIndex: appId,
     appArgs: [new Uint8Array(Buffer.from('activate'))],
     suggestedParams,
   });
   
   const signedTxns = await signer([appCallTxn.toByte()]);
-  const { txId } = await algodClient.sendRawTransaction(signedTxns).do();
+  const txResponse = await algodClient.sendRawTransaction(signedTxns).do();
+  const txId = txResponse.txid;
   
   await algosdk.waitForConfirmation(algodClient, txId, 4);
   console.log('✅ Bonding curve activated');
@@ -359,15 +364,15 @@ export async function purchaseTokens(
   
   // Transaction 1: Payment to contract
   const paymentTxn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
-    from: buyer,
-    to: appAddress,
+    sender: buyer,
+    receiver: appAddress,
     amount: algoPayment,
     suggestedParams,
   });
   
   // Transaction 2: App call to buy tokens
   const appCallTxn = algosdk.makeApplicationNoOpTxnFromObject({
-    from: buyer,
+    sender: buyer,
     appIndex: appId,
     appArgs: [
       new Uint8Array(Buffer.from('buy_tokens')),
@@ -383,7 +388,8 @@ export async function purchaseTokens(
   
   // Sign and submit
   const signedTxns = await signer(txns.map(txn => txn.toByte()));
-  const { txId } = await algodClient.sendRawTransaction(signedTxns).do();
+  const txResponse = await algodClient.sendRawTransaction(signedTxns).do();
+  const txId = txResponse.txid;
   
   await algosdk.waitForConfirmation(algodClient, txId, 4);
   console.log('✅ Purchase confirmed:', txId);
@@ -400,7 +406,7 @@ export async function purchaseTokens(
  */
 export async function getCurrentPrice(appId: number): Promise<number> {
   const appInfo = await algodClient.getApplicationByID(appId).do();
-  const globalState = appInfo.params['global-state'];
+  const globalState = appInfo.params.globalState || [];
   
   // Read global state to calculate current price
   // This is a simplified version - actual implementation would call the contract's get_price method
@@ -443,7 +449,7 @@ export async function getSaleStats(appId: number): Promise<{
   graduationRound: number;
 }> {
   const appInfo = await algodClient.getApplicationByID(appId).do();
-  const globalState = appInfo.params['global-state'];
+  const globalState = appInfo.params.globalState || [];
   
   return {
     tokensSold: readGlobalStateValue(globalState, 'tokens_sold') || 0,
@@ -498,25 +504,27 @@ async function loadClearProgram(): Promise<Uint8Array> {
  */
 export async function completeLaunchFlow(
   creator: string,
-  project: Omit<LaunchProject, 'id' | 'asa_id' | 'app_id'>,
+  project: Omit<LaunchProject, 'id' | 'asaId' | 'appId'>,
   signer: (txns: Uint8Array[]) => Promise<Uint8Array[]>
 ): Promise<{ asaId: number; appId: number }> {
-  console.log('🚀 Starting complete launch flow for:', project.token_name);
+    console.log('🚀 Starting complete launch flow for:', project.tokenName);
+  
+  // Step 1: Create ASA
   
   try {
     // Step 1: Create ARC-20 token
     const asaId = await createARC20Token(creator, project, signer);
     
     // Step 2: Deploy bonding curve contract
-    const projectWithAsa = { ...project, asa_id: asaId } as LaunchProject;
+    const projectWithAsa = { ...project, asaId: BigInt(asaId) } as LaunchProject;
     const appId = await deployBondingCurveContract(creator, projectWithAsa, signer);
     
     // Step 3: Initialize contract parameters
-    const projectWithApp = { ...projectWithAsa, app_id: appId };
+    const projectWithApp = { ...projectWithAsa, appId: BigInt(appId) } as LaunchProject;
     await initializeBondingCurve(creator, appId, projectWithApp, signer);
     
     // Step 4: Fund contract with tokens
-    const tokenAmount = project.tokens_for_sale * Math.pow(10, project.token_decimals);
+    const tokenAmount = Number(project.tokensForSale) * Math.pow(10, project.tokenDecimals);
     await fundBondingCurve(creator, appId, asaId, tokenAmount, signer);
     
     // Step 5: Activate sale

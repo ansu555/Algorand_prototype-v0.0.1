@@ -41,11 +41,11 @@
 export type {
   LaunchProject,
   TokenPurchase,
-  UserPoints,
   CurveType,
   ProjectStatus,
-  BondingCurveConfig,
-  LaunchResult,
+  LaunchpadPoints,
+  PriceQuote,
+  DexPlatform,
 } from './types'
 
 // Algorand operations
@@ -77,21 +77,21 @@ export {
 // Database operations
 export {
   // Project management
-  createLaunchProject,
-  getLaunchProject,
-  getAllLaunchProjects,
+  createProject,
+  getProject,
+  getAllProjects,
   updateProjectStatus,
   
   // Purchase tracking
-  recordTokenPurchase,
-  getUserPurchases,
+  recordPurchase,
+  getPurchaseHistory,
   
   // Points system
   getUserPoints,
-  updateUserPoints,
   
-  // Analytics
-  getProjectMetrics,
+  // Price calculations
+  getPriceQuote,
+  calculatePrice,
 } from './db'
 
 /**
@@ -134,7 +134,7 @@ export class BondingCurveSDK {
     signer: (txns: Uint8Array[]) => Promise<Uint8Array[]>
   ): Promise<{ asaId: number; appId: number; projectId: string }> {
     const { completeLaunchFlow } = await import('./algorand')
-    const { createLaunchProject } = await import('./db')
+    const { createProject } = await import('./db')
     
     console.log('🚀 Launching token:', config.name)
     
@@ -142,40 +142,60 @@ export class BondingCurveSDK {
     const { asaId, appId } = await completeLaunchFlow(
       creatorAddress,
       {
-        creator_address: creatorAddress,
-        token_name: config.name,
-        token_symbol: config.symbol,
-        token_decimals: config.decimals || 6,
-        total_supply: BigInt(config.totalSupply),
+        creatorAddress: creatorAddress,
+        tokenName: config.name,
+        tokenSymbol: config.symbol,
+        tokenDecimals: config.decimals || 6,
+        totalSupply: BigInt(config.totalSupply),
         description: config.description,
-        logo_url: config.logoUrl,
-        website_url: config.websiteUrl,
-        twitter_url: config.twitterUrl,
-        telegram_url: config.telegramUrl,
-        curve_type: config.curveType,
-        base_price: BigInt(config.basePrice),
-        max_price: BigInt(config.maxPrice),
-        bonding_target: BigInt(config.bondingTarget),
-        tokens_for_sale: BigInt(config.tokensForSale),
-        liquidity_percentage: config.liquidityPercentage || 80,
-        lp_lock_duration: BigInt(config.lpLockDuration || 15552000),
-        dex_platform: 'tinyman',
+        logoUrl: config.logoUrl,
+        websiteUrl: config.websiteUrl,
+        twitterUrl: config.twitterUrl,
+        telegramUrl: config.telegramUrl,
+        curveType: config.curveType,
+        basePrice: BigInt(config.basePrice),
+        maxPrice: BigInt(config.maxPrice),
+        bondingTarget: BigInt(config.bondingTarget),
+        tokensForSale: BigInt(config.tokensForSale),
+        liquidityPercentage: config.liquidityPercentage || 80,
+        lpLockDuration: BigInt(config.lpLockDuration || 15552000),
+        dexPlatform: 'tinyman',
         status: 'active',
-        tokens_sold: BigInt(0),
-        algo_raised: BigInt(0),
-        participant_count: 0,
-        created_at: new Date().toISOString(),
+        tokensSold: BigInt(0),
+        algoRaised: BigInt(0),
+        participantCount: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       },
       signer
     )
     
     // Record in database
-    const projectId = await createLaunchProject({
-      ...config,
-      creator_address: creatorAddress,
-      asa_id: BigInt(asaId),
-      app_id: BigInt(appId),
+    const projectId = createProject({
+      creatorAddress: creatorAddress,
+      tokenName: config.name,
+      tokenSymbol: config.symbol,
+      tokenDecimals: config.decimals || 6,
+      totalSupply: BigInt(config.totalSupply),
+      description: config.description,
+      logoUrl: config.logoUrl,
+      websiteUrl: config.websiteUrl,
+      twitterUrl: config.twitterUrl,
+      telegramUrl: config.telegramUrl,
+      curveType: config.curveType,
+      basePrice: BigInt(config.basePrice),
+      maxPrice: BigInt(config.maxPrice),
+      bondingTarget: BigInt(config.bondingTarget),
+      tokensForSale: BigInt(config.tokensForSale),
+      liquidityPercentage: config.liquidityPercentage || 80,
+      lpLockDuration: BigInt(config.lpLockDuration || 15552000),
+      dexPlatform: 'tinyman',
       status: 'active',
+      tokensSold: BigInt(0),
+      algoRaised: BigInt(0),
+      participantCount: 0,
+      asaId: BigInt(asaId),
+      appId: BigInt(appId),
     })
     
     console.log('✅ Launch complete!')
@@ -212,24 +232,24 @@ export class BondingCurveSDK {
    * Get project details
    */
   async getProject(projectId: string) {
-    const { getLaunchProject } = await import('./db')
-    return getLaunchProject(projectId)
+    const { getProject } = await import('./db')
+    return getProject(projectId)
   }
   
   /**
    * List all projects
    */
   async listProjects(filters?: { status?: string; creator?: string }) {
-    const { getAllLaunchProjects } = await import('./db')
-    return getAllLaunchProjects(filters)
+    const { getAllProjects } = await import('./db')
+    return getAllProjects(filters?.status as any)
   }
   
   /**
    * Get user's purchase history
    */
   async getUserPurchaseHistory(userAddress: string, projectId?: string) {
-    const { getUserPurchases } = await import('./db')
-    return getUserPurchases(userAddress, projectId)
+    const { getPurchaseHistory } = await import('./db')
+    return getPurchaseHistory(projectId || '', userAddress)
   }
   
   /**
