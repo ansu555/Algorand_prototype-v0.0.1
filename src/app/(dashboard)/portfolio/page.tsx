@@ -14,19 +14,39 @@ import { formatTrigger, type Rule, describeRule } from "@/lib/shared/rules"
 import { forceRunPoller, useAgentData } from "@/features/agent/hooks/useAgentData"
 import { deleteRule as apiDeleteRule, createRule } from "@/features/agent/api/client"
 import { ChevronDown, ChevronUp, Play, Trash2, Eye, RefreshCw, Zap, Activity, Clock, Target, TrendingUp, AlertCircle, CheckCircle2, XCircle, Pause, DollarSign, TrendingDown, BarChart3, Lock, Wallet, Plus } from "lucide-react"
-import { useWalletConnection } from '@/components/providers/txnlab-wallet-provider'
+import { useWalletConnection, useWalletActions } from '@/components/providers/txnlab-wallet-provider'
+import algosdk from 'algosdk'
 import RuleBuilderModal from "@/components/features/rules/rule-builder-modal"
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 
 export default function PortfolioPage() {
   const { activeAccount } = useWalletConnection()
+  const { signTransactions } = useWalletActions()
   const address = activeAccount?.address
   const { toast } = useToast()
   const { rules, logs, loading, refresh, setRuleStatus, lastRunByRule, seenLogIds, setSeenLogIds } = useAgentData(address)
   // Cache resolved coin symbols for target IDs
   const [symbolById, setSymbolById] = useState<Record<string, string>>({})
-  // Agent wallet state
-  const [agentWalletBalance, setAgentWalletBalance] = useState<number>(0)
+  // Agent wallet state - full data structure
+  const [agentWalletData, setAgentWalletData] = useState<{
+    agentAddress: string
+    isNew: boolean
+    accountInfo: {
+      address: string
+      algoBalance: number
+      minBalance: number
+      availableBalance: number
+      assets: Array<{
+        assetId: number
+        symbol: string
+        balance: string
+        decimals: number
+      }>
+      totalAssets: number
+    }
+    network: string
+  } | null>(null)
+  const [agentWalletLoading, setAgentWalletLoading] = useState(false)
   const [rechargeAmount, setRechargeAmount] = useState<string>("")
   const [rechargeDialogOpen, setRechargeDialogOpen] = useState(false)
   const [rechargingWallet, setRechargingWallet] = useState(false)
@@ -102,6 +122,33 @@ export default function PortfolioPage() {
       return next
     })
   }, [address, logs, seenLogIds, toast, setSeenLogIds])
+
+  // Fetch complete agent wallet data
+  useEffect(() => {
+    if (!address) return
+    
+    async function fetchAgentWallet() {
+      setAgentWalletLoading(true)
+      try {
+        const res = await fetch(`/api/agent/wallet?userAddress=${address}`)
+        const data = await res.json()
+        if (data.success) {
+          setAgentWalletData({
+            agentAddress: data.agentAddress,
+            isNew: data.isNew,
+            accountInfo: data.accountInfo,
+            network: data.network
+          })
+        }
+      } catch (error) {
+        console.error('Failed to fetch agent wallet:', error)
+      } finally {
+        setAgentWalletLoading(false)
+      }
+    }
+    
+    fetchAgentWallet()
+  }, [address])
 
   function nextCheck(rule: Rule) {
     const last = lastRunByRule.get(rule.id)
@@ -362,12 +409,12 @@ export default function PortfolioPage() {
                       <div className="rounded-lg bg-muted p-3 space-y-1">
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Current Balance:</span>
-                          <span className="font-semibold">{agentWalletBalance.toFixed(2)} ALGO</span>
+                          <span className="font-semibold">{agentWalletData?.accountInfo?.algoBalance?.toFixed(2) || '0.00'} ALGO</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">After Recharge:</span>
                           <span className="font-semibold text-red-500">
-                            {(agentWalletBalance + (parseFloat(rechargeAmount) || 0)).toFixed(2)} ALGO
+                            {((agentWalletData?.accountInfo?.algoBalance || 0) + (parseFloat(rechargeAmount) || 0)).toFixed(2)} ALGO
                           </span>
                         </div>
                       </div>
@@ -383,14 +430,101 @@ export default function PortfolioPage() {
                         <Button
                           className="flex-1 bg-red-500 hover:bg-red-600 text-white"
                           onClick={async () => {
+                            if (!address) {
+                              toast({
+                                title: "Wallet Not Connected",
+                                description: "Please connect your wallet first",
+                                variant: "destructive"
+                              })
+                              return
+                            }
+
+                            const amount = parseFloat(rechargeAmount)
+                            if (!amount || amount <= 0) {
+                              toast({
+                                title: "Invalid Amount",
+                                description: "Please enter a valid amount",
+                                variant: "destructive"
+                              })
+                              return
+                            }
+
                             setRechargingWallet(true)
-                            // TODO: Implement actual recharge logic
-                            await new Promise(resolve => setTimeout(resolve, 1500))
-                            setAgentWalletBalance(prev => prev + (parseFloat(rechargeAmount) || 0))
-                            toast({ title: "Wallet Recharged", description: `Added ${rechargeAmount} ALGO to agent wallet` })
-                            setRechargeAmount("")
-                            setRechargeDialogOpen(false)
-                            setRechargingWallet(false)
+                            try {
+                              // Get agent wallet address from backend
+                              const res = await fetch('/api/agent/wallet/recharge', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ userAddress: address, amount })
+                              })
+                              const data = await res.json()
+                              
+                              if (!data.success || !data.data?.agentAddress) {
+                                throw new Error(data.message || 'Failed to get agent wallet address')
+                              }
+
+                              const agentAddress = data.data.agentAddress || agentWalletData?.agentAddress
+                              const microAlgos = Math.floor(amount * 1_000_000)
+
+                              // Get suggested params from algod
+                              const algodClient = new algosdk.Algodv2(
+                                '',
+                                'https://testnet-api.algonode.cloud',
+                                ''
+                              )
+                              const suggestedParams = await algodClient.getTransactionParams().do()
+
+                              // Build payment transaction
+                              const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+                                sender: address,
+                                receiver: agentAddress,
+                                amount: microAlgos,
+                                note: new Uint8Array(Buffer.from('Agent Wallet Recharge')),
+                                suggestedParams
+                              })
+
+                              // Sign transaction with connected wallet
+                              const signedTxns = await signTransactions([txn])
+                              
+                              if (!signedTxns || signedTxns.length === 0) {
+                                throw new Error('Transaction signing cancelled')
+                              }
+
+                              // Submit to network
+                              const result = await algodClient.sendRawTransaction(signedTxns[0] as Uint8Array).do()
+                              const txId = result.txid
+                              
+                              // Wait for confirmation
+                              await algosdk.waitForConfirmation(algodClient, txId, 4)
+
+                              // Refresh complete agent wallet data
+                              const balanceRes = await fetch(`/api/agent/wallet?userAddress=${address}`)
+                              const balanceData = await balanceRes.json()
+                              if (balanceData.success) {
+                                setAgentWalletData({
+                                  agentAddress: balanceData.agentAddress,
+                                  isNew: balanceData.isNew,
+                                  accountInfo: balanceData.accountInfo,
+                                  network: balanceData.network
+                                })
+                              }
+
+                              setRechargeDialogOpen(false)
+                              setRechargeAmount("")
+                              toast({
+                                title: "Wallet Recharged Successfully",
+                                description: `Added ${amount} ALGO to your agent wallet. Tx: ${txId.substring(0, 10)}...`,
+                              })
+                            } catch (error) {
+                              console.error('Recharge failed:', error)
+                              toast({
+                                title: "Recharge Failed",
+                                description: error instanceof Error ? error.message : 'Failed to recharge wallet',
+                                variant: "destructive"
+                              })
+                            } finally {
+                              setRechargingWallet(false)
+                            }
                           }}
                           disabled={!rechargeAmount || parseFloat(rechargeAmount) <= 0 || rechargingWallet}
                         >
@@ -414,23 +548,99 @@ export default function PortfolioPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {/* Balance Display */}
-                <div className="rounded-lg bg-card/50 p-4 border border-border/50">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">Available Balance</p>
-                      <p className="text-3xl font-bold text-red-500">
-                        {agentWalletBalance.toFixed(2)} ALGO
-                      </p>
-                    </div>
-                    <div className="h-16 w-16 rounded-full bg-red-500/20 flex items-center justify-center">
-                      <DollarSign className="h-8 w-8 text-red-500" />
+                {/* Agent Wallet Address */}
+                {agentWalletData?.agentAddress && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground">Agent Wallet Address</label>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 rounded-md bg-muted px-3 py-2 text-xs font-mono break-all">
+                        {agentWalletData.agentAddress}
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(agentWalletData.agentAddress)
+                          toast({ title: "Address copied" })
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                      </Button>
                     </div>
                   </div>
+                )}
+
+                {/* Balance Display */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-lg bg-card/50 p-4 border border-border/50">
+                    <p className="text-xs text-muted-foreground mb-1">Total Balance</p>
+                    <p className="text-2xl font-bold text-red-500">
+                      {agentWalletData?.accountInfo?.algoBalance?.toFixed(6) || '0.000000'} ALGO
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-card/50 p-4 border border-border/50">
+                    <p className="text-xs text-muted-foreground mb-1">Available Balance</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {agentWalletData?.accountInfo?.availableBalance?.toFixed(6) || '0.000000'} ALGO
+                    </p>
+                  </div>
                 </div>
+
+                {/* Min Balance Info */}
+                {agentWalletData?.accountInfo && (
+                  <div className="text-xs text-muted-foreground">
+                    Minimum balance reserved: {agentWalletData.accountInfo.minBalance.toFixed(6)} ALGO
+                  </div>
+                )}
+
+                {/* Low Balance Warning */}
+                {agentWalletData?.accountInfo && agentWalletData.accountInfo.algoBalance < 0.3 && (
+                  <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 p-3">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
+                          Low ALGO Balance
+                        </p>
+                        <p className="text-xs text-yellow-800 dark:text-yellow-200 mt-1">
+                          {agentWalletData.accountInfo.algoBalance === 0
+                            ? "Your agent wallet needs ALGO to opt-in to assets and pay transaction fees. Please recharge with at least 0.5 ALGO."
+                            : "Your agent wallet is low on ALGO. Recharge to ensure smooth trading and asset opt-ins."}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Asset Holdings */}
+                {agentWalletData?.accountInfo?.assets && agentWalletData.accountInfo.assets.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Asset Holdings ({agentWalletData.accountInfo.totalAssets})
+                    </label>
+                    <div className="space-y-2">
+                      {agentWalletData.accountInfo.assets.map((asset) => (
+                        <div
+                          key={asset.assetId}
+                          className="flex items-center justify-between rounded-md border p-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Badge variant="secondary">{asset.symbol}</Badge>
+                            <span className="text-xs text-muted-foreground">
+                              ID: {asset.assetId}
+                            </span>
+                          </div>
+                          <span className="text-sm font-medium">
+                            {parseFloat(asset.balance).toFixed(asset.decimals)} {asset.symbol}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 
                 {/* Quick Stats */}
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-3 pt-2">
                   <div className="rounded-lg bg-card/50 p-3 border border-border/50 text-center">
                     <p className="text-xs text-muted-foreground mb-1">Total Spent</p>
                     <p className="text-lg font-semibold">0.00</p>
