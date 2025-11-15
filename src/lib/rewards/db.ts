@@ -133,15 +133,19 @@ export function resetDailyQuests(userId: string): void {
   const database = getDB()
   
   // Reset daily quests that were claimed more than 24 hours ago
-  database.prepare(`
+  const result = database.prepare(`
     UPDATE quest_progress 
-    SET status = 'active', progress = 0, completed_at = NULL
+    SET status = 'active', progress = 0, completed_at = NULL, claimed_at = NULL
     WHERE user_id = ? 
     AND quest_id IN (SELECT id FROM (SELECT ? as id) WHERE id IN ('daily_login'))
     AND status = 'claimed'
     AND claimed_at IS NOT NULL
     AND (julianday('now') - julianday(claimed_at)) * 24 >= 24
   `).run(userId, 'daily_login')
+  
+  if (result.changes > 0) {
+    console.log(`[RESET] Reset ${result.changes} daily quests for user ${userId}`)
+  }
 }
 
 export function getUserQuestProgress(userId: string): Array<Quest & { progress: number; status: QuestStatus }> {
@@ -232,8 +236,8 @@ export function trackUserAction(userId: string, actionType: string, metadata?: R
         progressRow.progress += 1
       }
       
-      // Check if quest is completed
-      if (progressRow.progress >= quest.requirement.count && progressRow.status !== 'completed') {
+      // Check if quest is completed - only if status is 'active'
+      if (progressRow.status === 'active' && progressRow.progress >= quest.requirement.count) {
         database.prepare(`
           UPDATE quest_progress 
           SET status = 'completed', completed_at = CURRENT_TIMESTAMP 

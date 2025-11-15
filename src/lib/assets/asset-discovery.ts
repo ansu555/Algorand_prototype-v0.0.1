@@ -55,6 +55,22 @@ export class AssetDiscoveryService {
       const assetData = new Map<number, { poolCount: number; dexSources: Set<string> }>();
       assetData.set(0, { poolCount: 0, dexSources: new Set(['native']) }); // Always include ALGO
 
+      // Add verified testnet assets by default (for pool creation)
+      if (this.network === 'testnet') {
+        const defaultTestnetAssets = [
+          31566704, // USDC testnet
+          67395862, // USDC testnet (primary)
+          10458941, // USDC testnet (secondary)
+          67396430, // USDt testnet
+          70283957, // ALGF testnet
+        ];
+        defaultTestnetAssets.forEach(assetId => {
+          if (!assetData.has(assetId)) {
+            assetData.set(assetId, { poolCount: 0, dexSources: new Set(['verified']) });
+          }
+        });
+      }
+
       // Discover assets from Tinyman pools
       const tinymanAssets = await this.discoverTinymanAssets();
       tinymanAssets.forEach(({ assetId, poolCount }) => {
@@ -255,6 +271,7 @@ export class AssetDiscoveryService {
     // Known verified testnet assets
     const verifiedTestnetAssets = [
       0, // ALGO
+      31566704, // USDC testnet (default in UI)
       67395862, // USDC testnet (primary - has most pools)
       10458941, // USDC testnet (secondary)
       67396430, // USDt testnet
@@ -285,7 +302,9 @@ export class AssetDiscoveryService {
     const logos: Record<number, string> = {
       0: 'https://algorand-wallet-mainnet.b-cdn.net/media/asset_verification_requests_logo_png/2023/01/17/9368b001c1fe4af88eadd08476152c57.png',
       31566704: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
+      67395862: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
       10458941: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png',
+      67396430: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
       312769: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
     };
 

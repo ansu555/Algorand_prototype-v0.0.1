@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
       amount2,
       lpTokenId,
       userAddress,
+      poolId, // NEW: Pool ID for multi-pool factory (optional, will compute if not provided)
     } = body
 
     console.log('Prepare add liquidity request:', {
@@ -30,6 +31,7 @@ export async function POST(request: NextRequest) {
       amount2,
       lpTokenId,
       userAddress,
+      poolId,
     })
 
     // Validate inputs
@@ -80,6 +82,10 @@ export async function POST(request: NextRequest) {
     const poolAddress = poolClient.getPoolAddress()
     const transactions: algosdk.Transaction[] = []
 
+    // Compute or use provided pool ID
+    const computedPoolId = poolId || poolClient.computePoolId(asset1Id, asset2Id)
+    console.log('Using pool ID:', computedPoolId)
+
     // Check if user is opted into LP token
     let needsOptIn = false
     try {
@@ -104,8 +110,9 @@ export async function POST(request: NextRequest) {
       transactions.push(optInTxn)
     }
 
-    // Step 2: Add liquidity
+    // Step 2: Add liquidity (NEW: requires poolId for multi-pool factory)
     const addLiquidityTxns = await poolClient.buildAddLiquidityTxns({
+      poolId: computedPoolId, // NEW: Required for multi-pool factory
       asset1Id,
       asset2Id,
       amount1: BigInt(amount1),

@@ -52,6 +52,11 @@ export default function RewardsPage() {
       })
       const data = await res.json()
       if (data.success) {
+        // DEBUG: Log quest data received
+        const dailyLogin = data.data.find((q: any) => q.id === 'daily_login')
+        if (dailyLogin) {
+          console.log(`[UI] Loaded Daily Login Quest - Status: ${dailyLogin.status}, Progress: ${dailyLogin.progress}`)
+        }
         setQuests(data.data)
       }
     } catch (error) {
@@ -75,22 +80,34 @@ export default function RewardsPage() {
       console.log('Claim response:', data)
       
       if (data.success) {
+        // Update local state immediately
+        setQuests(prev => prev.map(q => 
+          q.id === questId ? { ...q, status: 'claimed' as QuestStatus } : q
+        ))
+        
         // Wait a bit for database to flush
-        await new Promise(resolve => setTimeout(resolve, 100))
+        await new Promise(resolve => setTimeout(resolve, 200))
         
         // Force reload with cache busting
         await Promise.all([
           loadRewards(),
           loadQuests()
         ])
-        
-        // Update local state immediately to prevent UI lag
-        setQuests(prev => prev.map(q => 
-          q.id === questId ? { ...q, status: 'claimed' as QuestStatus } : q
-        ))
       } else {
-        console.error('Claim failed:', data.error)
-        alert(data.error || 'Failed to claim reward')
+        // Only show alert and log if it's not a cooldown message (user already knows they claimed it)
+        const errorMessage = data.error || 'Failed to claim reward'
+        const isCooldownError = errorMessage.toLowerCase().includes('cooldown') || errorMessage.toLowerCase().includes('claimed')
+        
+        if (!isCooldownError) {
+          console.error('Claim failed:', errorMessage)
+          alert(errorMessage)
+        }
+        
+        // Reload to sync state
+        await Promise.all([
+          loadRewards(),
+          loadQuests()
+        ])
       }
     } catch (error) {
       console.error('Failed to claim reward:', error)
@@ -135,9 +152,9 @@ export default function RewardsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Gift className="h-8 w-8 text-red-500" />
-              X Token Rewards
+            <h1 className="text-3xl font-bold flex items-center gap-3">
+              <Gift className="h-7 w-7 text-red-500" />
+              Rewards Dashboard
             </h1>
             <p className="text-muted-foreground mt-1">
               Complete quests and earn X tokens to unlock exclusive benefits
@@ -218,7 +235,7 @@ export default function RewardsPage() {
               </div>
               <div className="ml-6 text-right">
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400">+5 X</p>
-                <Badge variant="secondary" className="mt-2">Claimed Today ✓</Badge>
+                <Badge variant="secondary" className="mt-2">Claimed Today</Badge>
               </div>
             </div>
           </CardContent>
@@ -241,7 +258,9 @@ export default function RewardsPage() {
               activeQuests.map((quest) => (
                 <div key={quest.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                   <div className="flex items-center gap-4 flex-1">
-                    <div className="text-3xl">{quest.icon}</div>
+                    <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                      <Target className="h-5 w-5 text-blue-500" />
+                    </div>
                     <div className="flex-1">
                       <p className="font-semibold">{quest.title}</p>
                       <p className="text-sm text-muted-foreground">{quest.description}</p>
@@ -278,14 +297,16 @@ export default function RewardsPage() {
               {completedQuests.map((quest) => (
                 <div key={quest.id} className="flex items-center justify-between p-4 border border-green-500/20 rounded-lg bg-green-50/50 dark:bg-green-950/20">
                   <div className="flex items-center gap-4 flex-1">
-                    <div className="text-3xl">{quest.icon}</div>
+                    <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    </div>
                     <div className="flex-1">
                       <p className="font-semibold">{quest.title}</p>
                       <p className="text-sm text-muted-foreground">{quest.description}</p>
-                      <Badge variant="default" className="mt-2 bg-green-600">Completed ✓</Badge>
+                      <Badge variant="default" className="mt-2 bg-green-600">Completed</Badge>
                     </div>
                   </div>
-                  <div className="ml-4">
+                  <div className="ml-4" suppressHydrationWarning>
                     <Button 
                       onClick={() => claimReward(quest.id)}
                       disabled={claiming !== null}
@@ -313,7 +334,9 @@ export default function RewardsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {claimedQuests.slice(0, 6).map((quest) => (
                   <div key={quest.id} className="flex items-center gap-3 p-3 border rounded-lg opacity-60">
-                    <div className="text-2xl">{quest.icon}</div>
+                    <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                      <Trophy className="h-4 w-4 text-amber-500" />
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{quest.title}</p>
                       <p className="text-xs text-muted-foreground">+{quest.reward} X claimed</p>

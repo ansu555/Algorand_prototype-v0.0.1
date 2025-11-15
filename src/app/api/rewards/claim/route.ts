@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { claimQuestReward } from '@/lib/rewards/db'
+import { claimQuestReward, getDB } from '@/lib/rewards/db'
 import { PREDEFINED_QUESTS } from '@/lib/rewards/types'
 
 export async function POST(request: NextRequest) {
@@ -20,6 +20,15 @@ export async function POST(request: NextRequest) {
         : 'Quest not completed or already claimed'
       return NextResponse.json({ success: false, error: errorMessage }, { status: 400 })
     }
+    
+    // DEBUG: Check database state immediately after claim
+    const db = getDB()
+    const questStatus = db.prepare(`
+      SELECT status, claimed_at, completed_at 
+      FROM quest_progress 
+      WHERE user_id = ? AND quest_id = ?
+    `).get(userId, questId) as any
+    console.log(`[CLAIM DEBUG] After claim - Quest: ${questId}, Status: ${questStatus?.status}, Claimed At: ${questStatus?.claimed_at}`)
     
     // Add cache busting headers
     const response = NextResponse.json({
