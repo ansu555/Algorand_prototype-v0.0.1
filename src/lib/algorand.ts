@@ -194,8 +194,8 @@ export async function buildAlgorandAgent() {
             network,
             confirmedRound,
             explorerUrl: network === 'mainnet'
-              ? `https://algoexplorer.io/tx/${txId}`
-              : `https://testnet.algoexplorer.io/tx/${txId}`
+              ? `https://lora.algokit.io/mainnet/transaction/${txId}`
+              : `https://lora.algokit.io/testnet/transaction/${txId}`
           }
         }
       } catch (e: any) {
@@ -366,7 +366,7 @@ export async function buildAlgorandAgent() {
             fee: result.fee,
             network,
             realTransaction: true,
-            explorerUrl: `https://${network === 'mainnet' ? '' : 'testnet.'}algoexplorer.io/tx/${txId}`
+            explorerUrl: `https://lora.algokit.io/${network === 'mainnet' ? 'mainnet' : 'testnet'}/transaction/${txId}`
           }
         }
       } catch (e: any) {

@@ -134,6 +134,38 @@ export const tursoDriver = {
     const { rows } = await client.execute({ sql, args })
     return rows.map((r: any) => ({ id: r.id, ownerAddress: r.ownerAddress, ruleId: r.ruleId ?? undefined, action: r.action, details: parseObj(r.details), status: r.status, createdAt: r.createdAt }))
   },
+  async deleteBadExecuteLogs(): Promise<number> {
+    const client = await getClient()
+    try {
+      const res = await client.execute({
+        // Remove execute_rule logs with undefined or missing linkage/details
+        sql: `DELETE FROM logs 
+              WHERE UPPER(action) = 'EXECUTE_RULE' 
+                AND (
+                  ruleId IS NULL OR TRIM(COALESCE(ruleId, '')) = ''
+                  OR details IS NULL OR details = 'null'
+                  OR (
+                    json_extract(details, '$.plan') IS NULL 
+                    AND json_extract(details, '$.swap') IS NULL 
+                    AND json_extract(details, '$.txHash') IS NULL
+                  )
+                  OR (
+                    json_extract(details, '$.plan') IS NOT NULL AND (
+                      json_extract(details, '$.plan.assetId') IS NULL OR 
+                      json_extract(details, '$.plan.totalSpendAmount') IS NULL
+                    )
+                  )
+                  OR details LIKE '%undefined%'
+                )`,
+        args: []
+      })
+      const affected = (res as any).rowsAffected || (res as any).changes || (res as any).affectedRows || 0
+      return affected
+    } catch (e) {
+      console.error('Turso cleanup deleteBadExecuteLogs error:', e)
+      return 0
+    }
+  },
   async updateRule(id: string, changes: Partial<Rule>): Promise<Rule | null> {
     const existing = await tursoDriver.getRuleById(id)
     if (!existing) return null
