@@ -21,6 +21,8 @@ export async function GET(request: Request) {
       'POLLER_CHECKED',
       'POLLER_TRIGGER_FAILED',
       'RULE_CREATED',
+      'RULE_UPDATED',
+      'UPDATE_RULE',
       'RULE_DELETED',
       'EXECUTION_FAILED'
     ]
@@ -34,6 +36,10 @@ export async function GET(request: Request) {
       if (action === 'EXECUTE_RULE') {
         const status = (log.status || '').toLowerCase()
         if (status !== 'success') return false
+        const d = log.details || {}
+        // Require a valid plan payload to avoid undefined fields in UI
+        const plan = d.plan
+        if (!plan || plan.assetId == null || plan.totalSpendAmount == null) return false
       }
 
       return true

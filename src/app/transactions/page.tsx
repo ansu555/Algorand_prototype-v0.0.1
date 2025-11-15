@@ -211,6 +211,13 @@ export default function TransactionsPage() {
   const filteredTransactions = useMemo(() => {
     let filtered = transactions
 
+    // Filter out system/rule management events
+    const excludedActions = ['rule_updated', 'update_rule', 'rule_created', 'rule_deleted', 'poller_checked', 'poller_trigger_failed']
+    filtered = filtered.filter(tx => {
+      const action = (tx.action || '').toLowerCase()
+      return !excludedActions.includes(action)
+    })
+
     // Filter by type
     if (typeFilter !== 'all') {
       filtered = filtered.filter(tx => (tx.action || '').toLowerCase() === typeFilter)
@@ -334,9 +341,9 @@ export default function TransactionsPage() {
                       {/* Stats Grid */}
                       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                         <div className="space-y-0.5">
-                          <p className="text-xs text-muted-foreground">Total Volume</p>
+                          <p className="text-xs text-muted-foreground">Total Volume </p>
                           <p className="text-xl font-bold font-mono">{analytics.totalVolumeALGO.toFixed(2)} ALGO</p>
-                          <p className="text-[10px] text-muted-foreground">≈ ${(analytics.totalVolumeALGO * (prices.ALGO || 0)).toFixed(2)} USD</p>
+                          <p className="text-[10px] text-muted-foreground">≈ ${(analytics.totalVolumeALGO * (prices.ALGO || 0)).toFixed(2)} USD </p>
                         </div>
                         <div className="space-y-0.5">
                           <p className="text-xs text-muted-foreground">Total Transactions</p>
@@ -351,7 +358,7 @@ export default function TransactionsPage() {
                         <div className="space-y-0.5">
                           <p className="text-xs text-muted-foreground">Avg Transaction</p>
                           <p className="text-xl font-bold font-mono">{analytics.avgTransactionSize.toFixed(2)} ALGO</p>
-                          <p className="text-[10px] text-muted-foreground">Per transaction</p>
+                          <p className="text-[10px] text-muted-foreground">Per transaction </p>
                         </div>
                       </div>
 
