@@ -1,4 +1,4 @@
-# WaveBreak Launchpad - What We Built 🎯
+# Token Launchpad - What We Built 🎯
 
 ## 🎉 Summary: Critical 40% Complete!
 
