@@ -143,7 +143,6 @@ export function Header() {
   const navItems = [
     { name: "Home", href: "/" },
     { name: "Trade", href: "/trade" },
-    { name: "Fractionalize", href: "/fractionalize" },
     { name: "Stake", href: "/stake" },
     { name: "Launchpad", href: "/launchpad" },
     { name: "Portfolio", href: "/portfolio" },

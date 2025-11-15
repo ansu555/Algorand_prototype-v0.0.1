@@ -16,6 +16,8 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
+import { purchaseTokens } from "@/lib/launchpad/algorand"
+import algosdk from "algosdk"
 
 interface Project {
   id: string
@@ -139,7 +141,7 @@ export default function ProjectDetailPage() {
     
     setPurchasing(true)
     try {
-      // First validate
+      // Step 1: Validate purchase
       const validateRes = await fetch('/api/launchpad/purchase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -159,11 +161,79 @@ export default function ProjectDetailPage() {
         return
       }
       
-      // TODO: Sign and submit Algorand transaction
-      // This will be implemented when smart contracts are ready
-      alert('Smart contract integration coming soon! Transaction would be signed here.')
+      // Step 2: Check if project has app_id (bonding curve contract)
+      if (!project.launchRound || project.launchRound === 0) {
+        alert('This project has not been launched on-chain yet. Using mock transaction.')
+        
+        // Fallback to mock transaction
+        const recordRes = await fetch('/api/launchpad/purchase', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'record',
+            projectId: project.id,
+            userAddress: activeAccount.address,
+            tokenAmount: buyAmount,
+            algoAmount: priceQuote.algoAmount,
+            txHash: 'MOCK_TX_' + Date.now(),
+            blockNumber: 12345,
+          })
+        })
+        
+        const recordData = await recordRes.json()
+        
+        if (recordData.success) {
+          alert(`Purchase successful! Earned ${priceQuote.pointsEarned} points!`)
+          setBuyAmount("")
+          loadProject()
+          loadUserPoints()
+        }
+        
+        return
+      }
       
-      // Record purchase after successful transaction
+      // Step 3: Execute real TestNet transaction
+      console.log('🔗 Connecting to TestNet for purchase...')
+      
+      // Get app_id from project (this would come from your DB)
+      // For now, using a placeholder - you'd fetch this from the project
+      const appId = project.launchRound // Temporarily using launchRound as appId placeholder
+      const asaId = 0 // Would come from project.asa_id
+      
+      // Transaction signer using TxnLab wallet
+      const signer = async (txns: Uint8Array[]) => {
+        console.log('📝 Signing', txns.length, 'transactions...')
+        
+        // Convert to algosdk transactions for signing
+        const txnObjects = txns.map(txn => algosdk.decodeUnsignedTransaction(txn))
+        
+        // Sign with wallet (TxnLab provides signTransactions method)
+        const signedTxns = await (window as any).algorand?.signTransactions?.(
+          txnObjects.map(txn => ({ txn: Buffer.from(txn.toByte()).toString('base64') }))
+        )
+        
+        if (!signedTxns) {
+          throw new Error('Transaction signing cancelled')
+        }
+        
+        return signedTxns.map((signed: any) => 
+          new Uint8Array(Buffer.from(signed, 'base64'))
+        )
+      }
+      
+      // Execute purchase transaction on TestNet
+      const txId = await purchaseTokens(
+        activeAccount.address,
+        appId,
+        asaId,
+        Number(buyAmount),
+        Number(priceQuote.algoAmount),
+        signer
+      )
+      
+      console.log('✅ Transaction confirmed:', txId)
+      
+      // Step 4: Record purchase in database
       const recordRes = await fetch('/api/launchpad/purchase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -173,22 +243,22 @@ export default function ProjectDetailPage() {
           userAddress: activeAccount.address,
           tokenAmount: buyAmount,
           algoAmount: priceQuote.algoAmount,
-          txHash: 'MOCK_TX_HASH', // Will be real tx hash from blockchain
-          blockNumber: 12345, // Will be real block number
+          txHash: txId,
+          blockNumber: 0, // Would get from transaction confirmation
         })
       })
       
       const recordData = await recordRes.json()
       
       if (recordData.success) {
-        alert(`Purchase successful! Earned ${priceQuote.pointsEarned} points!`)
+        alert(`🎉 Purchase successful!\n\n✅ Earned ${priceQuote.pointsEarned} points!\n🔗 View on TestNet: https://testnet.algoexplorer.io/tx/${txId}`)
         setBuyAmount("")
         loadProject()
         loadUserPoints()
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Purchase failed:', error)
-      alert('Purchase failed. Please try again.')
+      alert(`❌ Purchase failed: ${error.message || 'Unknown error'}`)
     } finally {
       setPurchasing(false)
     }
