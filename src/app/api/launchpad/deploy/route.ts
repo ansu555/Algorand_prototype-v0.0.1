@@ -78,10 +78,9 @@ export async function POST(req: NextRequest) {
     const freeze = account.addr
     const clawback = account.addr
 
-    const txn = algosdk.makeAssetCreateTxnWithSuggestedParams(
-      account.addr,
-      undefined,
-      totalSupply,
+    const txn = algosdk.makeAssetCreateTxnWithSuggestedParamsFromObject({
+      from: account.addr,
+      total: totalSupply,
       decimals,
       defaultFrozen,
       manager,
@@ -90,10 +89,9 @@ export async function POST(req: NextRequest) {
       clawback,
       unitName,
       assetName,
-      assetURL,
-      undefined,
+      url: assetURL,
       suggestedParams
-    )
+    })
 
     // Sign transaction
     const signedTxn = txn.signTxn(account.sk)

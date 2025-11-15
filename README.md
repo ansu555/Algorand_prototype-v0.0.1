@@ -21,8 +21,9 @@
 
 - **🤖 AI-Powered Chat Agent**: Natural language interface for blockchain operations
 - **🔐 Per-User Agent Wallets**: Dedicated Algorand wallet for each user with encrypted storage
-- **� Algorand Blockchain**: Fast, secure, and carbon-neutral blockchain integration
+- **🌿 Algorand Blockchain**: Fast, secure, and carbon-neutral blockchain integration
 - **💱 DEX Integration**: Swap tokens via Tinyman and Pact on Algorand
+- **🚀 Token Launchpad**: Create and deploy custom tokens on Algorand with logo upload
 - **👛 Multi-Wallet Support**: Pera, Defly, MyAlgo wallet connections
 - **📊 Real-Time Market Data**: Live cryptocurrency prices and analytics
 - **🔄 Automated Trading Rules**: DCA, Rebalance, and Rotation strategies
@@ -87,7 +88,7 @@ Algorand_prototype-v0.0.1/
 
 ### 📚 Documentation
 
-**Core Documentation** (8 canonical guides):
+**Core Documentation** (9 canonical guides):
 
 - **[🏗️ System Overview](./docs/SYSTEM_OVERVIEW.md)** - Architecture, components, and data flows
 - **[👨‍💻 Developer Guide](./docs/DEVELOPER_GUIDE.md)** - Setup, installation, testing, and troubleshooting
@@ -97,6 +98,7 @@ Algorand_prototype-v0.0.1/
 - **[⚙️ Backend & Agent Spec](./docs/BACKEND_AND_AGENT_SPEC.md)** - API endpoints and database schema
 - **[🧠 AI Agent & MCP/NCP](./docs/AI_AGENT_AND_MCP_NCP_SPEC.md)** - AI capabilities and analytics engine
 - **[🔐 Agent Wallet System](./docs/AGENT_WALLET_SYSTEM.md)** - Per-user agent wallets and automated trading
+- **[🚀 Token Launchpad](./docs/TOKEN_LAUNCHPAD.md)** - Create and deploy tokens on 10xSwap DEX
 
 ### Key Architectural Decisions
 
