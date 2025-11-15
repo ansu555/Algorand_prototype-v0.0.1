@@ -7,11 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { formatTrigger, type Rule, describeRule } from "@/lib/shared/rules"
 import { forceRunPoller, useAgentData } from "@/features/agent/hooks/useAgentData"
 import { deleteRule as apiDeleteRule, createRule } from "@/features/agent/api/client"
-import { ChevronDown, ChevronUp, Play, Trash2, Eye, RefreshCw, Zap, Activity, Clock, Target, TrendingUp, AlertCircle, CheckCircle2, XCircle, Pause, DollarSign, TrendingDown, BarChart3, Lock } from "lucide-react"
+import { ChevronDown, ChevronUp, Play, Trash2, Eye, RefreshCw, Zap, Activity, Clock, Target, TrendingUp, AlertCircle, CheckCircle2, XCircle, Pause, DollarSign, TrendingDown, BarChart3, Lock, Wallet, Plus } from "lucide-react"
 import { useWalletConnection } from '@/components/providers/txnlab-wallet-provider'
 import RuleBuilderModal from "@/components/features/rules/rule-builder-modal"
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
@@ -23,6 +25,11 @@ export default function PortfolioPage() {
   const { rules, logs, loading, refresh, setRuleStatus, lastRunByRule, seenLogIds, setSeenLogIds } = useAgentData(address)
   // Cache resolved coin symbols for target IDs
   const [symbolById, setSymbolById] = useState<Record<string, string>>({})
+  // Agent wallet state
+  const [agentWalletBalance, setAgentWalletBalance] = useState<number>(0)
+  const [rechargeAmount, setRechargeAmount] = useState<string>("")
+  const [rechargeDialogOpen, setRechargeDialogOpen] = useState(false)
+  const [rechargingWallet, setRechargingWallet] = useState(false)
 
   useEffect(() => {
     if (!rules.length) return
@@ -307,6 +314,142 @@ export default function PortfolioPage() {
             </Button>
           </div>
         </div>
+
+        {/* Agent Wallet Section */}
+        {address && (
+          <Card className="shadow-xl border-border/50">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center">
+                    <Wallet className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Agent Wallet</CardTitle>
+                    <p className="text-xs text-muted-foreground">Automated trading balance</p>
+                  </div>
+                </div>
+                <Dialog open={rechargeDialogOpen} onOpenChange={setRechargeDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      className="gap-2 bg-red-500 hover:bg-red-600 text-white shadow-lg"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Recharge
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <Wallet className="h-5 w-5 text-red-500" />
+                        Recharge Agent Wallet
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="recharge-amount">Amount (ALGO)</Label>
+                        <Input
+                          id="recharge-amount"
+                          type="number"
+                          placeholder="Enter amount"
+                          value={rechargeAmount}
+                          onChange={(e) => setRechargeAmount(e.target.value)}
+                          min="0"
+                          step="0.1"
+                        />
+                      </div>
+                      <div className="rounded-lg bg-muted p-3 space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Current Balance:</span>
+                          <span className="font-semibold">{agentWalletBalance.toFixed(2)} ALGO</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">After Recharge:</span>
+                          <span className="font-semibold text-red-500">
+                            {(agentWalletBalance + (parseFloat(rechargeAmount) || 0)).toFixed(2)} ALGO
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => setRechargeDialogOpen(false)}
+                          disabled={rechargingWallet}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+                          onClick={async () => {
+                            setRechargingWallet(true)
+                            // TODO: Implement actual recharge logic
+                            await new Promise(resolve => setTimeout(resolve, 1500))
+                            setAgentWalletBalance(prev => prev + (parseFloat(rechargeAmount) || 0))
+                            toast({ title: "Wallet Recharged", description: `Added ${rechargeAmount} ALGO to agent wallet` })
+                            setRechargeAmount("")
+                            setRechargeDialogOpen(false)
+                            setRechargingWallet(false)
+                          }}
+                          disabled={!rechargeAmount || parseFloat(rechargeAmount) <= 0 || rechargingWallet}
+                        >
+                          {rechargingWallet ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Recharging...
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Confirm Recharge
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Balance Display */}
+                <div className="rounded-lg bg-card/50 p-4 border border-border/50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Available Balance</p>
+                      <p className="text-3xl font-bold text-red-500">
+                        {agentWalletBalance.toFixed(2)} ALGO
+                      </p>
+                    </div>
+                    <div className="h-16 w-16 rounded-full bg-red-500/20 flex items-center justify-center">
+                      <DollarSign className="h-8 w-8 text-red-500" />
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Quick Stats */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="rounded-lg bg-card/50 p-3 border border-border/50 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Total Spent</p>
+                    <p className="text-lg font-semibold">0.00</p>
+                  </div>
+                  <div className="rounded-lg bg-card/50 p-3 border border-border/50 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Trades</p>
+                    <p className="text-lg font-semibold">{successfulExecutions}</p>
+                  </div>
+                  <div className="rounded-lg bg-card/50 p-3 border border-border/50 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Success Rate</p>
+                    <p className="text-lg font-semibold">
+                      {logs.length > 0 ? ((successfulExecutions / logs.length) * 100).toFixed(0) : 0}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
