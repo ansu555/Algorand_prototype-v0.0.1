@@ -170,6 +170,7 @@ export default function CreatePoolPage() {
           signedTxns: signedTxnsBase64,
           ownerAddress: activeAccount.address,
           poolMetadata: {
+            poolId: prepareData.poolId, // NEW: Include pool ID from multi-pool factory
             asset1Id: token0Id,
             asset2Id: token1Id,
             amount1: amount1BaseUnits.toString(),
