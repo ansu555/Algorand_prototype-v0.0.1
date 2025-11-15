@@ -98,7 +98,15 @@ Next.js 15 App Router with route groups and API routes.
 ├── cryptocurrencies/         # Crypto market data
 │   ├── page.tsx              # Crypto list
 │   └── [id]/                 # Crypto detail page
-├── stake/                    # Staking page
+├── launchpad/                # WaveBreak Token Launchpad
+│   ├── page.tsx              # Browse all launches
+│   ├── create/               # Create new token launch
+│   │   └── page.tsx          # Launch creation form
+│   └── [projectId]/          # Project detail & buy interface
+│       └── page.tsx          # Project details, bonding curve, purchase
+├── rewards/                  # X Token Rewards System
+│   └── page.tsx              # Quest dashboard, streaks, badges, leaderboard
+├── stake/                    # Staking page (coming soon)
 ├── trade/                    # Trading page
 └── transactions/             # Transaction history
 ```
@@ -117,6 +125,17 @@ api/
 ├── assets/                   # Asset discovery & info
 ├── coingecko/                # CoinGecko API proxy
 ├── db/                       # Database operations
+├── launchpad/                # WaveBreak Token Launchpad API
+│   ├── projects/             # Project CRUD operations
+│   │   └── route.ts          # GET (list), POST (create)
+│   ├── purchase/             # Token purchase flow
+│   │   └── route.ts          # POST (quote, validate, record)
+│   ├── user/                 # User data endpoints
+│   │   └── route.ts          # GET (points, purchase history)
+│   ├── deploy/               # Smart contract deployment
+│   ├── tokens/               # Token management
+│   ├── watchlist/            # User watchlist
+│   └── upload/               # Logo/image upload
 ├── logs/                     # Execution logs
 ├── mcp/                      # Management Control Protocol
 ├── poller/                   # Background poller
@@ -127,6 +146,14 @@ api/
 │   ├── market-data/          # Pool TVL, volume, APR
 │   └── transactions/         # Pool transaction history
 ├── price/                    # Token price queries
+├── rewards/                  # X Token Rewards System API
+│   ├── route.ts              # GET user rewards data
+│   ├── quests/               # Quest management
+│   │   └── route.ts          # GET quest list & progress
+│   ├── track/                # Action tracking
+│   │   └── route.ts          # POST track user actions
+│   └── claim/                # Claim rewards
+│       └── route.ts          # POST claim quest rewards
 ├── router/                   # Multi-DEX routing
 ├── rules/                    # Autopilot rules CRUD
 ├── swap/                     # Swap preparation & execution
@@ -341,6 +368,74 @@ dex/
 - Clients implement: `fetchPools()`, `getQuote()`, `buildSwapTxn()`
 - `MultiDexAggregator` combines all clients for best route selection
 
+#### `lib/launchpad/` - WaveBreak Token Launchpad
+
+Bonding curve token launch system:
+
+```
+launchpad/
+├── algorand.ts               # Bonding curve smart contract interactions
+├── db.ts                     # Database operations (projects, purchases, points)
+├── schema.sql                # Database schema (8 tables)
+├── sdk.ts                    # Launchpad SDK (quotes, validation, graduation)
+├── types.ts                  # TypeScript types & interfaces
+└── contracts/                # Contract ABIs & deployment scripts
+    └── bonding-curve.py      # PyTeal bonding curve contract (future)
+```
+
+**Key Functions:**
+- `calculateSigmoidPrice()` - S-curve pricing
+- `calculateLinearPrice()` - Linear pricing
+- `calculateExponentialPrice()` - Exponential pricing
+- `getPriceQuote()` - Real-time price quotes with early bonus
+- `validatePurchase()` - Anti-bot checks (cooldown, limits)
+- `recordPurchase()` - Atomic purchase recording with points
+- `checkGraduation()` - Auto-DEX deployment trigger
+
+**Database Tables:**
+- `launch_projects` - Project configuration & status
+- `token_purchases` - Purchase history
+- `launchpad_points` - User points accumulation
+- `launchpad_claims` - 30-day vesting claims
+- `launchpad_liquidity` - DEX pool tracking
+- `launchpad_antibot` - Security & rate limiting
+- `launchpad_metrics` - Analytics snapshots
+- `launchpad_whitelist` - Pre-sale access control
+
+#### `lib/rewards/` - X Token Rewards System
+
+Quest-based gamification engine:
+
+```
+rewards/
+├── db.ts                     # Database operations (quests, rewards, actions)
+├── schema.sql                # Database schema (6 tables)
+└── types.ts                  # Quest, badge, streak, leaderboard types
+```
+
+**Key Types:**
+- `Quest` - Quest definition (daily, weekly, milestone, achievement)
+- `UserRewards` - User balance, level, XP, streaks, badges
+- `RewardTransaction` - Earn/spend history
+- `Badge` - Achievement badges with bonuses
+- `Streak` - Daily login streak tracking
+- `LeaderboardEntry` - Global/category leaderboards
+
+**Database Tables:**
+- `user_rewards` - Balance, level, XP, streaks, badges
+- `reward_transactions` - Earn/spend/claim history
+- `quest_progress` - Per-user quest state tracking
+- `user_actions` - Action log for quest progress
+- `daily_streaks` - Streak tracking & multipliers
+- `leaderboard_cache` - Performance-optimized leaderboard
+
+**Quest Tracking:**
+- Auto-tracks user actions (swaps, liquidity, rules)
+- Updates quest progress in real-time
+- Awards XP and X tokens on completion
+- Applies streak multipliers (1x → 3x)
+- Unlocks badges based on achievements
+
 ---
 
 ### `src/styles/` - Global Styles
@@ -392,24 +487,29 @@ Blockchain/
 
 ## Documentation (`docs/`)
 
-8 canonical documentation guides (1,500+ pages total):
+10 canonical documentation guides (2,000+ pages total):
 
 | File | Purpose | Lines |
 |------|---------|-------|
-| `SYSTEM_OVERVIEW.md` | Architecture, components, data flows | ~800 |
+| `SYSTEM_OVERVIEW.md` | Architecture, components, data flows | ~1,400 |
 | `DEVELOPER_GUIDE.md` | Setup, installation, testing | ~1,200 |
+| `FILE_STRUCTURE.md` | Detailed codebase organization | ~667 |
 | `CONTRACTS_AND_DEPLOYMENT.md` | Smart contracts, deployment | ~900 |
 | `LIQUIDITY_POOLS.md` | Pool adapters, DEX integration | ~1,100 |
 | `AUTOPILOT_MODULE.md` | Automated trading rules | ~650 |
 | `BACKEND_AND_AGENT_SPEC.md` | API endpoints, database | ~1,600 |
 | `AI_AGENT_AND_MCP_NCP_SPEC.md` | AI agent, analytics | ~750 |
 | `AGENT_WALLET_SYSTEM.md` | Per-user agent wallets | ~200 |
+| `TOKEN_LAUNCHPAD.md` | WaveBreak launchpad guide | ~350 |
+| `LAUNCHPAD_IMPLEMENTATION.md` | Technical implementation details | ~556 |
+| `TOKEN_ECONOMICS.md` | X Token rewards & economics | ~900 |
 
 **Documentation Structure:**
 - Each doc has Table of Contents
 - Code examples with syntax highlighting
-- Diagrams for complex flows
+- Diagrams for complex flows (ASCII art)
 - Cross-references between docs
+- Last updated dates
 
 ---
 

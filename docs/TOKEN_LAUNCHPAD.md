@@ -1,8 +1,648 @@
-# Token Launchpad Feature
+# WaveBreak Token Launchpad - User Guide
+
+**A fair-launch platform using bonding curves for transparent, bot-resistant token distribution on Algorand.**
+
+**Last Updated:** 2025-11-15
+
+---
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [How It Works](#how-it-works)
+3. [Bonding Curve Mechanics](#bonding-curve-mechanics)
+4. [Anti-Bot Protection](#anti-bot-protection)
+5. [Early Buyer Rewards](#early-buyer-rewards)
+6. [User Flow](#user-flow)
+7. [API Endpoints](#api-endpoints)
+8. [Database Schema](#database-schema)
+9. [Security](#security)
+10. [Troubleshooting](#troubleshooting)
+
+---
 
 ## Overview
 
-The Token Launchpad is a comprehensive feature that allows users to create, deploy, and manage custom tokens on the Algorand blockchain through the 10xSwap DEX platform.
+**WaveBreak** is a revolutionary fair-launch platform that uses **bonding curves** to ensure transparent price discovery and bot-resistant token distribution on the Algorand blockchain.
+
+### Key Features
+
+✅ **Fair Price Discovery** - Bonding curves eliminate manipulation  
+✅ **No Private Sales** - Everyone buys at algorithmically determined prices  
+✅ **Anti-Bot Protection** - Cooldown periods, transaction limits, whale penalties  
+✅ **Early Buyer Rewards** - 3x → 1x points multiplier based on timing  
+✅ **Automated DEX Graduation** - Liquidity pools created automatically  
+✅ **30-Day Vesting** - Fair token distribution with linear unlock  
+✅ **LP Lock** - 6-month liquidity locks for anti-rug protection
+
+---
+
+## How It Works
+
+### Launch Lifecycle
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    WAVEBREAK LAUNCH LIFECYCLE                       │
+└──────────────────────┬──────────────────────────────────────────────┘
+                       │
+            1. Project Creation
+                       │
+        ┌──────────────▼─────────────┐
+        │  Creator Configures:       │
+        │  • Token details           │
+        │  • Bonding curve type      │
+        │  • Pricing (base→max)      │
+        │  • Funding target          │
+        │  • Liquidity settings      │
+        └──────────────┬─────────────┘
+                       │
+            2. Bonding Curve Phase (Active)
+                       │
+        ┌──────────────▼─────────────┐
+        │  Users Purchase Tokens:    │
+        │  • Price determined by     │
+        │    progress on curve       │
+        │  • Earn points (3x→1x)     │
+        │  • Anti-bot checks pass    │
+        │  • Contribute to target    │
+        └──────────────┬─────────────┘
+                       │
+            3. Funding Target Reached
+                       │
+        ┌──────────────▼─────────────┐
+        │  Auto-Graduation:          │
+        │  • Create DEX pool         │
+        │  • Lock 80% liquidity      │
+        │  • Enable token trading    │
+        │  • Start 30-day vesting    │
+        └──────────────┬─────────────┘
+                       │
+            4. Post-Graduation
+                       │
+        ┌──────────────▼─────────────┐
+        │  • Users claim vested      │
+        │    tokens daily            │
+        │  • Token tradable on DEX   │
+        │  • LP locked for 6 months  │
+        │  • Creator receives 20%    │
+        │    of raised ALGO          │
+        └────────────────────────────┘
+```
+
+---
+
+## Bonding Curve Mechanics
+
+### What is a Bonding Curve?
+
+A **bonding curve** is an algorithm that automatically determines token price based on supply. As more tokens are sold, the price increases along the curve.
+
+**Benefits:**
+- **Transparent Pricing**: No hidden discounts or insider deals
+- **Fair Distribution**: Early supporters benefit, but whales are discouraged
+- **Price Discovery**: Market determines fair value organically
+- **No Manipulation**: Algorithm cannot be gamed
+
+### Three Curve Types
+
+#### 1. Linear Curve (Steady Growth)
+
+```
+Price = basePrice + (maxPrice - basePrice) × progress
+
+Example:
+  Base: $0.01, Max: $0.10, Supply: 1,000,000
+
+  Progress    Price
+  ────────    ─────
+  0%          $0.01
+  25%         $0.0325
+  50%         $0.055
+  75%         $0.0775
+  100%        $0.10
+
+Best for: Community tokens, DAOs, stable projects
+```
+
+**Visual:**
+```
+$0.10 ┤                                          ●
+      │                                     ●
+      │                                 ●
+$0.05 ┤                            ●
+      │                       ●
+      │                  ●
+$0.01 ┤●            ●
+      └──────────────────────────────────────────
+      0%                                      100%
+```
+
+#### 2. Exponential Curve (Rapid Acceleration)
+
+```
+Price = basePrice × (maxPrice / basePrice) ^ progress
+
+Example:
+  Base: $0.01, Max: $0.50, Supply: 1,000,000
+
+  Progress    Price
+  ────────    ─────
+  0%          $0.01
+  25%         $0.033
+  50%         $0.105
+  75%         $0.280
+  100%        $0.50
+
+Best for: Meme coins, speculation plays, viral tokens
+```
+
+**Visual:**
+```
+$0.50 ┤                                          ●
+      │                                      ●
+      │                                   ●
+$0.25 ┤                               ●
+      │                          ●
+      │                    ●
+$0.01 ┤●●●●         ●
+      └──────────────────────────────────────────
+      0%                                      100%
+```
+
+#### 3. Sigmoid Curve (S-Shaped, Balanced)
+
+```
+Price = basePrice + (maxPrice - basePrice) × (progress²)
+
+Example:
+  Base: $0.01, Max: $0.20, Supply: 1,000,000
+
+  Progress    Price
+  ────────    ─────
+  0%          $0.01
+  25%         $0.0219
+  50%         $0.0575
+  75%         $0.1168
+  100%        $0.20
+
+Best for: Gaming tokens, balanced launches, utility tokens
+```
+
+**Visual:**
+```
+$0.20 ┤                                          ●
+      │                                      ●
+      │                                  ●
+$0.10 ┤                             ●●
+      │                        ●●
+      │                  ●●
+$0.01 ┤●●●●●●     ●
+      └──────────────────────────────────────────
+      0%                                      100%
+```
+
+---
+
+## Anti-Bot Protection
+
+WaveBreak implements **four layers** of anti-bot defenses:
+
+### 1. Cooldown Period
+
+**Mechanism:** 10-block cooldown (~33 seconds) between purchases per wallet
+
+**Purpose:** Prevents rapid bot sniping
+
+**Implementation:**
+```typescript
+const lastPurchaseRound = await getLastPurchaseRound(userAddress, projectId)
+const currentRound = await algodClient.status().do().lastRound
+const blocksSinceLastPurchase = currentRound - lastPurchaseRound
+
+if (blocksSinceLastPurchase < 10) {
+  throw new Error(`Cooldown active. Please wait ${10 - blocksSinceLastPurchase} blocks.`)
+}
+```
+
+**User Experience:** ~33 second wait between buys (legitimate users unaffected)
+
+### 2. Per-Transaction Limit
+
+**Mechanism:** Max 1% of total supply per single purchase
+
+**Purpose:** Prevents single whale buys that spike price unfairly
+
+**Implementation:**
+```typescript
+const maxPerTx = project.totalSupply * 0.01
+
+if (tokenAmount > maxPerTx) {
+  throw new Error(`Max ${formatTokens(maxPerTx)} tokens per transaction`)
+}
+```
+
+**Example:** 1,000,000 supply → max 10,000 tokens per buy
+
+### 3. Per-User Limit
+
+**Mechanism:** Max 5% of total supply per wallet address
+
+**Purpose:** Prevents single wallet dominance, encourages decentralization
+
+**Implementation:**
+```typescript
+const userTotalBought = await getUserTotalPurchased(userAddress, projectId)
+const maxPerUser = project.totalSupply * 0.05
+
+if (userTotalBought + tokenAmount > maxPerUser) {
+  throw new Error(`You can only buy up to 5% of total supply`)
+}
+```
+
+**Example:** 1,000,000 supply → max 50,000 tokens per wallet
+
+### 4. Whale Penalty
+
+**Mechanism:** Purchases >2.5% of supply flagged + reduced point multiplier
+
+**Purpose:** Economically discourages whale behavior
+
+**Implementation:**
+```typescript
+const isWhale = tokenAmount > (project.totalSupply * 0.025)
+
+if (isWhale) {
+  pointsMultiplier = 0.5  // Reduced from early buyer bonus (3x→1x)
+  flagAsWhale(userAddress, projectId)
+}
+```
+
+**Effect:** Whales can still buy, but earn fewer rewards
+
+---
+
+## Early Buyer Rewards
+
+### Points System
+
+Users earn **points** during bonding curve phase. After graduation, points convert to tokens.
+
+**Conversion:** 1 point = 1 launched token
+
+**Vesting:** 30-day linear unlock (daily claims)
+
+### Early Bonus Multiplier
+
+Points earned depend on purchase timing:
+
+```
+Multiplier = 3.0 - (progress × 2.0)
+```
+
+| Progress | Multiplier | $100 Purchase → Points | $100 Purchase → Tokens (after graduation) |
+|----------|-----------|------------------------|------------------------------------------|
+| 0-10% sold | 3x | 300 points | 300 tokens |
+| 10-25% sold | 2.5x | 250 points | 250 tokens |
+| 25-50% sold | 2x | 200 points | 200 tokens |
+| 50-75% sold | 1.5x | 150 points | 150 tokens |
+| 75-100% sold | 1x | 100 points | 100 tokens |
+
+**Visual:**
+```
+ 3x ┤●
+    │  ●●
+    │     ●●
+ 2x ┤        ●●●
+    │            ●●●
+    │                ●●●●
+ 1x ┤                     ●●●●●●●●●●●●●●●●●
+    └───────────────────────────────────────────────
+    0%                  Progress               100%
+```
+
+### Vesting Schedule
+
+After graduation:
+- Total points convert to tokens
+- Unlock linearly over 30 days
+- **Daily unlock** = totalPoints / 30
+- Users claim unlocked tokens daily via UI
+
+**Example:**
+- User earned **1,000 points** during bonding phase
+- After graduation: **1,000 tokens** vest over 30 days
+- **Day 1:** Can claim ~33.33 tokens
+- **Day 2:** Can claim ~33.33 more tokens
+- **Day 30:** All 1,000 tokens claimable
+
+---
+
+## User Flow
+
+### For Creators: Launching a Token
+
+#### Step 1: Navigate to Launchpad
+
+Visit `/launchpad` and click **"Launch Token"**
+
+#### Step 2: Configure Token
+
+Fill in token details:
+
+**Token Information:**
+- Name (e.g., "Moon Token")
+- Symbol (e.g., "MOON")
+- Decimals (default: 6)
+- Total Supply (e.g., 1,000,000)
+- Description
+- Logo upload (PNG, JPG, SVG, WebP, max 5MB)
+- Social links (website, Twitter, Telegram)
+
+**Bonding Curve Configuration:**
+- **Curve Type:** Linear / Exponential / Sigmoid
+- **Base Price:** Starting price (e.g., $0.01)
+- **Max Price:** Ending price (e.g., $0.10)
+- **Funding Target:** ALGO to raise (e.g., 10,000 ALGO)
+- **Tokens for Sale:** Tokens available in bonding phase (e.g., 800,000)
+
+**Liquidity Configuration:**
+- **DEX Platform:** Tinyman / Pact
+- **Liquidity %:** Percentage of raised ALGO for DEX pool (default: 80%)
+- **LP Lock Duration:** Lock period for liquidity (default: 6 months)
+
+#### Step 3: Create & Deploy
+
+1. Click **"Create Project"**
+2. Transaction sent to Algorand
+3. ASA (Algorand Standard Asset) created
+4. Bonding curve becomes **Active**
+5. Users can now buy tokens
+
+---
+
+### For Buyers: Purchasing Tokens
+
+#### Step 1: Browse Projects
+
+Visit `/launchpad` to see all active launches
+
+**Filters:**
+- All / Active / Graduated
+- Sort by newest / funding progress
+
+#### Step 2: View Project Details
+
+Click on a project to see:
+- Token info (name, symbol, supply)
+- Bonding curve chart
+- Current price & progress
+- Funding status (ALGO raised / target)
+- Security badges (anti-bot, LP lock)
+- Early buyer multiplier (current)
+
+#### Step 3: Get Price Quote
+
+Enter token amount to buy:
+- Live price calculation
+- Price impact shown
+- Points to earn displayed
+- Total cost in ALGO
+
+**Example Quote:**
+```
+Buy 1,000 MOON tokens
+
+Current Price: $0.045 (45% progress)
+Average Price: $0.043
+Total Cost: 43 ALGO
+Price Impact: 2.3%
+
+Points Earned: 2,150 (2.15x early bonus)
+After Graduation: 2,150 MOON tokens (30-day vesting)
+```
+
+#### Step 4: Execute Purchase
+
+1. Review quote
+2. Click **"Buy Tokens"**
+3. Wallet prompts for signature
+4. Payment transaction sent (ALGO → Project)
+5. Purchase recorded on-chain
+6. Points awarded to your account
+
+#### Step 5: Track Progress
+
+- View your points on project page
+- See total contributions
+- Monitor graduation progress
+
+#### Step 6: Claim Vested Tokens (Post-Graduation)
+
+After project graduates:
+1. Visit project page
+2. Click **"Claim Vested Tokens"**
+3. Daily unlock amount shown
+4. Tokens transferred to your wallet
+
+---
+
+## API Endpoints
+
+### Projects API
+
+#### `GET /api/launchpad/projects`
+
+List all launchpad projects
+
+**Query Parameters:**
+- `id` (optional): Get single project by ID
+- `status` (optional): Filter by status (pending/active/graduated)
+
+**Response:**
+```json
+{
+  "success": true,
+  "projects": [
+    {
+      "id": "uuid",
+      "tokenName": "Moon Token",
+      "tokenSymbol": "MOON",
+      "totalSupply": "1000000000000",
+      "curveType": "sigmoid",
+      "basePrice": "10000",
+      "maxPrice": "100000",
+      "bondingTarget": "10000000000",
+      "status": "active",
+      "tokensSold": "450000000000",
+      "algoRaised": "4500000000",
+      "participantCount": 127,
+      "liquidityPercentage": 80,
+      "lpLockDuration": "15552000",
+      "dexPlatform": "tinyman"
+    }
+  ]
+}
+```
+
+#### `POST /api/launchpad/projects`
+
+Create new token launch
+
+**Request Body:**
+```json
+{
+  "creatorAddress": "ALGO_ADDRESS",
+  "tokenName": "Moon Token",
+  "tokenSymbol": "MOON",
+  "totalSupply": "1000000000000",
+  "description": "To the moon! 🚀",
+  "curveType": "sigmoid",
+  "basePrice": "10000",
+  "maxPrice": "100000",
+  "bondingTarget": "10000000000",
+  "tokensForSale": "800000000000",
+  "liquidityPercentage": 80,
+  "lpLockDuration": "15552000",
+  "dexPlatform": "tinyman"
+}
+```
+
+---
+
+### Purchase API
+
+#### `POST /api/launchpad/purchase`
+
+Handle token purchases (three actions)
+
+**Action: `quote`** - Get price quote
+
+**Request:**
+```json
+{
+  "action": "quote",
+  "projectId": "uuid",
+  "tokenAmount": "1000000000"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "quote": {
+    "tokensAmount": "1000000000",
+    "algoAmount": "43000000",
+    "currentPrice": "45000",
+    "avgPrice": "43000",
+    "priceImpact": 2.3,
+    "earlyBonus": 2.15,
+    "pointsEarned": "2150000000"
+  }
+}
+```
+
+**Action: `validate`** - Run anti-bot checks
+
+**Request:**
+```json
+{
+  "action": "validate",
+  "projectId": "uuid",
+  "userAddress": "ALGO_ADDRESS",
+  "tokenAmount": "1000000000",
+  "algoAmount": "43000000"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Purchase validated successfully"
+}
+```
+
+**Action: `record`** - Save completed purchase
+
+**Request:**
+```json
+{
+  "action": "record",
+  "projectId": "uuid",
+  "userAddress": "ALGO_ADDRESS",
+  "tokenAmount": "1000000000",
+  "algoAmount": "43000000",
+  "txHash": "TRANSACTION_HASH",
+  "blockNumber": "12345678"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "purchase": {
+    "id": "uuid",
+    "pointsEarned": "2150000000"
+  },
+  "graduated": false
+}
+```
+
+---
+
+### User API
+
+#### `GET /api/launchpad/user`
+
+Get user data
+
+**Action: `points`** - Get user points for project
+
+**Query:**
+```
+/api/launchpad/user?action=points&projectId=uuid&userAddress=ALGO_ADDRESS
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "points": {
+    "totalPoints": "5000000000",
+    "claimablePoints": "2500000000",
+    "claimedPoints": "2500000000"
+  }
+}
+```
+
+**Action: `purchases`** - Get purchase history
+
+**Query:**
+```
+/api/launchpad/user?action=purchases&projectId=uuid&userAddress=ALGO_ADDRESS
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "purchases": [
+    {
+      "id": "uuid",
+      "tokensAmount": "1000000000",
+      "algoPaid": "43000000",
+      "pricePerToken": "43000",
+      "pointsEarned": "2150000000",
+      "timestamp": "2025-11-15T12:00:00Z"
+    }
+  ]
+}
+```
+
+---
 
 ## Features
 
