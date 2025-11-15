@@ -189,25 +189,28 @@ export function getUserQuestProgress(userId: string): Array<Quest & { progress: 
 export function trackUserAction(userId: string, actionType: string, metadata?: Record<string, any>): void {
   const database = getDB()
   
-  database.transaction(() => {
-    // Special handling for login action - only track once per day
-    if (actionType === 'login') {
-      const today = new Date().toISOString().split('T')[0]
-      const lastLogin = database.prepare(`
-        SELECT timestamp FROM user_actions 
-        WHERE user_id = ? AND action_type = 'login' 
-        ORDER BY timestamp DESC LIMIT 1
-      `).get(userId) as any
-      
-      if (lastLogin) {
-        const lastLoginDate = new Date(lastLogin.timestamp).toISOString().split('T')[0]
-        if (lastLoginDate === today) {
-          // Already logged in today, skip tracking
-          return
-        }
+  // Update daily streak BEFORE the transaction if it's a login action
+  let shouldUpdateStreak = false
+  if (actionType === 'login') {
+    const today = new Date().toISOString().split('T')[0]
+    const lastLogin = database.prepare(`
+      SELECT timestamp FROM user_actions 
+      WHERE user_id = ? AND action_type = 'login' 
+      ORDER BY timestamp DESC LIMIT 1
+    `).get(userId) as any
+    
+    if (lastLogin) {
+      const lastLoginDate = new Date(lastLogin.timestamp).toISOString().split('T')[0]
+      if (lastLoginDate === today) {
+        // Already logged in today, skip everything
+        return
       }
     }
     
+    shouldUpdateStreak = true
+  }
+  
+  database.transaction(() => {
     // Log the action
     database.prepare(`
       INSERT INTO user_actions (user_id, action_type, metadata)
@@ -225,18 +228,35 @@ export function trackUserAction(userId: string, actionType: string, metadata?: R
       
       if (!progressRow) {
         database.prepare(`
-          INSERT INTO quest_progress (user_id, quest_id, progress)
-          VALUES (?, ?, 1)
+          INSERT INTO quest_progress (user_id, quest_id, progress, status)
+          VALUES (?, ?, 1, 'active')
         `).run(userId, quest.id)
-        progressRow = { progress: 1 }
-      } else if (progressRow.status === 'active') {
-        database.prepare(`
-          UPDATE quest_progress SET progress = progress + 1 WHERE user_id = ? AND quest_id = ?
-        `).run(userId, quest.id)
-        progressRow.progress += 1
+        progressRow = { progress: 1, status: 'active' }
+      } else {
+        // For daily quests that have been claimed, check if 24 hours have passed
+        if (quest.type === 'daily' && progressRow.status === 'claimed' && progressRow.claimed_at) {
+          const lastClaimTime = new Date(progressRow.claimed_at).getTime()
+          const now = Date.now()
+          const hoursSinceLastClaim = (now - lastClaimTime) / (1000 * 60 * 60)
+          
+          // If 24 hours have passed, reset the quest
+          if (hoursSinceLastClaim >= 24) {
+            database.prepare(`
+              UPDATE quest_progress 
+              SET progress = 1, status = 'active', completed_at = NULL, claimed_at = NULL
+              WHERE user_id = ? AND quest_id = ?
+            `).run(userId, quest.id)
+            progressRow = { progress: 1, status: 'active' }
+          }
+        } else if (progressRow.status === 'active') {
+          database.prepare(`
+            UPDATE quest_progress SET progress = progress + 1 WHERE user_id = ? AND quest_id = ?
+          `).run(userId, quest.id)
+          progressRow.progress += 1
+        }
       }
       
-      // Check if quest is completed - only if status is 'active'
+      // Check if quest is completed
       if (progressRow.status === 'active' && progressRow.progress >= quest.requirement.count) {
         database.prepare(`
           UPDATE quest_progress 
@@ -246,6 +266,11 @@ export function trackUserAction(userId: string, actionType: string, metadata?: R
       }
     }
   })()
+  
+  // Update streak after transaction completes
+  if (shouldUpdateStreak) {
+    updateDailyStreak(userId)
+  }
 }
 
 export function claimQuestReward(userId: string, questId: string): boolean {
@@ -262,26 +287,6 @@ export function claimQuestReward(userId: string, questId: string): boolean {
     `).get(userId, questId) as any
     
     if (!progressRow) return false
-    
-    // For daily quests, check 24-hour cooldown
-    if (quest.type === 'daily') {
-      const lastClaim = database.prepare(`
-        SELECT claimed_at FROM quest_progress 
-        WHERE user_id = ? AND quest_id = ? AND claimed_at IS NOT NULL
-        ORDER BY claimed_at DESC LIMIT 1
-      `).get(userId, questId) as any
-      
-      if (lastClaim) {
-        const lastClaimTime = new Date(lastClaim.claimed_at).getTime()
-        const now = Date.now()
-        const hoursSinceLastClaim = (now - lastClaimTime) / (1000 * 60 * 60)
-        
-        // If less than 24 hours have passed, return false
-        if (hoursSinceLastClaim < 24) {
-          return false
-        }
-      }
-    }
     
     // Immediately mark as claimed to prevent duplicate claims
     const updateResult = database.prepare(`

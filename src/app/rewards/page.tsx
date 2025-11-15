@@ -19,10 +19,14 @@ export default function RewardsPage() {
   const [claiming, setClaiming] = useState<string | null>(null)
 
   useEffect(() => {
-    if (activeAccount?.address) {
-      loadRewards()
-      loadQuests()
-    }
+    if (!activeAccount?.address) return
+
+    // Ensure login tracking runs (via loadRewards) before fetching quests to avoid race
+    // where quest progress appears stale due to duty ordering.
+    ;(async () => {
+      await loadRewards()
+      await loadQuests()
+    })()
   }, [activeAccount])
 
   const loadRewards = async () => {
@@ -85,14 +89,18 @@ export default function RewardsPage() {
           q.id === questId ? { ...q, status: 'claimed' as QuestStatus } : q
         ))
         
-        // Wait a bit for database to flush
-        await new Promise(resolve => setTimeout(resolve, 200))
-        
-        // Force reload with cache busting
-        await Promise.all([
-          loadRewards(),
-          loadQuests()
-        ])
+        // If API returned updated data, use it; otherwise fall back to reload
+        if (data.data) {
+          if (data.data.quests) setQuests(data.data.quests)
+          if (data.data.rewards) setRewards(data.data.rewards)
+        } else {
+          // Wait a bit for DB to flush, then re-fetch
+          await new Promise(resolve => setTimeout(resolve, 200))
+          await Promise.all([
+            loadRewards(),
+            loadQuests()
+          ])
+        }
       } else {
         // Only show alert and log if it's not a cooldown message (user already knows they claimed it)
         const errorMessage = data.error || 'Failed to claim reward'
@@ -116,6 +124,7 @@ export default function RewardsPage() {
       setClaiming(null)
     }
   }
+
 
   const nextLevelXP = LEVEL_THRESHOLDS[rewards?.level || 0] || 0
   const currentLevelXP = LEVEL_THRESHOLDS[(rewards?.level || 1) - 1] || 0
@@ -242,6 +251,7 @@ export default function RewardsPage() {
         </Card>
 
         {/* Active Quests */}
+        
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

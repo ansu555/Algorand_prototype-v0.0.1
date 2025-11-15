@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { trackUserAction } from '@/lib/rewards/db'
+import { trackUserAction, getUserQuestProgress, getUserRewards } from '@/lib/rewards/db'
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,10 +11,18 @@ export async function POST(request: NextRequest) {
     }
     
     trackUserAction(userId, actionType, metadata)
-    
+
+    // After tracking, return updated quest progress and rewards for immediate UI update
+    const quests = getUserQuestProgress(userId)
+    const rewards = getUserRewards(userId)
+
     return NextResponse.json({
       success: true,
-      message: 'Action tracked successfully'
+      message: 'Action tracked successfully',
+      data: {
+        quests,
+        rewards
+      }
     })
   } catch (error: any) {
     console.error('Track action error:', error)
