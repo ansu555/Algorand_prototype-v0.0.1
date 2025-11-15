@@ -65,7 +65,10 @@ export async function POST(request: NextRequest) {
     
     if (!lpTokenId) {
       console.warn('⚠️ LP Token ID not found in inner transactions')
-      console.log('Confirmed transaction details:', JSON.stringify(confirmedTxn, null, 2))
+      // Use replacer to handle BigInt serialization
+      console.log('Confirmed transaction details:', JSON.stringify(confirmedTxn, (_key, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+      , 2))
     }
 
     // Store pool creation in database for tracking
