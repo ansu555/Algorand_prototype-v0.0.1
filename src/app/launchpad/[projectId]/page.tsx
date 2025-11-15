@@ -86,7 +86,7 @@ export default function ProjectDetailPage() {
 
   const loadProject = async () => {
     try {
-      const res = await fetch(`/api/launchpad/projects?id=${params.projectId}`)
+      const res = await fetch(`/api/launchpad/projects?projectId=${params.projectId}`)
       const data = await res.json()
       
       if (data.success) {
