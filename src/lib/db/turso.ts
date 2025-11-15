@@ -75,6 +75,18 @@ export type TokenWatchlist = {
   createdAt: string
 }
 
+export type AgentWalletStats = {
+  id: string
+  userAddress: string
+  totalSpendUSD: number // Total amount spent in USD
+  totalTrades: number // Total number of trades executed
+  successfulTrades: number // Number of successful trades
+  failedTrades: number // Number of failed trades
+  lastTradeAt?: string // Timestamp of last trade
+  createdAt: string
+  updatedAt: string
+}
+
 function str(v: any) { return v == null ? null : JSON.stringify(v) }
 function parseArr(v: any): string[] { if (!v) return []; try { const x = JSON.parse(String(v)); return Array.isArray(x) ? x : [] } catch { return [] } }
 function parseObj(v: any): Record<string, any> | undefined { if (!v) return undefined; try { const x = JSON.parse(String(v)); return (x && typeof x === 'object') ? x : undefined } catch { return undefined } }
@@ -140,6 +152,17 @@ export const tursoDriver = {
       tokenId TEXT NOT NULL,
       createdAt TEXT NOT NULL,
       UNIQUE(userAddress, tokenId)
+    )`)
+    await client.execute(`CREATE TABLE IF NOT EXISTS agent_wallet_stats (
+      id TEXT PRIMARY KEY,
+      userAddress TEXT NOT NULL UNIQUE,
+      totalSpendUSD REAL NOT NULL DEFAULT 0,
+      totalTrades INTEGER NOT NULL DEFAULT 0,
+      successfulTrades INTEGER NOT NULL DEFAULT 0,
+      failedTrades INTEGER NOT NULL DEFAULT 0,
+      lastTradeAt TEXT,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL
     )`)
   },
   async createRule(rule: Rule): Promise<Rule> {
@@ -528,5 +551,119 @@ export const tursoDriver = {
       args: [userAddress.toLowerCase(), tokenId]
     })
     return rows.length > 0
+  },
+
+  // Agent Wallet Stats Operations
+  async getAgentWalletStats(userAddress: string): Promise<AgentWalletStats | null> {
+    const client = await getClient()
+    const { rows } = await client.execute({
+      sql: `SELECT * FROM agent_wallet_stats WHERE userAddress = ?`,
+      args: [userAddress.toLowerCase()]
+    })
+    const r: any = rows[0]
+    if (!r) return null
+    return {
+      id: r.id,
+      userAddress: r.userAddress,
+      totalSpendUSD: r.totalSpendUSD ?? 0,
+      totalTrades: r.totalTrades ?? 0,
+      successfulTrades: r.successfulTrades ?? 0,
+      failedTrades: r.failedTrades ?? 0,
+      lastTradeAt: r.lastTradeAt ?? undefined,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt
+    }
+  },
+
+  async createAgentWalletStats(stats: AgentWalletStats): Promise<AgentWalletStats> {
+    const client = await getClient()
+    await client.execute({
+      sql: `INSERT INTO agent_wallet_stats (id, userAddress, totalSpendUSD, totalTrades, successfulTrades, failedTrades, lastTradeAt, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(userAddress) DO UPDATE SET
+              totalSpendUSD = excluded.totalSpendUSD,
+              totalTrades = excluded.totalTrades,
+              successfulTrades = excluded.successfulTrades,
+              failedTrades = excluded.failedTrades,
+              lastTradeAt = excluded.lastTradeAt,
+              updatedAt = excluded.updatedAt`,
+      args: [
+        stats.id,
+        stats.userAddress.toLowerCase(),
+        stats.totalSpendUSD,
+        stats.totalTrades,
+        stats.successfulTrades,
+        stats.failedTrades,
+        stats.lastTradeAt ?? null,
+        stats.createdAt,
+        stats.updatedAt
+      ]
+    })
+    return stats
+  },
+
+  async updateAgentWalletStats(userAddress: string, changes: Partial<AgentWalletStats>): Promise<AgentWalletStats | null> {
+    const existing = await tursoDriver.getAgentWalletStats(userAddress)
+    if (!existing) {
+      // Create new stats if doesn't exist
+      const newStats: AgentWalletStats = {
+        id: `stats_${userAddress.toLowerCase()}_${Date.now()}`,
+        userAddress: userAddress.toLowerCase(),
+        totalSpendUSD: changes.totalSpendUSD ?? 0,
+        totalTrades: changes.totalTrades ?? 0,
+        successfulTrades: changes.successfulTrades ?? 0,
+        failedTrades: changes.failedTrades ?? 0,
+        lastTradeAt: changes.lastTradeAt,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+      return await tursoDriver.createAgentWalletStats(newStats)
+    }
+
+    const merged: AgentWalletStats = {
+      ...existing,
+      ...changes,
+      id: existing.id,
+      userAddress: existing.userAddress,
+      createdAt: existing.createdAt,
+      updatedAt: new Date().toISOString()
+    }
+
+    const client = await getClient()
+    await client.execute({
+      sql: `UPDATE agent_wallet_stats SET totalSpendUSD=?, totalTrades=?, successfulTrades=?, failedTrades=?, lastTradeAt=?, updatedAt=? WHERE userAddress=?`,
+      args: [
+        merged.totalSpendUSD,
+        merged.totalTrades,
+        merged.successfulTrades,
+        merged.failedTrades,
+        merged.lastTradeAt ?? null,
+        merged.updatedAt,
+        merged.userAddress
+      ]
+    })
+    return merged
+  },
+
+  async incrementAgentTrade(userAddress: string, spendUSD: number, success: boolean): Promise<void> {
+    const stats = await tursoDriver.getAgentWalletStats(userAddress)
+    const current = stats ?? {
+      id: `stats_${userAddress.toLowerCase()}_${Date.now()}`,
+      userAddress: userAddress.toLowerCase(),
+      totalSpendUSD: 0,
+      totalTrades: 0,
+      successfulTrades: 0,
+      failedTrades: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+
+    await tursoDriver.updateAgentWalletStats(userAddress, {
+      totalSpendUSD: current.totalSpendUSD + spendUSD,
+      totalTrades: current.totalTrades + 1,
+      successfulTrades: current.successfulTrades + (success ? 1 : 0),
+      failedTrades: current.failedTrades + (success ? 0 : 1),
+      lastTradeAt: new Date().toISOString()
+    })
   },
 }
