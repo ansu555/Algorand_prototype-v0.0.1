@@ -10,11 +10,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'userId and actionType are required' }, { status: 400 })
     }
     
-    trackUserAction(userId, actionType, metadata)
+    await trackUserAction(userId, actionType, metadata)
 
     // After tracking, return updated quest progress and rewards for immediate UI update
-    const quests = getUserQuestProgress(userId)
-    const rewards = getUserRewards(userId)
+    const quests = await getUserQuestProgress(userId)
+    const rewards = await getUserRewards(userId)
 
     return NextResponse.json({
       success: true,
