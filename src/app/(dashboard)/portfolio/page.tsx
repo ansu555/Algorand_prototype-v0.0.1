@@ -47,6 +47,14 @@ export default function PortfolioPage() {
     network: string
   } | null>(null)
   const [agentWalletLoading, setAgentWalletLoading] = useState(false)
+  const [agentWalletStats, setAgentWalletStats] = useState<{
+    totalSpendUSD: number
+    totalTrades: number
+    successfulTrades: number
+    failedTrades: number
+    successRate: number
+    lastTradeAt: string | null
+  } | null>(null)
   const [rechargeAmount, setRechargeAmount] = useState<string>("")
   const [rechargeDialogOpen, setRechargeDialogOpen] = useState(false)
   const [rechargingWallet, setRechargingWallet] = useState(false)
@@ -150,6 +158,39 @@ export default function PortfolioPage() {
     fetchAgentWallet()
   }, [address])
 
+  // Fetch agent wallet stats
+  useEffect(() => {
+    if (!address) return
+    
+    async function fetchAgentStats() {
+      try {
+        const res = await fetch(`/api/agent/wallet/stats?userAddress=${address}`)
+        const data = await res.json()
+        if (data.success && data.stats) {
+          setAgentWalletStats(data.stats)
+        }
+      } catch (error) {
+        console.error('Failed to fetch agent wallet stats:', error)
+      }
+    }
+    
+    fetchAgentStats()
+  }, [address])
+
+  // Helper to refresh agent wallet stats
+  async function refreshAgentStats() {
+    if (!address) return
+    try {
+      const res = await fetch(`/api/agent/wallet/stats?userAddress=${address}`)
+      const data = await res.json()
+      if (data.success && data.stats) {
+        setAgentWalletStats(data.stats)
+      }
+    } catch (error) {
+      console.error('Failed to refresh agent wallet stats:', error)
+    }
+  }
+
   function nextCheck(rule: Rule) {
     const last = lastRunByRule.get(rule.id)
     if (!rule.cooldownMinutes) return "any moment"
@@ -214,6 +255,8 @@ export default function PortfolioPage() {
       const hash = json?.logEntry?.details?.txHash
       toast({ title: 'Swap submitted', description: hash ? `Tx: ${String(hash).slice(0, 10)}…${String(hash).slice(-6)}` : 'Submitted' })
       refresh()
+      // Refresh stats after successful trade
+      await refreshAgentStats()
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Execution failed'
       toast({ title: 'Swap failed', description: msg, variant: 'destructive' })
@@ -643,16 +686,16 @@ export default function PortfolioPage() {
                 <div className="grid grid-cols-3 gap-3 pt-2">
                   <div className="rounded-lg bg-card/50 p-3 border border-border/50 text-center">
                     <p className="text-xs text-muted-foreground mb-1">Total Spent</p>
-                    <p className="text-lg font-semibold">0.00</p>
+                    <p className="text-lg font-semibold">${agentWalletStats?.totalSpendUSD?.toFixed(2) || '0.00'}</p>
                   </div>
                   <div className="rounded-lg bg-card/50 p-3 border border-border/50 text-center">
                     <p className="text-xs text-muted-foreground mb-1">Trades</p>
-                    <p className="text-lg font-semibold">{successfulExecutions}</p>
+                    <p className="text-lg font-semibold">{agentWalletStats?.totalTrades || 0}</p>
                   </div>
                   <div className="rounded-lg bg-card/50 p-3 border border-border/50 text-center">
                     <p className="text-xs text-muted-foreground mb-1">Success Rate</p>
                     <p className="text-lg font-semibold">
-                      {logs.length > 0 ? ((successfulExecutions / logs.length) * 100).toFixed(0) : 0}%
+                      {agentWalletStats?.successRate?.toFixed(0) || 0}%
                     </p>
                   </div>
                 </div>
