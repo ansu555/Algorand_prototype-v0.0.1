@@ -159,7 +159,7 @@ class LiquidityPoolContract(ARC4Contract):
     @arc4.abimethod(allow_actions=["NoOp"])
     def create_lp_token(
         self,
-        pool_id: arc4.String,
+        pool_id: arc4.DynamicBytes,
         total: arc4.UInt64,
         decimals: arc4.UInt32,
         name: arc4.String,
@@ -169,7 +169,7 @@ class LiquidityPoolContract(ARC4Contract):
         Create the LP token for a specific pool
 
         Args:
-            pool_id: Pool identifier (base64 encoded pool key)
+            pool_id: Pool identifier (raw 32-byte hash)
             total: Total supply of LP tokens
             decimals: Decimal places for LP token
             name: LP token name
@@ -180,8 +180,8 @@ class LiquidityPoolContract(ARC4Contract):
         """
         assert Txn.sender == Global.creator_address, "Only creator can create LP token"
 
-        # Decode pool ID - extract bytes from arc4.String
-        pool_key = pool_id.bytes
+        # Extract raw bytes from arc4.DynamicBytes (no length prefix)
+        pool_key = pool_id.native
 
         # Get pool data from box
         pool_data_bytes, exists = op.Box.get(pool_key)
@@ -217,7 +217,7 @@ class LiquidityPoolContract(ARC4Contract):
     @arc4.abimethod(allow_actions=["NoOp"])
     def add_liquidity(
         self,
-        pool_id: arc4.String,
+        pool_id: arc4.DynamicBytes,
         asset_1_payment: gtxn.AssetTransferTransaction,
         asset_2_payment: gtxn.AssetTransferTransaction,
         min_lp_tokens: arc4.UInt64,
@@ -235,7 +235,7 @@ class LiquidityPoolContract(ARC4Contract):
             Amount of LP tokens minted
         """
         # Decode pool ID - extract bytes from arc4.String
-        pool_key = pool_id.bytes
+        pool_key = pool_id.native
 
         # Get pool data from box
         pool_data_bytes, exists = op.Box.get(pool_key)
@@ -310,7 +310,7 @@ class LiquidityPoolContract(ARC4Contract):
     @arc4.abimethod(allow_actions=["NoOp"])
     def remove_liquidity(
         self,
-        pool_id: arc4.String,
+        pool_id: arc4.DynamicBytes,
         lp_token_payment: gtxn.AssetTransferTransaction,
         min_asset_1: arc4.UInt64,
         min_asset_2: arc4.UInt64,
@@ -328,7 +328,7 @@ class LiquidityPoolContract(ARC4Contract):
             Tuple of (asset_1_amount, asset_2_amount) returned
         """
         # Decode pool ID - extract bytes from arc4.String
-        pool_key = pool_id.bytes
+        pool_key = pool_id.native
 
         # Get pool data from box
         pool_data_bytes, exists = op.Box.get(pool_key)
@@ -390,7 +390,7 @@ class LiquidityPoolContract(ARC4Contract):
     @arc4.abimethod(allow_actions=["NoOp"])
     def swap(
         self,
-        pool_id: arc4.String,
+        pool_id: arc4.DynamicBytes,
         asset_in_payment: gtxn.AssetTransferTransaction,
         asset_out_id: arc4.UInt64,
         min_amount_out: arc4.UInt64,
@@ -408,7 +408,7 @@ class LiquidityPoolContract(ARC4Contract):
             Amount of output asset sent
         """
         # Decode pool ID - extract bytes from arc4.String
-        pool_key = pool_id.bytes
+        pool_key = pool_id.native
 
         # Get pool data from box
         pool_data_bytes, exists = op.Box.get(pool_key)
@@ -482,18 +482,18 @@ class LiquidityPoolContract(ARC4Contract):
         return arc4.UInt64(amount_out)
 
     @arc4.abimethod(readonly=True)
-    def get_pool_info(self, pool_id: arc4.String) -> PoolData:
+    def get_pool_info(self, pool_id: arc4.DynamicBytes) -> PoolData:
         """
         Get current pool state
 
         Args:
-            pool_id: Pool identifier
+            pool_id: Pool identifier (raw 32-byte hash)
 
         Returns:
             Pool data
         """
-        # Decode pool ID - extract bytes from arc4.String
-        pool_key = pool_id.bytes
+        # Extract raw bytes from arc4.DynamicBytes
+        pool_key = pool_id.native
         pool_data_bytes, exists = op.Box.get(pool_key)
         assert exists, "Pool does not exist"
 
@@ -522,7 +522,7 @@ class LiquidityPoolContract(ARC4Contract):
     @arc4.abimethod(readonly=True)
     def get_swap_quote(
         self,
-        pool_id: arc4.String,
+        pool_id: arc4.DynamicBytes,
         asset_in_id: arc4.UInt64,
         asset_out_id: arc4.UInt64,
         amount_in: arc4.UInt64,
@@ -540,7 +540,7 @@ class LiquidityPoolContract(ARC4Contract):
             Expected output amount
         """
         # Decode pool ID - extract bytes from arc4.String
-        pool_key = pool_id.bytes
+        pool_key = pool_id.native
         pool_data_bytes, exists = op.Box.get(pool_key)
         assert exists, "Pool does not exist"
 
