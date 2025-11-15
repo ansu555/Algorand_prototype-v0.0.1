@@ -139,20 +139,24 @@ export default function PoolPage() {
               const reserve1 = BigInt(pool.reserve1)
               const reserve2 = BigInt(pool.reserve2)
 
+              // Use actual decimals from the API
+              const decimals1 = pool.asset1_decimals || 6
+              const decimals2 = pool.asset2_decimals || 6
+
               // Calculate current price from reserves
               let currentPrice: number | undefined
               if (reserve1 > 0n && reserve2 > 0n) {
-                const reserve0Num = Number(reserve1) / 1e6 // Assuming 6 decimals
-                const reserve1Num = Number(reserve2) / 1e6
+                const reserve0Num = Number(reserve1) / Math.pow(10, decimals1)
+                const reserve1Num = Number(reserve2) / Math.pow(10, decimals2)
                 currentPrice = reserve1Num / reserve0Num
               }
 
               return {
                 id: pool.poolId,
-                token0: `Asset ${pool.asset1_id}`,
-                token1: `Asset ${pool.asset2_id}`,
-                token0Decimals: 6, // Default
-                token1Decimals: 6,
+                token0: pool.asset1_name || `Asset ${pool.asset1_id}`,
+                token1: pool.asset2_name || `Asset ${pool.asset2_id}`,
+                token0Decimals: decimals1,
+                token1Decimals: decimals2,
                 protocol: 'v2',
                 feeTier: pool.fee_bps,
                 dex: '10xswap',

@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch and decode each pool's data
-    const pools: PoolInfo[] = []
+    const pools: any[] = []
 
     for (const box of boxes) {
       try {
@@ -100,13 +100,41 @@ export async function GET(request: NextRequest) {
         // Get pool address (application address for this pool)
         const poolAppAddress = process.env.NEXT_PUBLIC_POOL_APP_ADDRESS || ''
 
+        // Fetch asset information for both assets
+        let asset1Name = `Asset ${poolData.asset1_id}`
+        let asset2Name = `Asset ${poolData.asset2_id}`
+        let asset1Decimals = 6
+        let asset2Decimals = 6
+
+        try {
+          const asset1Info = await algodClient.getAssetByID(poolData.asset1_id).do()
+          asset1Name = asset1Info.params['unit-name'] || asset1Info.params.name || `Asset ${poolData.asset1_id}`
+          asset1Decimals = asset1Info.params.decimals || 6
+          console.log(`  Asset 1: ${asset1Name} (${poolData.asset1_id})`)
+        } catch (e) {
+          console.warn(`  Failed to fetch asset 1 info: ${poolData.asset1_id}`)
+        }
+
+        try {
+          const asset2Info = await algodClient.getAssetByID(poolData.asset2_id).do()
+          asset2Name = asset2Info.params['unit-name'] || asset2Info.params.name || `Asset ${poolData.asset2_id}`
+          asset2Decimals = asset2Info.params.decimals || 6
+          console.log(`  Asset 2: ${asset2Name} (${poolData.asset2_id})`)
+        } catch (e) {
+          console.warn(`  Failed to fetch asset 2 info: ${poolData.asset2_id}`)
+        }
+
         pools.push({
           ...poolData,
           poolId: poolIdHex,
           poolAddress: poolAppAddress,
+          asset1_name: asset1Name,
+          asset2_name: asset2Name,
+          asset1_decimals: asset1Decimals,
+          asset2_decimals: asset2Decimals,
         })
 
-        console.log(`✅ Pool ${poolIdHex}: Asset ${poolData.asset1_id} / ${poolData.asset2_id}`)
+        console.log(`✅ Pool ${poolIdHex}: ${asset1Name} / ${asset2Name}`)
       } catch (error) {
         console.error(`❌ Error reading pool box:`, error)
       }
