@@ -7,7 +7,7 @@
 4. **Multi-DEX Aggregation** - Best price routing across Tinyman and Pact
 5. **Automated Trading** - Auto-Pilot rules for DCA, rebalancing, and rotation strategies
 
-## 🎉 Hackathon Highlight: WaveBreak Launchpad
+## 🎉 Hackathon Highlight: Token Launchpad
 
 **WaveBreak** is a revolutionary token launchpad using **bonding curves** for fair, bot-resistant token launches. Built for [Algorand Hack Series #2].
 
@@ -34,13 +34,6 @@ python scripts/deploy-bonding-curve.py
 npm run dev
 # Visit http://localhost:3000/launchpad
 ```
-
-**📖 Full Documentation:**
-- [Hackathon Submission Guide](docs/HACKATHON_SUBMISSION.md)
-- [Deployment Checklist](docs/DEPLOYMENT_CHECKLIST.md)
-- [What We Built](docs/WHAT_WE_BUILT.md)
-
----
 
 ## Table of Contents
 
@@ -280,7 +273,7 @@ Invite friends and earn lifetime rewards:
 - **Platform Currency**: Foundation for future features
 - **Leaderboard Status**: Show off your X holdings
 
-#### 🔜 Coming Soon
+#### 🔜 Coming Soon (entirely conseptual)
 - **Trading Fee Discounts**: Up to 75% off (Diamond tier: 50,000+ X)
 - **Staking Rewards**: 15% base APY, up to 40% with lock periods
 - **VIP Benefits**:
