@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { SearchBar } from "@/components/shared/search-bar"
 import { 
   Rocket, ArrowLeft, ArrowRight, CheckCircle2, 
-  AlertTriangle, TrendingUp, Shield, Gift, Lock
+  AlertTriangle, TrendingUp, Shield, Gift, Lock, Upload
 } from "lucide-react"
 import Link from "next/link"
 import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
@@ -24,7 +24,6 @@ interface FormData {
   totalSupply: string
   tokensForSale: string
   description: string
-  logoUrl: string
   websiteUrl: string
   twitterUrl: string
   telegramUrl: string
@@ -51,6 +50,10 @@ export default function CreateProjectPage() {
   const { activeAccount } = useWalletConnection()
   const [step, setStep] = useState(1)
   const [creating, setCreating] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [logoData, setLogoData] = useState<{ data: string; mimeType: string } | null>(null)
   
   const [formData, setFormData] = useState<FormData>({
     tokenName: '',
@@ -58,7 +61,6 @@ export default function CreateProjectPage() {
     totalSupply: '',
     tokensForSale: '',
     description: '',
-    logoUrl: '',
     websiteUrl: '',
     twitterUrl: '',
     telegramUrl: '',
@@ -76,6 +78,59 @@ export default function CreateProjectPage() {
 
   const updateField = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file')
+        return
+      }
+
+      // Validate file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image must be less than 5MB')
+        return
+      }
+
+      setLogoFile(file)
+      
+      // Create preview
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const uploadLogo = async (): Promise<{ data: string; mimeType: string } | null> => {
+    if (!logoFile) return null
+
+    try {
+      const formDataUpload = new FormData()
+      formDataUpload.append('logo', logoFile)
+
+      const uploadResponse = await fetch('/api/launchpad/upload', {
+        method: 'POST',
+        body: formDataUpload
+      })
+
+      const uploadData = await uploadResponse.json()
+      if (!uploadData.success) {
+        throw new Error(uploadData.error || 'Failed to upload logo')
+      }
+
+      return {
+        data: uploadData.logoData,
+        mimeType: uploadData.logoMimeType
+      }
+    } catch (error) {
+      console.error('Logo upload error:', error)
+      throw error
+    }
   }
 
   const validateStep = (stepNum: number): boolean => {
@@ -139,6 +194,12 @@ export default function CreateProjectPage() {
 
     setCreating(true)
     try {
+      // Upload logo if provided
+      let uploadedLogo: { data: string; mimeType: string } | null = null
+      if (logoFile) {
+        uploadedLogo = await uploadLogo()
+      }
+
       const res = await fetch('/api/launchpad/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -149,7 +210,8 @@ export default function CreateProjectPage() {
           totalSupply: formData.totalSupply,
           tokensForSale: formData.tokensForSale,
           description: formData.description || undefined,
-          logoUrl: formData.logoUrl || undefined,
+          logoData: uploadedLogo?.data,
+          logoMimeType: uploadedLogo?.mimeType,
           websiteUrl: formData.websiteUrl || undefined,
           twitterUrl: formData.twitterUrl || undefined,
           telegramUrl: formData.telegramUrl || undefined,
@@ -302,14 +364,39 @@ export default function CreateProjectPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="logoUrl">Logo URL</Label>
-                  <Input
-                    id="logoUrl"
-                    type="url"
-                    placeholder="https://..."
-                    value={formData.logoUrl}
-                    onChange={(e) => updateField('logoUrl', e.target.value)}
-                  />
+                  <Label>Logo Upload</Label>
+                  <div className="flex items-center gap-4">
+                    {logoPreview ? (
+                      <div className="w-16 h-16 rounded-full overflow-hidden border-2">
+                        <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-amber-500 flex items-center justify-center text-white font-bold text-xl">
+                        {formData.tokenSymbol ? formData.tokenSymbol.charAt(0).toUpperCase() : '?'}
+                      </div>
+                    )}
+                    <div>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleLogoSelect}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Upload Logo
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        PNG, JPG, SVG or WebP. Max 5MB.
+                      </p>
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="websiteUrl">Website URL</Label>

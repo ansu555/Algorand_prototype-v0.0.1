@@ -45,3 +45,6 @@ node_modules
 # allow committing the SQLite WAL file under data/
 !data/db.sqlite-wal
 
+# uploaded files (logos, etc.)
+/public/uploads/*
+!/public/uploads/logos/.gitkeep

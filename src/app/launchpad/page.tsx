@@ -29,7 +29,7 @@ interface Project {
 
 export default function LaunchpadPage() {
   const [projects, setProjects] = useState<Project[]>([])
-  const [filter, setFilter] = useState<'all' | 'active' | 'graduated'>('active')
+  const [filter, setFilter] = useState<'all' | 'active' | 'graduated'>('all')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
