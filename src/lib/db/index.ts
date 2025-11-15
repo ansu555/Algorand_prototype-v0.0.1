@@ -1,6 +1,6 @@
-import { tursoDriver, type Rule, type LogEntry, type AgentWallet, type LaunchpadToken, type TokenWatchlist } from './turso'
+import { tursoDriver, type Rule, type LogEntry, type AgentWallet, type LaunchpadToken, type TokenWatchlist, type AgentWalletStats } from './turso'
 
-export type { Rule, LogEntry, AgentWallet, LaunchpadToken, TokenWatchlist }
+export type { Rule, LogEntry, AgentWallet, LaunchpadToken, TokenWatchlist, AgentWalletStats }
 
 // Initialize Turso database
 let initPromise: Promise<void> | null = null
@@ -128,4 +128,25 @@ export async function getWatchlist(userAddress: string): Promise<string[]> {
 export async function isInWatchlist(userAddress: string, tokenId: string): Promise<boolean> {
   await ensureInit()
   return tursoDriver.isInWatchlist(userAddress, tokenId)
+}
+
+// Agent Wallet Stats Operations
+export async function getAgentWalletStats(userAddress: string): Promise<AgentWalletStats | null> {
+  await ensureInit()
+  return tursoDriver.getAgentWalletStats(userAddress)
+}
+
+export async function createAgentWalletStats(stats: AgentWalletStats): Promise<AgentWalletStats> {
+  await ensureInit()
+  return tursoDriver.createAgentWalletStats(stats)
+}
+
+export async function updateAgentWalletStats(userAddress: string, changes: Partial<AgentWalletStats>): Promise<AgentWalletStats | null> {
+  await ensureInit()
+  return tursoDriver.updateAgentWalletStats(userAddress, changes)
+}
+
+export async function incrementAgentTrade(userAddress: string, spendUSD: number, success: boolean): Promise<void> {
+  await ensureInit()
+  return tursoDriver.incrementAgentTrade(userAddress, spendUSD, success)
 }

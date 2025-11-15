@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getRuleById, createLog, type LogEntry } from "@/lib/db"
+import { getRuleById, createLog, incrementAgentTrade, type LogEntry } from "@/lib/db"
 import { getAgent } from "@/lib/agent"
 import type { AlgorandAsset } from "@/lib/algorand"
 import algosdk from "algosdk"
@@ -134,6 +134,14 @@ export async function POST(req: Request) {
     }
     await createLog(log)
 
+    // Track the successful trade in agent wallet stats
+    try {
+      await incrementAgentTrade(normalizedRecipient, spendAmount, true)
+    } catch (statsError) {
+      console.error('Failed to update agent wallet stats:', statsError)
+      // Don't fail the execution if stats update fails
+    }
+
     return NextResponse.json({ success: true, txHash, swap: swapResult.details, logEntry: log }, { status: 200 })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'Execution failed'
@@ -150,7 +158,11 @@ export async function POST(req: Request) {
         status: 'failed',
         createdAt: now,
       }
-      try { await createLog(failLog) } catch {}
+      try { 
+        await createLog(failLog)
+        // Track the failed trade in agent wallet stats
+        await incrementAgentTrade(loadedRule.ownerAddress, 0, false)
+      } catch {}
     }
     return NextResponse.json({ success: false, error: msg }, { status: statusCode })
   }
