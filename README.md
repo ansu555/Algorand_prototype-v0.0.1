@@ -1,12 +1,49 @@
-# 10xSwap: AI-Powered Algorand DEX
+# 10xSwap: AI-Powered Algorand DEX + WaveBreak Token Launchpad
 
-10xSwap is a modern web application that allows users to explore cryptocurrency markets, manage assets, and execute transactions on the Algorand blockchain. It features an AI-powered chat agent that can understand natural language commands to perform actions like checking balances, getting token prices, and executing swaps and transfers.
+10xSwap is a comprehensive Algorand ecosystem platform featuring:
+1. **AI-Powered DEX** - Natural language trading and portfolio management
+2. **WaveBreak Launchpad** - Fair token launches using bonding curves (NEW! 🚀)
+
+## 🎉 Hackathon Highlight: WaveBreak Launchpad
+
+**WaveBreak** is a revolutionary token launchpad using **bonding curves** for fair, bot-resistant token launches. Built for [Algorand Hack Series #2].
+
+### Key Features
+- ✅ **Smart Contract-Powered:** PyTeal bonding curve with ABI methods
+- ✅ **Anti-Bot Protection:** Rate limiting, cooldown, max purchase caps
+- ✅ **3 Pricing Curves:** Linear, Exponential, Sigmoid
+- ✅ **Early Buyer Rewards:** Points system incentivizes community building
+- ✅ **Auto-DEX Graduation:** Creates liquidity pools when target reached
+- ✅ **TestNet Verified:** All transactions viewable on AlgoExplorer
+- ✅ **Modular SDK:** One codebase powers 4+ industries (meme, DAO, gaming, creator tokens)
+
+### Quick Start (Launchpad)
+```bash
+# 1. Deploy smart contract
+pip install pyteal beaker py-algorand-sdk
+export CREATOR_MNEMONIC="your 25 words..."
+python scripts/deploy-bonding-curve.py
+
+# 2. Update config
+# Edit src/lib/launchpad/algorand.ts with your App ID
+
+# 3. Test on TestNet
+npm run dev
+# Visit http://localhost:3000/launchpad
+```
+
+**📖 Full Documentation:**
+- [Hackathon Submission Guide](docs/HACKATHON_SUBMISSION.md)
+- [Deployment Checklist](docs/DEPLOYMENT_CHECKLIST.md)
+- [What We Built](docs/WHAT_WE_BUILT.md)
+
+---
 
 ## Table of Contents
 
 - [✨ Features](#-features)
 - [🏗️ Project Structure](#️-project-structure)
-- [� Getting Started](#-getting-started)
+- [🚀 Getting Started](#-getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#1-installation)
   - [Environment Setup](#2-environment-setup)
@@ -14,8 +51,8 @@
 - [🔧 API Keys & Configuration](#-api-keys--configuration)
 - [📡 API Endpoints](#-api-endpoints)
 - [🤖 AI Agent Features](#-ai-agent-features)
-- [� Supported Tokens](#-supported-tokens)
-- [�📖 Documentation](#-documentation)
+- [💎 Supported Tokens](#-supported-tokens)
+- [📖 Documentation](#-documentation)
 
 ## ✨ Features
 

@@ -6,7 +6,8 @@ import { SearchBar } from "@/components/shared/search-bar"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
-import { Loader2, ArrowUpDown, Clock, CalendarClock, ExternalLink, Copy, Check, TrendingUp, Activity } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Loader2, ArrowUpDown, Clock, CalendarClock, ExternalLink, Copy, Check, TrendingUp, Activity, ChevronLeft, ChevronRight } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
@@ -47,6 +48,8 @@ export default function TransactionsPage() {
   >('all')
   const [prices, setPrices] = useState<Record<string, number>>({})
   const [loadingPrices, setLoadingPrices] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const transactionsPerPage = 5
 
   // Fetch token prices
   useEffect(() => {
@@ -235,6 +238,17 @@ export default function TransactionsPage() {
 
     return sorted
   }, [transactions, typeFilter, sortBy])
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredTransactions.length / transactionsPerPage)
+  const startIndex = (currentPage - 1) * transactionsPerPage
+  const endIndex = startIndex + transactionsPerPage
+  const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex)
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [typeFilter, sortBy])
 
   return (
     <div className="flex min-h-screen flex-col [&_*:hover]:!bg-transparent [&_*:hover]:!text-current [&_*:hover]:!opacity-100">
@@ -444,7 +458,7 @@ export default function TransactionsPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredTransactions.map((tx) => {
+                    paginatedTransactions.map((tx) => {
                       const isExecuteRule = tx.action === 'execute_rule'
                       
                       // For EXECUTE_RULE, show only the single token being executed
@@ -605,6 +619,68 @@ export default function TransactionsPage() {
                   )}
                 </TableBody>
               </Table>
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {!loading && filteredTransactions.length > 0 && (
+            <div className="flex items-center justify-between px-4 py-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                Showing {startIndex + 1} to {Math.min(endIndex, filteredTransactions.length)} of {filteredTransactions.length} transactions
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                    // Show first page, last page, current page, and pages around current
+                    const showPage = 
+                      page === 1 || 
+                      page === totalPages || 
+                      (page >= currentPage - 1 && page <= currentPage + 1)
+                    
+                    const showEllipsis = 
+                      (page === currentPage - 2 && currentPage > 3) ||
+                      (page === currentPage + 2 && currentPage < totalPages - 2)
+
+                    if (showEllipsis) {
+                      return <span key={page} className="px-2 text-muted-foreground">...</span>
+                    }
+
+                    if (!showPage) return null
+
+                    return (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                        className={currentPage === page ? "bg-red-500 hover:bg-red-600" : ""}
+                      >
+                        {page}
+                      </Button>
+                    )
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
             </CardContent>
