@@ -58,17 +58,25 @@ export class AssetDiscoveryService {
       // Add verified testnet assets by default (for pool creation)
       if (this.network === 'testnet') {
         const defaultTestnetAssets = [
-          31566704, // USDC testnet
           67395862, // USDC testnet (primary)
           10458941, // USDC testnet (secondary)
           67396430, // USDt testnet
           70283957, // ALGF testnet
         ];
-        defaultTestnetAssets.forEach(assetId => {
-          if (!assetData.has(assetId)) {
-            assetData.set(assetId, { poolCount: 0, dexSources: new Set(['verified']) });
+
+        // Verify that default testnet assets actually exist on the indexer
+        for (const assetId of defaultTestnetAssets) {
+          try {
+            // This may throw if the asset is not found (404)
+            await this.indexerClient.lookupAssetByID(assetId).do();
+            if (!assetData.has(assetId)) {
+              assetData.set(assetId, { poolCount: 0, dexSources: new Set(['verified']) });
+            }
+          } catch (e) {
+            // Asset not found on this indexer - skip it
+            console.warn(`Default testnet asset ${assetId} not present on indexer; skipping`)
           }
-        });
+        }
       }
 
       // Discover assets from Tinyman pools
@@ -258,9 +266,18 @@ export class AssetDiscoveryService {
 
       this.assetsCache.set(assetId, assetInfo);
       return assetInfo;
-    } catch (error) {
-      console.error(`Error fetching asset ${assetId}:`, error);
-      return null;
+    } catch (error: any) {
+      // The indexer may return 404 if the asset ID doesn't exist on the selected network.
+      // Treat that as a 'not found' and return null (skip the asset) without spamming the logs.
+      const status = error?.status || error?.response?.status || (error?.message?.includes('404') ? 404 : undefined)
+
+      if (status === 404) {
+        console.warn(`Asset ${assetId} not found (indexer 404). Skipping.`)
+      } else {
+        console.error(`Error fetching asset ${assetId}:`, error)
+      }
+
+      return null
     }
   }
 

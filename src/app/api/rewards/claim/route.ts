@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { claimQuestReward, getDB } from '@/lib/rewards/db'
+import { claimQuestReward, getDB, getUserQuestProgress, getUserRewards } from '@/lib/rewards/db'
 import { PREDEFINED_QUESTS } from '@/lib/rewards/types'
 
 export async function POST(request: NextRequest) {
@@ -31,10 +31,17 @@ export async function POST(request: NextRequest) {
     console.log(`[CLAIM DEBUG] After claim - Quest: ${questId}, Status: ${questStatus?.status}, Claimed At: ${questStatus?.claimed_at}`)
     
     // Add cache busting headers
+    const quests = getUserQuestProgress(userId)
+    const rewardsData = getUserRewards(userId)
+
     const response = NextResponse.json({
       success: true,
       message: 'Reward claimed successfully',
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      data: {
+        quests,
+        rewards: rewardsData
+      }
     })
     
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')

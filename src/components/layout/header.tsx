@@ -152,6 +152,7 @@ export function Header() {
   const exploreItems = [
     { name: "Tokens", href: "/cryptocurrencies" },
     { name: "Pool", href: "/pool" },
+    { name: "Launchpad", href: "/launchpad" },
     { name: "Transaction", href: "/transactions" },
   ];
 

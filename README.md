@@ -56,27 +56,17 @@ npm run dev
 
 ## ✨ Features
 
-### AI-Powered DEX
-- **🤖 AI Chat Agent**: Natural language interface for blockchain operations
-- **🔐 Per-User Agent Wallets**: Dedicated Algorand wallet with encrypted storage
-- **💱 DEX Integration**: Swap tokens via Tinyman and Pact
-- **👛 Multi-Wallet Support**: Pera, Defly, MyAlgo connections
-- **📊 Real-Time Market Data**: Live prices and analytics
-- **🔄 Automated Trading Rules**: DCA, Rebalance, Rotation strategies
-
-### WaveBreak Launchpad (NEW! 🚀)
-- **📜 Smart Contracts**: PyTeal bonding curve with ARC-4 ABI
-- **🛡️ Anti-Bot Protection**: Cooldown + rate limiting
-- **📈 Price Discovery**: Linear/Exponential/Sigmoid curves
-- **🎁 Early Rewards**: Points for early supporters
-- **💧 Auto-Liquidity**: DEX graduation when target reached
-- **🔧 Modular SDK**: Reusable across industries
-- **✅ ARC Compliant**: ARC-4, ARC-20, ARC-0010/0011
-
-### Shared Features
-- **⚡ Algorand Blockchain**: Sub-3 second finality, carbon-neutral
-- **🎨 Modern UI**: Responsive design with dark mode
-- **📦 On-Chain Contracts**: Autopilot rules + swap router
+- **🤖 AI-Powered Chat Agent**: Natural language interface for blockchain operations
+- **🔐 Per-User Agent Wallets**: Dedicated Algorand wallet for each user with encrypted storage
+- **🌿 Algorand Blockchain**: Fast, secure, and carbon-neutral blockchain integration
+- **💱 DEX Integration**: Swap tokens via Tinyman and Pact on Algorand
+- **🚀 Token Launchpad**: Create and deploy custom tokens on Algorand with logo upload
+- **👛 Multi-Wallet Support**: Pera, Defly, MyAlgo wallet connections
+- **📊 Real-Time Market Data**: Live cryptocurrency prices and analytics
+- **🔄 Automated Trading Rules**: DCA, Rebalance, and Rotation strategies
+- **⚡ Instant Finality**: Sub-3 second transaction confirmation on Algorand
+- **🎨 Modern UI**: Responsive design with dark mode support
+- **📦 On-Chain Smart Contracts**: Deployed autopilot rules and multi-hop swap router
 
 ## 🏗️ Project Structure
 
@@ -135,7 +125,7 @@ Algorand_prototype-v0.0.1/
 
 ### 📚 Documentation
 
-**Core Documentation** (8 canonical guides):
+**Core Documentation** (9 canonical guides):
 
 - **[🏗️ System Overview](./docs/SYSTEM_OVERVIEW.md)** - Architecture, components, and data flows
 - **[👨‍💻 Developer Guide](./docs/DEVELOPER_GUIDE.md)** - Setup, installation, testing, and troubleshooting
@@ -145,6 +135,7 @@ Algorand_prototype-v0.0.1/
 - **[⚙️ Backend & Agent Spec](./docs/BACKEND_AND_AGENT_SPEC.md)** - API endpoints and database schema
 - **[🧠 AI Agent & MCP/NCP](./docs/AI_AGENT_AND_MCP_NCP_SPEC.md)** - AI capabilities and analytics engine
 - **[🔐 Agent Wallet System](./docs/AGENT_WALLET_SYSTEM.md)** - Per-user agent wallets and automated trading
+- **[🚀 Token Launchpad](./docs/TOKEN_LAUNCHPAD.md)** - Create and deploy tokens on 10xSwap DEX
 
 ### Key Architectural Decisions
 
