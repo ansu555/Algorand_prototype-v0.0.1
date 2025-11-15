@@ -242,9 +242,11 @@ export async function POST(request: NextRequest) {
     const lpDecimals = Math.max(asset1Info.decimals, asset2Info.decimals)
     const lpTotalSupply = BigInt('18446744073709551615') // Max uint64
 
+    // CRITICAL: buildCreateLPTokenTxn expects raw Uint8Array for box reference
+    // poolId is already a Uint8Array from computePoolId
     const createLPTokenTxn = await poolClient.buildCreateLPTokenTxn(
       userAddress,
-      poolId, // NEW: Required for multi-pool factory
+      poolId, // Raw Uint8Array - will be used for box reference
       lpTotalSupply,
       lpDecimals,
       lpTokenName,
@@ -271,12 +273,15 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Prepared', txnsToSign.length, 'transactions for pool creation')
 
+    // Convert poolId to base64 for JSON response
+    const poolIdBase64 = Buffer.from(poolId).toString('base64')
+
     return NextResponse.json({
       success: true,
       txnsToSign,
       txnCount: txnsToSign.length,
       poolAddress,
-      poolId, // NEW: Include pool ID for future add_liquidity calls
+      poolId: poolIdBase64, // NEW: Include pool ID for future add_liquidity calls (as base64)
       lpTokenName,
       lpTokenUnit,
       estimatedLiquidity: Math.sqrt(Number(amount1) * Number(amount2)), // Rough estimate
@@ -294,7 +299,7 @@ export async function POST(request: NextRequest) {
         amount1,
         amount2,
         feeBps,
-        poolId, // NEW: Store for later use
+        poolId: poolIdBase64, // NEW: Store for later use (as base64)
       }
     })
 

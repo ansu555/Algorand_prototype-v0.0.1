@@ -14,7 +14,7 @@ export interface CreatePoolParams {
 }
 
 export interface AddLiquidityParams {
-  poolId: string; // NEW: Required for multi-pool factory
+  poolId: Uint8Array; // NEW: Required for multi-pool factory (raw 32 bytes)
   asset1Id: number;
   asset2Id: number;
   amount1: bigint;
@@ -24,7 +24,7 @@ export interface AddLiquidityParams {
 }
 
 export interface RemoveLiquidityParams {
-  poolId: string; // NEW: Required for multi-pool factory
+  poolId: Uint8Array; // NEW: Required for multi-pool factory (raw 32 bytes)
   lpTokenAmount: bigint;
   minAsset1: bigint;
   minAsset2: bigint;
@@ -32,7 +32,7 @@ export interface RemoveLiquidityParams {
 }
 
 export interface SwapParams {
-  poolId: string; // NEW: Required for multi-pool factory
+  poolId: Uint8Array; // NEW: Required for multi-pool factory (raw 32 bytes)
   assetInId: number;
   assetOutId: number;
   amountIn: bigint;
@@ -107,6 +107,14 @@ export class LiquidityPoolClient {
     const feeType = algosdk.ABIType.from('uint16');
     appArgs.push(feeType.encode(params.feeBps));
 
+    // CRITICAL: Compute pool ID and declare box reference
+    // The create_pool method will create this box, so we need to declare it
+    const poolIdBytes = this.computePoolId(params.asset1Id, params.asset2Id);
+    const boxReference: algosdk.BoxReference = {
+      appIndex: this.poolAppId,
+      name: Buffer.from(poolIdBytes), // Pool ID is raw 32-byte SHA256 hash as Buffer
+    };
+
     // Application call to create_pool with proper ARC-4 encoding
     const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
       sender: params.userAddress,
@@ -119,6 +127,7 @@ export class LiquidityPoolClient {
         : params.asset2Id === 0
         ? [params.asset1Id]  // Only include non-ALGO asset
         : [params.asset1Id, params.asset2Id],  // Include both if neither is ALGO
+      boxes: [boxReference], // Box reference with raw bytes
     });
     transactions.push(appCallTxn);
 
@@ -131,7 +140,7 @@ export class LiquidityPoolClient {
    */
   async buildCreateLPTokenTxn(
     userAddress: string,
-    poolId: string,
+    poolIdBytes: Uint8Array,
     totalSupply: bigint,
     decimals: number,
     name: string,
@@ -160,9 +169,13 @@ export class LiquidityPoolClient {
     // Encode method arguments using ABIType for proper encoding
     const appArgs: Uint8Array[] = [createLPTokenMethod.getSelector()];
 
-    // Encode string for pool_id (NEW)
-    const poolIdType = algosdk.ABIType.from('string');
-    appArgs.push(poolIdType.encode(poolId));
+    // Encode pool_id as ARC-4 string (2-byte length prefix + raw bytes)
+    // We need to manually create the ARC-4 string encoding
+    const poolIdEncoded = new Uint8Array(2 + poolIdBytes.length);
+    poolIdEncoded[0] = (poolIdBytes.length >> 8) & 0xFF; // High byte of length
+    poolIdEncoded[1] = poolIdBytes.length & 0xFF;        // Low byte of length
+    poolIdEncoded.set(poolIdBytes, 2);                   // Copy the bytes after length
+    appArgs.push(poolIdEncoded);
 
     // Encode uint64 for total supply
     const totalType = algosdk.ABIType.from('uint64');
@@ -185,12 +198,21 @@ export class LiquidityPoolClient {
     modifiedParams.fee = BigInt(2000); // 1000 for this txn + 1000 for inner txn (asset creation)
     modifiedParams.flatFee = true;
 
+    // CRITICAL: Box reference must use raw bytes WITHOUT ARC-4 encoding
+    // The pool_id argument is ARC-4 encoded (with length prefix), but the box name is raw
+    // Convert Uint8Array to Buffer to ensure proper encoding
+    const boxReference: algosdk.BoxReference = {
+      appIndex: this.poolAppId,
+      name: Buffer.from(poolIdBytes), // Raw 32-byte pool ID as Buffer
+    };
+
     const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
       sender: userAddress,
       suggestedParams: modifiedParams,
       appIndex: this.poolAppId,
       onComplete: algosdk.OnApplicationComplete.NoOpOC,
       appArgs,
+      boxes: [boxReference], // Box reference with raw bytes
     });
 
     return appCallTxn;
@@ -282,6 +304,12 @@ export class LiquidityPoolClient {
     modifiedParams.fee = BigInt(2000); // 1000 for this txn + 1000 for inner txn
     modifiedParams.flatFee = true;
 
+    // CRITICAL: Declare box reference for box storage access
+    const boxReference: algosdk.BoxReference = {
+      appIndex: this.poolAppId,
+      name: Buffer.from(params.poolId), // Pool ID is raw 32-byte hash as Buffer
+    };
+
     const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
       sender: params.userAddress,
       suggestedParams: modifiedParams,
@@ -289,6 +317,7 @@ export class LiquidityPoolClient {
       onComplete: algosdk.OnApplicationComplete.NoOpOC,
       appArgs,
       foreignAssets: [params.asset1Id, params.asset2Id],
+      boxes: [boxReference], // Box reference with raw bytes
     });
     transactions.push(appCallTxn);
 
@@ -350,6 +379,12 @@ export class LiquidityPoolClient {
     modifiedParams.fee = BigInt(3000); // 1000 for this txn + 2000 for 2 inner txns (2 asset transfers)
     modifiedParams.flatFee = true;
 
+    // CRITICAL: Declare box reference for box storage access
+    const boxReference: algosdk.BoxReference = {
+      appIndex: this.poolAppId,
+      name: Buffer.from(params.poolId), // Pool ID is raw 32-byte hash as Buffer
+    };
+
     const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
       sender: params.userAddress,
       suggestedParams: modifiedParams,
@@ -357,6 +392,7 @@ export class LiquidityPoolClient {
       onComplete: algosdk.OnApplicationComplete.NoOpOC,
       appArgs,
       foreignAssets: [lpTokenId],
+      boxes: [boxReference], // Box reference with raw bytes
     });
     transactions.push(appCallTxn);
 
@@ -430,6 +466,12 @@ export class LiquidityPoolClient {
     modifiedParams.fee = BigInt(2000); // 1000 for this txn + 1000 for inner txn (asset transfer)
     modifiedParams.flatFee = true;
 
+    // CRITICAL: Declare box reference for box storage access
+    const boxReference: algosdk.BoxReference = {
+      appIndex: this.poolAppId,
+      name: Buffer.from(params.poolId), // Pool ID is raw 32-byte hash as Buffer
+    };
+
     const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
       sender: params.userAddress,
       suggestedParams: modifiedParams,
@@ -437,6 +479,7 @@ export class LiquidityPoolClient {
       onComplete: algosdk.OnApplicationComplete.NoOpOC,
       appArgs,
       foreignAssets: [params.assetInId, params.assetOutId],
+      boxes: [boxReference], // Box reference with raw bytes
     });
     transactions.push(appCallTxn);
 
@@ -452,9 +495,9 @@ export class LiquidityPoolClient {
    * - Sort asset IDs
    * - Concatenate as bytes
    * - SHA256 hash
-   * - Return as arc4.String (raw bytes)
+   * - Return as raw bytes (Uint8Array)
    */
-  computePoolId(asset1Id: number, asset2Id: number): string {
+  computePoolId(asset1Id: number, asset2Id: number): Uint8Array {
     // Sort asset IDs to ensure consistent key
     const [sortedAsset1, sortedAsset2] = asset1Id < asset2Id
       ? [asset1Id, asset2Id]
@@ -465,12 +508,12 @@ export class LiquidityPoolClient {
     buffer.writeBigUInt64BE(BigInt(sortedAsset1), 0);
     buffer.writeBigUInt64BE(BigInt(sortedAsset2), 8);
 
-    // SHA256 hash
+    // SHA256 hash - return as raw bytes
     const crypto = require('crypto');
     const hash = crypto.createHash('sha256').update(buffer).digest();
 
-    // Return as base64 string (ARC-4 string encoding for bytes)
-    return hash.toString('base64');
+    // Return as Uint8Array (raw 32 bytes)
+    return new Uint8Array(hash);
   }
 
   /**
