@@ -129,8 +129,26 @@ export function updateXTokenBalance(userId: string, amount: number, type: 'earn'
 }
 
 // Quest Functions
+export function resetDailyQuests(userId: string): void {
+  const database = getDB()
+  
+  // Reset daily quests that were claimed more than 24 hours ago
+  database.prepare(`
+    UPDATE quest_progress 
+    SET status = 'active', progress = 0, completed_at = NULL
+    WHERE user_id = ? 
+    AND quest_id IN (SELECT id FROM (SELECT ? as id) WHERE id IN ('daily_login'))
+    AND status = 'claimed'
+    AND claimed_at IS NOT NULL
+    AND (julianday('now') - julianday(claimed_at)) * 24 >= 24
+  `).run(userId, 'daily_login')
+}
+
 export function getUserQuestProgress(userId: string): Array<Quest & { progress: number; status: QuestStatus }> {
   const database = getDB()
+  
+  // First, reset any daily quests that are ready
+  resetDailyQuests(userId)
   
   database.transaction(() => {
     // Ensure all quest progress rows exist
@@ -241,6 +259,26 @@ export function claimQuestReward(userId: string, questId: string): boolean {
     
     if (!progressRow) return false
     
+    // For daily quests, check 24-hour cooldown
+    if (quest.type === 'daily') {
+      const lastClaim = database.prepare(`
+        SELECT claimed_at FROM quest_progress 
+        WHERE user_id = ? AND quest_id = ? AND claimed_at IS NOT NULL
+        ORDER BY claimed_at DESC LIMIT 1
+      `).get(userId, questId) as any
+      
+      if (lastClaim) {
+        const lastClaimTime = new Date(lastClaim.claimed_at).getTime()
+        const now = Date.now()
+        const hoursSinceLastClaim = (now - lastClaimTime) / (1000 * 60 * 60)
+        
+        // If less than 24 hours have passed, return false
+        if (hoursSinceLastClaim < 24) {
+          return false
+        }
+      }
+    }
+    
     // Immediately mark as claimed to prevent duplicate claims
     const updateResult = database.prepare(`
       UPDATE quest_progress SET status = 'claimed', claimed_at = CURRENT_TIMESTAMP
@@ -273,6 +311,31 @@ export function claimQuestReward(userId: string, questId: string): boolean {
   })()
   
   return result
+}
+
+// Get time until next claim is available (in milliseconds)
+export function getTimeUntilNextClaim(userId: string, questId: string): number | null {
+  const database = getDB()
+  
+  const quest = PREDEFINED_QUESTS.find(q => q.id === questId)
+  if (!quest || quest.type !== 'daily') return null
+  
+  const lastClaim = database.prepare(`
+    SELECT claimed_at FROM quest_progress 
+    WHERE user_id = ? AND quest_id = ? AND claimed_at IS NOT NULL
+    ORDER BY claimed_at DESC LIMIT 1
+  `).get(userId, questId) as any
+  
+  if (!lastClaim) return 0 // Never claimed, available now
+  
+  const lastClaimTime = new Date(lastClaim.claimed_at).getTime()
+  const now = Date.now()
+  const timeElapsed = now - lastClaimTime
+  const cooldownTime = 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+  
+  const timeRemaining = cooldownTime - timeElapsed
+  
+  return timeRemaining > 0 ? timeRemaining : 0
 }
 
 // Streak Functions

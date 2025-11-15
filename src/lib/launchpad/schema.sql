@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS launch_projects (
   description TEXT,
   logo_url TEXT,
   website_url TEXT,
-  twitter_url TEXT,
+  twitter_url TEXT, 
   telegram_url TEXT,
   
   -- ASA Information
