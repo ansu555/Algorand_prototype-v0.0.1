@@ -14,6 +14,7 @@ export interface CreatePoolParams {
 }
 
 export interface AddLiquidityParams {
+  poolId: Uint8Array; // NEW: Required for multi-pool factory (raw 32 bytes)
   asset1Id: number;
   asset2Id: number;
   amount1: bigint;
@@ -23,6 +24,7 @@ export interface AddLiquidityParams {
 }
 
 export interface RemoveLiquidityParams {
+  poolId: Uint8Array; // NEW: Required for multi-pool factory (raw 32 bytes)
   lpTokenAmount: bigint;
   minAsset1: bigint;
   minAsset2: bigint;
@@ -30,6 +32,7 @@ export interface RemoveLiquidityParams {
 }
 
 export interface SwapParams {
+  poolId: Uint8Array; // NEW: Required for multi-pool factory (raw 32 bytes)
   assetInId: number;
   assetOutId: number;
   amountIn: bigint;
@@ -104,6 +107,14 @@ export class LiquidityPoolClient {
     const feeType = algosdk.ABIType.from('uint16');
     appArgs.push(feeType.encode(params.feeBps));
 
+    // CRITICAL: Compute pool ID and declare box reference
+    // The create_pool method will create this box, so we need to declare it
+    const poolIdBytes = this.computePoolId(params.asset1Id, params.asset2Id);
+    const boxReference: algosdk.BoxReference = {
+      appIndex: this.poolAppId,
+      name: Buffer.from(poolIdBytes), // Pool ID is raw 32-byte SHA256 hash as Buffer
+    };
+
     // Application call to create_pool with proper ARC-4 encoding
     const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
       sender: params.userAddress,
@@ -116,6 +127,7 @@ export class LiquidityPoolClient {
         : params.asset2Id === 0
         ? [params.asset1Id]  // Only include non-ALGO asset
         : [params.asset1Id, params.asset2Id],  // Include both if neither is ALGO
+      boxes: [boxReference], // Box reference with raw bytes
     });
     transactions.push(appCallTxn);
 
@@ -124,9 +136,11 @@ export class LiquidityPoolClient {
 
   /**
    * Build transactions to create LP token
+   * NEW: Requires pool_id parameter for multi-pool factory
    */
   async buildCreateLPTokenTxn(
     userAddress: string,
+    poolIdBytes: Uint8Array,
     totalSupply: bigint,
     decimals: number,
     name: string,
@@ -139,9 +153,11 @@ export class LiquidityPoolClient {
     const suggestedParams = await this.algodClient.getTransactionParams().do();
 
     // Create ARC-4 method for proper encoding
+    // NEW: pool_id is now the first parameter
     const createLPTokenMethod = new algosdk.ABIMethod({
       name: 'create_lp_token',
       args: [
+        { type: 'string', name: 'pool_id' },
         { type: 'uint64', name: 'total' },
         { type: 'uint32', name: 'decimals' },
         { type: 'string', name: 'name' },
@@ -152,6 +168,14 @@ export class LiquidityPoolClient {
 
     // Encode method arguments using ABIType for proper encoding
     const appArgs: Uint8Array[] = [createLPTokenMethod.getSelector()];
+
+    // Encode pool_id as ARC-4 string (2-byte length prefix + raw bytes)
+    // We need to manually create the ARC-4 string encoding
+    const poolIdEncoded = new Uint8Array(2 + poolIdBytes.length);
+    poolIdEncoded[0] = (poolIdBytes.length >> 8) & 0xFF; // High byte of length
+    poolIdEncoded[1] = poolIdBytes.length & 0xFF;        // Low byte of length
+    poolIdEncoded.set(poolIdBytes, 2);                   // Copy the bytes after length
+    appArgs.push(poolIdEncoded);
 
     // Encode uint64 for total supply
     const totalType = algosdk.ABIType.from('uint64');
@@ -174,12 +198,21 @@ export class LiquidityPoolClient {
     modifiedParams.fee = BigInt(2000); // 1000 for this txn + 1000 for inner txn (asset creation)
     modifiedParams.flatFee = true;
 
+    // CRITICAL: Box reference must use raw bytes WITHOUT ARC-4 encoding
+    // The pool_id argument is ARC-4 encoded (with length prefix), but the box name is raw
+    // Convert Uint8Array to Buffer to ensure proper encoding
+    const boxReference: algosdk.BoxReference = {
+      appIndex: this.poolAppId,
+      name: Buffer.from(poolIdBytes), // Raw 32-byte pool ID as Buffer
+    };
+
     const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
       sender: userAddress,
       suggestedParams: modifiedParams,
       appIndex: this.poolAppId,
       onComplete: algosdk.OnApplicationComplete.NoOpOC,
       appArgs,
+      boxes: [boxReference], // Box reference with raw bytes
     });
 
     return appCallTxn;
@@ -244,9 +277,11 @@ export class LiquidityPoolClient {
     // Transaction 3: Application call to add_liquidity
     // Create ARC-4 method for proper encoding
     // Note: axfer transactions are in the group, but must be in the signature for selector
+    // NEW: pool_id is now the first parameter
     const addLiquidityMethod = new algosdk.ABIMethod({
       name: 'add_liquidity',
       args: [
+        { type: 'string', name: 'pool_id' },
         { type: 'axfer', name: 'asset_1_payment' },
         { type: 'axfer', name: 'asset_2_payment' },
         { type: 'uint64', name: 'min_lp_tokens' },
@@ -256,6 +291,11 @@ export class LiquidityPoolClient {
 
     // Only non-transaction arguments are encoded in appArgs
     const appArgs: Uint8Array[] = [addLiquidityMethod.getSelector()];
+
+    // Encode string for pool_id (NEW)
+    const poolIdType = algosdk.ABIType.from('string');
+    appArgs.push(poolIdType.encode(params.poolId));
+
     const minLpTokensType = algosdk.ABIType.from('uint64');
     appArgs.push(minLpTokensType.encode(params.minLpTokens));
 
@@ -264,6 +304,12 @@ export class LiquidityPoolClient {
     modifiedParams.fee = BigInt(2000); // 1000 for this txn + 1000 for inner txn
     modifiedParams.flatFee = true;
 
+    // CRITICAL: Declare box reference for box storage access
+    const boxReference: algosdk.BoxReference = {
+      appIndex: this.poolAppId,
+      name: Buffer.from(params.poolId), // Pool ID is raw 32-byte hash as Buffer
+    };
+
     const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
       sender: params.userAddress,
       suggestedParams: modifiedParams,
@@ -271,6 +317,7 @@ export class LiquidityPoolClient {
       onComplete: algosdk.OnApplicationComplete.NoOpOC,
       appArgs,
       foreignAssets: [params.asset1Id, params.asset2Id],
+      boxes: [boxReference], // Box reference with raw bytes
     });
     transactions.push(appCallTxn);
 
@@ -303,9 +350,11 @@ export class LiquidityPoolClient {
     // Transaction 2: Application call to remove_liquidity
     // Create ARC-4 method for proper encoding
     // Note: axfer transaction is in the group, but must be in the signature for selector
+    // NEW: pool_id is now the first parameter
     const removeLiquidityMethod = new algosdk.ABIMethod({
       name: 'remove_liquidity',
       args: [
+        { type: 'string', name: 'pool_id' },
         { type: 'axfer', name: 'lp_token_payment' },
         { type: 'uint64', name: 'min_asset_1' },
         { type: 'uint64', name: 'min_asset_2' },
@@ -315,6 +364,11 @@ export class LiquidityPoolClient {
 
     // Only non-transaction arguments are encoded in appArgs
     const appArgs: Uint8Array[] = [removeLiquidityMethod.getSelector()];
+
+    // Encode string for pool_id (NEW)
+    const poolIdType = algosdk.ABIType.from('string');
+    appArgs.push(poolIdType.encode(params.poolId));
+
     const minAsset1Type = algosdk.ABIType.from('uint64');
     appArgs.push(minAsset1Type.encode(params.minAsset1));
     const minAsset2Type = algosdk.ABIType.from('uint64');
@@ -325,6 +379,12 @@ export class LiquidityPoolClient {
     modifiedParams.fee = BigInt(3000); // 1000 for this txn + 2000 for 2 inner txns (2 asset transfers)
     modifiedParams.flatFee = true;
 
+    // CRITICAL: Declare box reference for box storage access
+    const boxReference: algosdk.BoxReference = {
+      appIndex: this.poolAppId,
+      name: Buffer.from(params.poolId), // Pool ID is raw 32-byte hash as Buffer
+    };
+
     const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
       sender: params.userAddress,
       suggestedParams: modifiedParams,
@@ -332,6 +392,7 @@ export class LiquidityPoolClient {
       onComplete: algosdk.OnApplicationComplete.NoOpOC,
       appArgs,
       foreignAssets: [lpTokenId],
+      boxes: [boxReference], // Box reference with raw bytes
     });
     transactions.push(appCallTxn);
 
@@ -376,9 +437,11 @@ export class LiquidityPoolClient {
     // Transaction 2: Application call to swap
     // Create ARC-4 method for proper encoding
     // Note: axfer transaction is in the group, but must be in the signature for selector
+    // NEW: pool_id is now the first parameter
     const swapMethod = new algosdk.ABIMethod({
       name: 'swap',
       args: [
+        { type: 'string', name: 'pool_id' },
         { type: 'axfer', name: 'asset_in_payment' },
         { type: 'uint64', name: 'asset_out_id' },
         { type: 'uint64', name: 'min_amount_out' },
@@ -388,6 +451,11 @@ export class LiquidityPoolClient {
 
     // Only non-transaction arguments are encoded in appArgs
     const appArgs: Uint8Array[] = [swapMethod.getSelector()];
+
+    // Encode string for pool_id (NEW)
+    const poolIdType = algosdk.ABIType.from('string');
+    appArgs.push(poolIdType.encode(params.poolId));
+
     const assetOutIdType = algosdk.ABIType.from('uint64');
     appArgs.push(assetOutIdType.encode(params.assetOutId));
     const minAmountOutType = algosdk.ABIType.from('uint64');
@@ -398,6 +466,12 @@ export class LiquidityPoolClient {
     modifiedParams.fee = BigInt(2000); // 1000 for this txn + 1000 for inner txn (asset transfer)
     modifiedParams.flatFee = true;
 
+    // CRITICAL: Declare box reference for box storage access
+    const boxReference: algosdk.BoxReference = {
+      appIndex: this.poolAppId,
+      name: Buffer.from(params.poolId), // Pool ID is raw 32-byte hash as Buffer
+    };
+
     const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
       sender: params.userAddress,
       suggestedParams: modifiedParams,
@@ -405,6 +479,7 @@ export class LiquidityPoolClient {
       onComplete: algosdk.OnApplicationComplete.NoOpOC,
       appArgs,
       foreignAssets: [params.assetInId, params.assetOutId],
+      boxes: [boxReference], // Box reference with raw bytes
     });
     transactions.push(appCallTxn);
 
@@ -413,42 +488,49 @@ export class LiquidityPoolClient {
   }
 
   /**
-   * Get pool information (read-only)
+   * Compute pool ID for an asset pair (client-side)
+   * NEW: Required for multi-pool factory
+   *
+   * Replicates the contract's get_pool_key logic:
+   * - Sort asset IDs
+   * - Concatenate as bytes
+   * - SHA256 hash
+   * - Return as raw bytes (Uint8Array)
    */
-  async getPoolInfo(): Promise<PoolInfo | null> {
+  computePoolId(asset1Id: number, asset2Id: number): Uint8Array {
+    // Sort asset IDs to ensure consistent key
+    const [sortedAsset1, sortedAsset2] = asset1Id < asset2Id
+      ? [asset1Id, asset2Id]
+      : [asset2Id, asset1Id];
+
+    // Concatenate as 8-byte big-endian values
+    const buffer = Buffer.alloc(16);
+    buffer.writeBigUInt64BE(BigInt(sortedAsset1), 0);
+    buffer.writeBigUInt64BE(BigInt(sortedAsset2), 8);
+
+    // SHA256 hash - return as raw bytes
+    const crypto = require('crypto');
+    const hash = crypto.createHash('sha256').update(buffer).digest();
+
+    // Return as Uint8Array (raw 32 bytes)
+    return new Uint8Array(hash);
+  }
+
+  /**
+   * Get pool information (read-only)
+   * NEW: For multi-pool factory, we'll need to use box storage
+   * This is a placeholder - actual implementation would require simulate/dryrun
+   */
+  async getPoolInfo(poolId: string): Promise<PoolInfo | null> {
     if (this.poolAppId === 0) {
       return null;
     }
 
     try {
-      const appInfo = await this.algodClient.getApplicationByID(this.poolAppId).do();
-      const globalState = (appInfo.params as any)['global-state'] || appInfo.params.globalState;
-
-      // Parse global state
-      const parsedState: any = {};
-      for (const item of globalState) {
-        const key = Buffer.from(item.key, 'base64').toString();
-        const value = item.value;
-
-        if (value.type === 1) {
-          // bytes
-          parsedState[key] = Buffer.from(value.bytes, 'base64');
-        } else if (value.type === 2) {
-          // uint
-          parsedState[key] = BigInt(value.uint);
-        }
-      }
-
-      return {
-        asset1Id: parsedState.asset_1_id || 0n,
-        asset2Id: parsedState.asset_2_id || 0n,
-        reserve1: parsedState.reserve_1 || 0n,
-        reserve2: parsedState.reserve_2 || 0n,
-        totalLiquidity: parsedState.total_liquidity || 0n,
-        feeBps: Number(parsedState.fee_bps || 0n),
-        lpTokenId: parsedState.lp_token_id || 0n,
-        initialized: parsedState.initialized || false,
-      };
+      // For now, return null - getting box data requires simulate API
+      // In production, you would use the simulate endpoint to call get_pool_info
+      console.warn('getPoolInfo not fully implemented for multi-pool factory. Use compute_pool_id to get poolId, then query boxes directly.');
+      return null;
     } catch (error) {
       console.error('Error fetching pool info:', error);
       return null;
@@ -457,38 +539,27 @@ export class LiquidityPoolClient {
 
   /**
    * Get swap quote (read-only)
+   * NEW: Requires poolId for multi-pool factory
+   *
+   * Note: Currently calculates locally. For production, should use simulate API
    */
-  async getSwapQuote(assetInId: number, assetOutId: number, amountIn: bigint): Promise<bigint> {
+  async getSwapQuote(
+    poolId: string,
+    assetInId: number,
+    assetOutId: number,
+    amountIn: bigint
+  ): Promise<bigint> {
     if (this.poolAppId === 0) {
       throw new Error('Liquidity Pool contract not deployed.');
     }
 
-    const suggestedParams = await this.algodClient.getTransactionParams().do();
+    // For now, we'll need the pool info from the frontend/caller
+    // In production, this would use the simulate API to call get_swap_quote
+    console.warn('getSwapQuote: This method needs pool reserves. Pass them from the frontend or use simulate API.');
 
-    // This would require a dryrun or simulate call
-    // For now, we'll calculate locally based on pool state
-    const poolInfo = await this.getPoolInfo();
-    if (!poolInfo || poolInfo.reserve1 === 0n || poolInfo.reserve2 === 0n) {
-      throw new Error('Pool not initialized or no liquidity');
-    }
-
-    const swap1to2 = assetInId === Number(poolInfo.asset1Id) && assetOutId === Number(poolInfo.asset2Id);
-    const swap2to1 = assetInId === Number(poolInfo.asset2Id) && assetOutId === Number(poolInfo.asset1Id);
-
-    if (!swap1to2 && !swap2to1) {
-      throw new Error('Invalid asset pair');
-    }
-
-    const reserveIn = swap1to2 ? poolInfo.reserve1 : poolInfo.reserve2;
-    const reserveOut = swap1to2 ? poolInfo.reserve2 : poolInfo.reserve1;
-
-    // Calculate output using constant product formula
-    const amountInWithFee = amountIn * BigInt(10000 - poolInfo.feeBps);
-    const numerator = amountInWithFee * reserveOut;
-    const denominator = reserveIn * 10000n + amountInWithFee;
-    const amountOut = numerator / denominator;
-
-    return amountOut;
+    // Placeholder - return 0 for now
+    // The frontend should calculate quotes locally using pool reserves
+    return 0n;
   }
 
   /**

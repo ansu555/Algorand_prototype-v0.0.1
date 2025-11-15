@@ -85,6 +85,7 @@ export async function POST(request: NextRequest) {
             confirmedRound: Number(confirmedRound),
 
             // Pool details
+            poolId: poolMetadata.poolId, // NEW: Store pool ID from multi-pool factory
             asset1Id: poolMetadata.asset1Id,
             asset2Id: poolMetadata.asset2Id,
             amount1: poolMetadata.amount1,

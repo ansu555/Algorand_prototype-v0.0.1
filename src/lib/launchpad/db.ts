@@ -1,0 +1,502 @@
+import Database from 'better-sqlite3'
+import path from 'path'
+import fs from 'fs'
+import { randomBytes } from 'crypto'
+import type {
+  LaunchProject,
+  TokenPurchase,
+  LaunchpadPoints,
+  LaunchpadClaim,
+  AntiBotRecord,
+  PriceQuote,
+  BondingCurveParams,
+  CurveType,
+  ProjectStatus
+} from './types'
+import {
+  calculateProgress,
+  calculateEarlyBonus,
+  BLOCKS_PER_DAY,
+  MAX_PURCHASE_PER_TX_PERCENT,
+  MAX_PURCHASE_PER_USER_PERCENT,
+  COOLDOWN_BLOCKS,
+  POINTS_MULTIPLIER_BASE
+} from './types'
+
+const dbPath = path.join(process.cwd(), 'data', 'launchpad.sqlite')
+
+// Ensure data directory exists
+const dataDir = path.dirname(dbPath)
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true })
+}
+
+let db: Database.Database | null = null
+
+function getDB(): Database.Database {
+  if (!db) {
+    db = new Database(dbPath)
+    db.pragma('journal_mode = WAL')
+    initializeDatabase()
+  }
+  return db
+}
+
+function initializeDatabase() {
+  const schemaPath = path.join(process.cwd(), 'src', 'lib', 'launchpad', 'schema.sql')
+  
+  if (fs.existsSync(schemaPath)) {
+    const schema = fs.readFileSync(schemaPath, 'utf-8')
+    db!.exec(schema)
+  }
+}
+
+// Project Management
+export function createProject(project: Omit<LaunchProject, 'id' | 'createdAt' | 'updatedAt'>): string {
+  const database = getDB()
+  const projectId = `project_${Date.now()}_${randomBytes(4).toString('hex')}`
+  
+  database.prepare(`
+    INSERT INTO launch_projects (
+      id, creator_address, token_name, token_symbol, token_decimals, total_supply,
+      description, logo_url, website_url, twitter_url, telegram_url,
+      curve_type, base_price, max_price, bonding_target, tokens_for_sale,
+      liquidity_percentage, lp_lock_duration, dex_platform, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    projectId,
+    project.creatorAddress,
+    project.tokenName,
+    project.tokenSymbol,
+    project.tokenDecimals,
+    project.totalSupply.toString(),
+    project.description || null,
+    project.logoUrl || null,
+    project.websiteUrl || null,
+    project.twitterUrl || null,
+    project.telegramUrl || null,
+    project.curveType,
+    project.basePrice.toString(),
+    project.maxPrice.toString(),
+    project.bondingTarget.toString(),
+    project.tokensForSale.toString(),
+    project.liquidityPercentage,
+    project.lpLockDuration.toString(),
+    project.dexPlatform,
+    project.status
+  )
+  
+  return projectId
+}
+
+export function getProject(projectId: string): LaunchProject | null {
+  const database = getDB()
+  const row = database.prepare('SELECT * FROM launch_projects WHERE id = ?').get(projectId) as any
+  
+  if (!row) return null
+  
+  return {
+    id: row.id,
+    creatorAddress: row.creator_address,
+    tokenName: row.token_name,
+    tokenSymbol: row.token_symbol,
+    tokenDecimals: row.token_decimals,
+    totalSupply: BigInt(row.total_supply),
+    description: row.description,
+    logoUrl: row.logo_url,
+    websiteUrl: row.website_url,
+    twitterUrl: row.twitter_url,
+    telegramUrl: row.telegram_url,
+    asaId: row.asa_id ? BigInt(row.asa_id) : undefined,
+    appId: row.app_id ? BigInt(row.app_id) : undefined,
+    curveType: row.curve_type as CurveType,
+    basePrice: BigInt(row.base_price),
+    maxPrice: BigInt(row.max_price),
+    bondingTarget: BigInt(row.bonding_target),
+    tokensForSale: BigInt(row.tokens_for_sale),
+    status: row.status as ProjectStatus,
+    tokensSold: BigInt(row.tokens_sold),
+    algoRaised: BigInt(row.algo_raised),
+    participantCount: row.participant_count,
+    launchRound: row.launch_round ? BigInt(row.launch_round) : undefined,
+    graduationRound: row.graduation_round ? BigInt(row.graduation_round) : undefined,
+    liquidityPercentage: row.liquidity_percentage,
+    lpLockDuration: BigInt(row.lp_lock_duration),
+    dexPlatform: row.dex_platform,
+    createdAt: row.created_at,
+    launchedAt: row.launched_at,
+    graduatedAt: row.graduated_at,
+    updatedAt: row.updated_at
+  }
+}
+
+export function getAllProjects(status?: ProjectStatus): LaunchProject[] {
+  const database = getDB()
+  
+  const query = status 
+    ? 'SELECT * FROM launch_projects WHERE status = ? ORDER BY created_at DESC'
+    : 'SELECT * FROM launch_projects ORDER BY created_at DESC'
+  
+  const rows = status
+    ? database.prepare(query).all(status) as any[]
+    : database.prepare(query).all() as any[]
+  
+  return rows.map(row => ({
+    id: row.id,
+    creatorAddress: row.creator_address,
+    tokenName: row.token_name,
+    tokenSymbol: row.token_symbol,
+    tokenDecimals: row.token_decimals,
+    totalSupply: BigInt(row.total_supply),
+    description: row.description,
+    logoUrl: row.logo_url,
+    websiteUrl: row.website_url,
+    twitterUrl: row.twitter_url,
+    telegramUrl: row.telegram_url,
+    asaId: row.asa_id ? BigInt(row.asa_id) : undefined,
+    appId: row.app_id ? BigInt(row.app_id) : undefined,
+    curveType: row.curve_type as CurveType,
+    basePrice: BigInt(row.base_price),
+    maxPrice: BigInt(row.max_price),
+    bondingTarget: BigInt(row.bonding_target),
+    tokensForSale: BigInt(row.tokens_for_sale),
+    status: row.status as ProjectStatus,
+    tokensSold: BigInt(row.tokens_sold),
+    algoRaised: BigInt(row.algo_raised),
+    participantCount: row.participant_count,
+    launchRound: row.launch_round ? BigInt(row.launch_round) : undefined,
+    graduationRound: row.graduation_round ? BigInt(row.graduation_round) : undefined,
+    liquidityPercentage: row.liquidity_percentage,
+    lpLockDuration: BigInt(row.lp_lock_duration),
+    dexPlatform: row.dex_platform,
+    createdAt: row.created_at,
+    launchedAt: row.launched_at,
+    graduatedAt: row.graduated_at,
+    updatedAt: row.updated_at
+  }))
+}
+
+export function updateProjectStatus(projectId: string, status: ProjectStatus, additionalData?: any) {
+  const database = getDB()
+  
+  database.prepare(`
+    UPDATE launch_projects 
+    SET status = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(status, projectId)
+  
+  if (additionalData) {
+    if (additionalData.asaId) {
+      database.prepare('UPDATE launch_projects SET asa_id = ? WHERE id = ?')
+        .run(additionalData.asaId.toString(), projectId)
+    }
+    if (additionalData.appId) {
+      database.prepare('UPDATE launch_projects SET app_id = ? WHERE id = ?')
+        .run(additionalData.appId.toString(), projectId)
+    }
+    if (additionalData.launchRound) {
+      database.prepare('UPDATE launch_projects SET launch_round = ?, launched_at = CURRENT_TIMESTAMP WHERE id = ?')
+        .run(additionalData.launchRound.toString(), projectId)
+    }
+    if (additionalData.graduationRound) {
+      database.prepare('UPDATE launch_projects SET graduation_round = ?, graduated_at = CURRENT_TIMESTAMP WHERE id = ?')
+        .run(additionalData.graduationRound.toString(), projectId)
+    }
+  }
+}
+
+// Bonding Curve Calculations
+export function calculateSigmoidPrice(params: BondingCurveParams): bigint {
+  const { basePrice, maxPrice, totalSupply, tokensSold } = params
+  
+  // Progress as percentage * 100 (0-10000)
+  const progress = (tokensSold * 10000n) / totalSupply
+  
+  // Simplified sigmoid: price = base + (max - base) * (progress / 10000)^2
+  const priceIncrease = (progress * progress) / 10000n
+  const priceDelta = ((maxPrice - basePrice) * priceIncrease) / 10000n
+  
+  return basePrice + priceDelta
+}
+
+export function calculateLinearPrice(params: BondingCurveParams): bigint {
+  const { basePrice, maxPrice, totalSupply, tokensSold } = params
+  
+  const progress = (tokensSold * 10000n) / totalSupply
+  const priceDelta = ((maxPrice - basePrice) * progress) / 10000n
+  
+  return basePrice + priceDelta
+}
+
+export function calculateExponentialPrice(params: BondingCurveParams): bigint {
+  const { basePrice, maxPrice, totalSupply, tokensSold } = params
+  
+  const progress = (tokensSold * 10000n) / totalSupply
+  
+  // Exponential: price = base * (max/base)^(progress/10000)
+  // Simplified for TEAL compatibility
+  const ratio = (maxPrice * 10000n) / basePrice
+  const expFactor = (ratio * progress) / 10000n
+  
+  return (basePrice * expFactor) / 10000n
+}
+
+export function calculatePrice(params: BondingCurveParams): bigint {
+  switch (params.curveType) {
+    case 'sigmoid':
+      return calculateSigmoidPrice(params)
+    case 'linear':
+      return calculateLinearPrice(params)
+    case 'exponential':
+      return calculateExponentialPrice(params)
+    default:
+      return calculateLinearPrice(params)
+  }
+}
+
+export function getPriceQuote(projectId: string, tokensAmount: bigint): PriceQuote | null {
+  const project = getProject(projectId)
+  if (!project) return null
+  
+  const currentPrice = calculatePrice({
+    curveType: project.curveType,
+    basePrice: project.basePrice,
+    maxPrice: project.maxPrice,
+    totalSupply: project.tokensForSale,
+    tokensSold: project.tokensSold
+  })
+  
+  // Calculate total cost (simplified - should integrate for accurate pricing)
+  const totalCost = (tokensAmount * currentPrice) / BigInt(10 ** project.tokenDecimals)
+  
+  // Calculate price impact
+  const priceAfter = calculatePrice({
+    curveType: project.curveType,
+    basePrice: project.basePrice,
+    maxPrice: project.maxPrice,
+    totalSupply: project.tokensForSale,
+    tokensSold: project.tokensSold + tokensAmount
+  })
+  
+  const priceImpact = Number((priceAfter - currentPrice) * 10000n / currentPrice) / 100
+  
+  // Calculate points with early bonus
+  const progress = calculateProgress(project.tokensSold, project.tokensForSale)
+  const earlyBonus = calculateEarlyBonus(progress)
+  const pointsToEarn = BigInt(Math.floor(Number(tokensAmount) * earlyBonus))
+  
+  return {
+    tokensAmount,
+    totalCost,
+    averagePrice: currentPrice,
+    priceImpact,
+    pointsToEarn
+  }
+}
+
+// Purchase Management
+export function recordPurchase(
+  projectId: string,
+  buyerAddress: string,
+  tokensAmount: bigint,
+  algoPaid: bigint,
+  transactionId: string,
+  blockRound: bigint
+): string {
+  const database = getDB()
+  const project = getProject(projectId)
+  
+  if (!project) throw new Error('Project not found')
+  
+  const purchaseId = `purchase_${Date.now()}_${randomBytes(4).toString('hex')}`
+  
+  const currentPrice = calculatePrice({
+    curveType: project.curveType,
+    basePrice: project.basePrice,
+    maxPrice: project.maxPrice,
+    totalSupply: project.tokensForSale,
+    tokensSold: project.tokensSold
+  })
+  
+  const progress = calculateProgress(project.tokensSold, project.tokensForSale)
+  const earlyBonus = calculateEarlyBonus(progress)
+  const pointsEarned = BigInt(Math.floor(Number(tokensAmount) * earlyBonus))
+  
+  database.transaction(() => {
+    // Record purchase
+    database.prepare(`
+      INSERT INTO token_purchases (
+        id, project_id, buyer_address, tokens_amount, algo_paid,
+        price_per_token, points_earned, transaction_id, block_round
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      purchaseId,
+      projectId,
+      buyerAddress,
+      tokensAmount.toString(),
+      algoPaid.toString(),
+      currentPrice.toString(),
+      pointsEarned.toString(),
+      transactionId,
+      blockRound.toString()
+    )
+    
+    // Update project stats
+    const newTokensSold = project.tokensSold + tokensAmount
+    const newAlgoRaised = project.algoRaised + algoPaid
+    
+    database.prepare(`
+      UPDATE launch_projects 
+      SET tokens_sold = ?, algo_raised = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(newTokensSold.toString(), newAlgoRaised.toString(), projectId)
+    
+    // Update or create points record
+    const existingPoints = database.prepare(
+      'SELECT * FROM launchpad_points WHERE user_address = ? AND project_id = ?'
+    ).get(buyerAddress, projectId) as any
+    
+    if (existingPoints) {
+      database.prepare(`
+        UPDATE launchpad_points 
+        SET points_balance = points_balance + ?,
+            total_earned = total_earned + ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_address = ? AND project_id = ?
+      `).run(pointsEarned.toString(), pointsEarned.toString(), buyerAddress, projectId)
+    } else {
+      database.prepare(`
+        INSERT INTO launchpad_points (user_address, project_id, points_balance, total_earned)
+        VALUES (?, ?, ?, ?)
+      `).run(buyerAddress, projectId, pointsEarned.toString(), pointsEarned.toString())
+      
+      // Increment participant count
+      database.prepare(`
+        UPDATE launch_projects SET participant_count = participant_count + 1 WHERE id = ?
+      `).run(projectId)
+    }
+    
+    // Update anti-bot record
+    const antibotRecord = database.prepare(
+      'SELECT * FROM launchpad_antibot WHERE user_address = ? AND project_id = ?'
+    ).get(buyerAddress, projectId) as any
+    
+    if (antibotRecord) {
+      database.prepare(`
+        UPDATE launchpad_antibot 
+        SET purchase_count = purchase_count + 1,
+            last_purchase_round = ?,
+            total_tokens_bought = total_tokens_bought + ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_address = ? AND project_id = ?
+      `).run(blockRound.toString(), tokensAmount.toString(), buyerAddress, projectId)
+    } else {
+      database.prepare(`
+        INSERT INTO launchpad_antibot (
+          user_address, project_id, purchase_count, last_purchase_round, total_tokens_bought
+        ) VALUES (?, ?, 1, ?, ?)
+      `).run(buyerAddress, projectId, blockRound.toString(), tokensAmount.toString())
+    }
+  })()
+  
+  return purchaseId
+}
+
+// Anti-Bot Checks
+export function validatePurchase(
+  projectId: string,
+  buyerAddress: string,
+  tokensAmount: bigint,
+  currentRound: bigint
+): { valid: boolean; reason?: string } {
+  const database = getDB()
+  const project = getProject(projectId)
+  
+  if (!project) return { valid: false, reason: 'Project not found' }
+  if (project.status !== 'active') return { valid: false, reason: 'Project not active' }
+  
+  // Check if enough tokens available
+  if (project.tokensSold + tokensAmount > project.tokensForSale) {
+    return { valid: false, reason: 'Insufficient tokens available' }
+  }
+  
+  // Check per-transaction limit (1% of total supply)
+  const maxPerTx = (project.tokensForSale * BigInt(MAX_PURCHASE_PER_TX_PERCENT)) / 100n
+  if (tokensAmount > maxPerTx) {
+    return { valid: false, reason: `Maximum ${MAX_PURCHASE_PER_TX_PERCENT}% per transaction` }
+  }
+  
+  // Get anti-bot record
+  const antibotRecord = database.prepare(
+    'SELECT * FROM launchpad_antibot WHERE user_address = ? AND project_id = ?'
+  ).get(buyerAddress, projectId) as any
+  
+  if (antibotRecord) {
+    // Check cooldown period
+    if (antibotRecord.last_purchase_round) {
+      const lastRound = BigInt(antibotRecord.last_purchase_round)
+      if (currentRound < lastRound + COOLDOWN_BLOCKS) {
+        return { valid: false, reason: 'Cooldown period active' }
+      }
+    }
+    
+    // Check per-user limit (5% of total supply)
+    const maxPerUser = (project.tokensForSale * BigInt(MAX_PURCHASE_PER_USER_PERCENT)) / 100n
+    const totalAfterPurchase = BigInt(antibotRecord.total_tokens_bought) + tokensAmount
+    if (totalAfterPurchase > maxPerUser) {
+      return { valid: false, reason: `Maximum ${MAX_PURCHASE_PER_USER_PERCENT}% per address` }
+    }
+    
+    // Check if flagged as bot
+    if (antibotRecord.flagged_as_bot) {
+      return { valid: false, reason: 'Address flagged for suspicious activity' }
+    }
+  }
+  
+  return { valid: true }
+}
+
+export function getUserPoints(userAddress: string, projectId: string): LaunchpadPoints | null {
+  const database = getDB()
+  const row = database.prepare(
+    'SELECT * FROM launchpad_points WHERE user_address = ? AND project_id = ?'
+  ).get(userAddress, projectId) as any
+  
+  if (!row) return null
+  
+  return {
+    userAddress: row.user_address,
+    projectId: row.project_id,
+    pointsBalance: BigInt(row.points_balance),
+    totalEarned: BigInt(row.total_earned),
+    totalClaimed: BigInt(row.total_claimed),
+    lastClaimRound: row.last_claim_round ? BigInt(row.last_claim_round) : undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  }
+}
+
+export function getPurchaseHistory(projectId: string, buyerAddress?: string): TokenPurchase[] {
+  const database = getDB()
+  
+  const query = buyerAddress
+    ? 'SELECT * FROM token_purchases WHERE project_id = ? AND buyer_address = ? ORDER BY timestamp DESC'
+    : 'SELECT * FROM token_purchases WHERE project_id = ? ORDER BY timestamp DESC'
+  
+  const rows = buyerAddress
+    ? database.prepare(query).all(projectId, buyerAddress) as any[]
+    : database.prepare(query).all(projectId) as any[]
+  
+  return rows.map(row => ({
+    id: row.id,
+    projectId: row.project_id,
+    buyerAddress: row.buyer_address,
+    tokensAmount: BigInt(row.tokens_amount),
+    algoPaid: BigInt(row.algo_paid),
+    pricePerToken: BigInt(row.price_per_token),
+    pointsEarned: BigInt(row.points_earned),
+    transactionId: row.transaction_id,
+    blockRound: BigInt(row.block_round),
+    timestamp: row.timestamp
+  }))
+}

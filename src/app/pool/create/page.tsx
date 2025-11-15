@@ -170,6 +170,7 @@ export default function CreatePoolPage() {
           signedTxns: signedTxnsBase64,
           ownerAddress: activeAccount.address,
           poolMetadata: {
+            poolId: prepareData.poolId, // NEW: Include pool ID from multi-pool factory
             asset1Id: token0Id,
             asset2Id: token1Id,
             amount1: amount1BaseUnits.toString(),
@@ -285,10 +286,10 @@ export default function CreatePoolPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="0">ALGO</SelectItem>
+                          <SelectItem value="0">ALGO (0)</SelectItem>
                           {assets.filter(a => a.id !== 0).map((asset) => (
                             <SelectItem key={asset.id} value={String(asset.id)}>
-                              {asset.symbol || asset.unitName || `Asset ${asset.id}`}
+                              {asset.symbol || asset.unitName || `Asset ${asset.id}`} ({asset.id})
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -301,10 +302,10 @@ export default function CreatePoolPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="0">ALGO</SelectItem>
+                          <SelectItem value="0">ALGO (0)</SelectItem>
                           {assets.filter(a => a.id !== 0).map((asset) => (
                             <SelectItem key={asset.id} value={String(asset.id)}>
-                              {asset.symbol || asset.unitName || `Asset ${asset.id}`}
+                              {asset.symbol || asset.unitName || `Asset ${asset.id}`} ({asset.id})
                             </SelectItem>
                           ))}
                         </SelectContent>
