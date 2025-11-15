@@ -55,7 +55,8 @@ export type LaunchpadToken = {
   totalSupply: string
   creatorAddress: string
   description?: string
-  logoPath?: string // Path to uploaded logo file
+  logoData?: string // Base64-encoded logo image data stored in database
+  logoMimeType?: string // MIME type of the logo (e.g., image/png)
   website?: string
   twitter?: string
   telegram?: string
@@ -121,7 +122,8 @@ export const tursoDriver = {
       totalSupply TEXT NOT NULL,
       creatorAddress TEXT NOT NULL,
       description TEXT,
-      logoPath TEXT,
+      logoData TEXT,
+      logoMimeType TEXT,
       website TEXT,
       twitter TEXT,
       telegram TEXT,
@@ -312,8 +314,8 @@ export const tursoDriver = {
   async createLaunchpadToken(token: LaunchpadToken): Promise<LaunchpadToken> {
     const client = await getClient()
     await client.execute({
-      sql: `INSERT INTO launchpad_tokens (id, assetId, name, symbol, decimals, totalSupply, creatorAddress, description, logoPath, website, twitter, telegram, status, cooldownEndTime, marketCap, initialPrice, createdAt, deployedAt)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      sql: `INSERT INTO launchpad_tokens (id, assetId, name, symbol, decimals, totalSupply, creatorAddress, description, logoData, logoMimeType, website, twitter, telegram, status, cooldownEndTime, marketCap, initialPrice, createdAt, deployedAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       args: [
         token.id,
         token.assetId ?? null,
@@ -323,7 +325,8 @@ export const tursoDriver = {
         token.totalSupply,
         token.creatorAddress.toLowerCase(),
         token.description ?? null,
-        token.logoPath ?? null,
+        token.logoData ?? null,
+        token.logoMimeType ?? null,
         token.website ?? null,
         token.twitter ?? null,
         token.telegram ?? null,
@@ -390,7 +393,8 @@ export const tursoDriver = {
       totalSupply: r.totalSupply,
       creatorAddress: r.creatorAddress,
       description: r.description ?? undefined,
-      logoPath: r.logoPath ?? undefined,
+      logoData: r.logoData ?? undefined,
+      logoMimeType: r.logoMimeType ?? undefined,
       website: r.website ?? undefined,
       twitter: r.twitter ?? undefined,
       telegram: r.telegram ?? undefined,
@@ -420,7 +424,8 @@ export const tursoDriver = {
       totalSupply: r.totalSupply,
       creatorAddress: r.creatorAddress,
       description: r.description ?? undefined,
-      logoPath: r.logoPath ?? undefined,
+      logoData: r.logoData ?? undefined,
+      logoMimeType: r.logoMimeType ?? undefined,
       website: r.website ?? undefined,
       twitter: r.twitter ?? undefined,
       telegram: r.telegram ?? undefined,
@@ -440,7 +445,7 @@ export const tursoDriver = {
     const merged: LaunchpadToken = { ...existing, ...changes, id: existing.id, createdAt: existing.createdAt }
     const client = await getClient()
     await client.execute({
-      sql: `UPDATE launchpad_tokens SET assetId=?, name=?, symbol=?, decimals=?, totalSupply=?, creatorAddress=?, description=?, logoPath=?, website=?, twitter=?, telegram=?, status=?, cooldownEndTime=?, marketCap=?, initialPrice=?, deployedAt=? WHERE id=?`,
+      sql: `UPDATE launchpad_tokens SET assetId=?, name=?, symbol=?, decimals=?, totalSupply=?, creatorAddress=?, description=?, logoData=?, logoMimeType=?, website=?, twitter=?, telegram=?, status=?, cooldownEndTime=?, marketCap=?, initialPrice=?, deployedAt=? WHERE id=?`,
       args: [
         merged.assetId ?? null,
         merged.name,
@@ -449,7 +454,8 @@ export const tursoDriver = {
         merged.totalSupply,
         merged.creatorAddress,
         merged.description ?? null,
-        merged.logoPath ?? null,
+        merged.logoData ?? null,
+        merged.logoMimeType ?? null,
         merged.website ?? null,
         merged.twitter ?? null,
         merged.telegram ?? null,

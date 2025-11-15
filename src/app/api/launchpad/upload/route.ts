@@ -1,26 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { randomUUID } from 'crypto'
 
-const UPLOAD_DIR = join(process.cwd(), 'public', 'uploads', 'logos')
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml', 'image/webp']
 
-// Ensure upload directory exists
-async function ensureUploadDir() {
-  try {
-    await mkdir(UPLOAD_DIR, { recursive: true })
-  } catch (error) {
-    // Directory might already exist
-  }
-}
-
-// POST /api/launchpad/upload - Upload token logo
+// POST /api/launchpad/upload - Upload token logo and return base64 data
 export async function POST(req: NextRequest) {
   try {
-    await ensureUploadDir()
-
     const formData = await req.formData()
     const file = formData.get('logo') as File | null
 
@@ -47,22 +32,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Generate unique filename
-    const ext = file.name.split('.').pop() || 'png'
-    const filename = `${randomUUID()}.${ext}`
-    const filepath = join(UPLOAD_DIR, filename)
-
-    // Convert file to buffer and save
+    // Convert file to base64
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    await writeFile(filepath, buffer)
-
-    // Return the public path
-    const logoPath = `/uploads/logos/${filename}`
+    const base64Data = buffer.toString('base64')
 
     return NextResponse.json({
       success: true,
-      logoPath
+      logoData: base64Data,
+      logoMimeType: file.type
     })
   } catch (error: any) {
     console.error('Error uploading logo:', error)

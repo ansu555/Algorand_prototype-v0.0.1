@@ -8,7 +8,7 @@ The Token Launchpad is a comprehensive feature that allows users to create, depl
 
 ### 1. Token Creation
 - **Token Information**: Name, symbol, decimals, total supply
-- **Logo Upload**: Direct file upload (PNG, JPG, SVG, WebP) up to 5MB
+- **Logo Upload**: Direct file upload (PNG, JPG, SVG, WebP) up to 5MB - **stored in database as base64**
 - **Description**: Detailed token description
 - **Social Links**: Website, Twitter, Telegram
 - **Initial Price**: Set an initial price in USD
@@ -200,7 +200,7 @@ Remove token from watchlist
 ### Upload
 
 #### POST /api/launchpad/upload
-Upload token logo
+Upload token logo and convert to base64 for database storage
 
 **Request:** multipart/form-data
 - `logo`: Image file (PNG, JPG, SVG, WebP, max 5MB)
@@ -209,7 +209,8 @@ Upload token logo
 ```json
 {
   "success": true,
-  "logoPath": "/uploads/logos/uuid.png"
+  "logoData": "base64_encoded_image_data",
+  "logoMimeType": "image/png"
 }
 ```
 
@@ -252,7 +253,8 @@ CREATE TABLE launchpad_tokens (
   totalSupply TEXT NOT NULL,
   creatorAddress TEXT NOT NULL,
   description TEXT,
-  logoPath TEXT,
+  logoData TEXT,                      -- Base64-encoded logo stored in database
+  logoMimeType TEXT,                  -- MIME type of logo (e.g., image/png)
   website TEXT,
   twitter TEXT,
   telegram TEXT,
@@ -288,11 +290,11 @@ CREATE TABLE token_watchlists (
    - Token updates/deletes require creator address verification
    - Watchlist operations require wallet connection
 
-3. **File Upload**
+3. **Logo Storage**
+   - Logos stored as base64 in database (not as files)
    - File type validation (images only)
    - File size limit (5MB)
-   - Random UUID filename to prevent conflicts
-   - Stored in `/public/uploads/logos/` (excluded from git)
+   - Converted to base64 during upload for database storage
 
 4. **Asset Creation**
    - Uses Algorand SDK for secure ASA creation
