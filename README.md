@@ -7,7 +7,7 @@
 4. **Multi-DEX Aggregation** - Best price routing across Tinyman and Pact
 5. **Automated Trading** - Auto-Pilot rules for DCA, rebalancing, and rotation strategies
 
-## 🎉 Hackathon Highlight: WaveBreak Launchpad
+## 🎉 Hackathon Highlight: Token Launchpad
 
 **WaveBreak** is a revolutionary token launchpad using **bonding curves** for fair, bot-resistant token launches. Built for [Algorand Hack Series #2].
 
