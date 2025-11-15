@@ -52,15 +52,16 @@ export default function PoolPage() {
       try {
         setLoading(true)
         setError(null)
-        
-        // Fetch both pool data and market data in parallel
-        const [poolsResponse, marketResponse] = await Promise.all([
+
+        // Fetch from multiple sources in parallel
+        const [poolsResponse, marketResponse, tenxSwapResponse] = await Promise.all([
           fetch(`/api/pools/all?network=${network}`),
           fetch(`/api/pools/market-data?network=${network}`).catch(() => null),
+          fetch(`/api/pool/list`).catch(() => null), // Fetch 10xSwap pools from on-chain
         ])
-        
+
         const poolsData = await poolsResponse.json()
-        
+
         if (!poolsData.success) {
           throw new Error(poolsData.error || 'Failed to fetch pools')
         }
@@ -79,7 +80,7 @@ export default function PoolPage() {
           // Convert string BigInt values back to BigInt
           const reserve1 = BigInt(poolInfo.reserve1)
           const reserve2 = BigInt(poolInfo.reserve2)
-          
+
           // Calculate current price from reserves
           let currentPrice: number | undefined
           if (reserve1 && reserve2) {
@@ -100,7 +101,7 @@ export default function PoolPage() {
 
           // Merge with market data if available
           const poolMarketData = marketData[poolInfo.poolId]
-          
+
           return {
             id: poolInfo.poolId,
             token0: poolInfo.asset1.symbol,
@@ -127,8 +128,55 @@ export default function PoolPage() {
           }
         })
 
+        // Add 10xSwap pools from on-chain contract
+        if (tenxSwapResponse?.ok) {
+          const tenxSwapData = await tenxSwapResponse.json()
+          if (tenxSwapData.success && tenxSwapData.pools) {
+            console.log(`🔟 Found ${tenxSwapData.pools.length} 10xSwap pool(s) on-chain`)
+
+            const tenxSwapPools: Pool[] = tenxSwapData.pools.map((pool: any) => {
+              // Convert string BigInt values back to BigInt
+              const reserve1 = BigInt(pool.reserve1)
+              const reserve2 = BigInt(pool.reserve2)
+
+              // Calculate current price from reserves
+              let currentPrice: number | undefined
+              if (reserve1 > 0n && reserve2 > 0n) {
+                const reserve0Num = Number(reserve1) / 1e6 // Assuming 6 decimals
+                const reserve1Num = Number(reserve2) / 1e6
+                currentPrice = reserve1Num / reserve0Num
+              }
+
+              return {
+                id: pool.poolId,
+                token0: `Asset ${pool.asset1_id}`,
+                token1: `Asset ${pool.asset2_id}`,
+                token0Decimals: 6, // Default
+                token1Decimals: 6,
+                protocol: 'v2',
+                feeTier: pool.fee_bps,
+                dex: '10xswap',
+                reserve0: reserve1,
+                reserve1: reserve2,
+                poolAddress: pool.poolAddress,
+                currentPrice,
+                tvlUSD: undefined, // Not available for 10xSwap pools yet
+                volume1dUSD: undefined,
+                volume30dUSD: undefined,
+                volume24hUSD: undefined,
+                poolAPR: undefined,
+                rewardAPR: undefined,
+                fees24hUSD: undefined,
+              }
+            })
+
+            // Prepend 10xSwap pools to the beginning (show them first)
+            pools.unshift(...tenxSwapPools)
+          }
+        }
+
         setAllPools(pools)
-        console.log(`✅ Loaded ${pools.length} pools from API`)
+        console.log(`✅ Loaded ${pools.length} pools total`)
       } catch (err: any) {
         console.error('Error fetching pools:', err)
         setError(err.message || 'Failed to load pools')
