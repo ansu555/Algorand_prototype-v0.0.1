@@ -35,13 +35,6 @@ npm run dev
 # Visit http://localhost:3000/launchpad
 ```
 
-**📖 Full Documentation:**
-- [Hackathon Submission Guide](docs/HACKATHON_SUBMISSION.md)
-- [Deployment Checklist](docs/DEPLOYMENT_CHECKLIST.md)
-- [What We Built](docs/WHAT_WE_BUILT.md)
-
----
-
 ## Table of Contents
 
 - [✨ Features](#-features)
