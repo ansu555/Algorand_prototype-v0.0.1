@@ -1,39 +1,11 @@
-# 10xSwap: AI-Powered Algorand DEX + WaveBreak Token Launchpad + X Token Rewards
+# 10xSwap: AI-Powered Algorand DEX 
 
 10xSwap is a comprehensive Algorand ecosystem platform featuring:
 1. **AI-Powered DEX** - Natural language trading and portfolio management
-2. **WaveBreak Launchpad** - Fair token launches using bonding curves with anti-bot protection 🚀
+2. **Token Launchpad** - Fair token launches using bonding curves with anti-bot protection 🚀
 3. **X Token Rewards System** - Quest-based rewards with levels, streaks, and badges 🎮
 4. **Multi-DEX Aggregation** - Best price routing across Tinyman and Pact
 5. **Automated Trading** - Auto-Pilot rules for DCA, rebalancing, and rotation strategies
-
-## 🎉 Hackathon Highlight: Token Launchpad
-
-**WaveBreak** is a revolutionary token launchpad using **bonding curves** for fair, bot-resistant token launches. Built for [Algorand Hack Series #2].
-
-### Key Features
-- ✅ **Smart Contract-Powered:** PyTeal bonding curve with ABI methods
-- ✅ **Anti-Bot Protection:** Rate limiting, cooldown, max purchase caps
-- ✅ **3 Pricing Curves:** Linear, Exponential, Sigmoid
-- ✅ **Early Buyer Rewards:** Points system incentivizes community building
-- ✅ **Auto-DEX Graduation:** Creates liquidity pools when target reached
-- ✅ **TestNet Verified:** All transactions viewable on AlgoExplorer
-- ✅ **Modular SDK:** One codebase powers 4+ industries (meme, DAO, gaming, creator tokens)
-
-### Quick Start (Launchpad)
-```bash
-# 1. Deploy smart contract
-pip install pyteal beaker py-algorand-sdk
-export CREATOR_MNEMONIC="your 25 words..."
-python scripts/deploy-bonding-curve.py
-
-# 2. Update config
-# Edit src/lib/launchpad/algorand.ts with your App ID
-
-# 3. Test on TestNet
-npm run dev
-# Visit http://localhost:3000/launchpad
-```
 
 ## Table of Contents
 
