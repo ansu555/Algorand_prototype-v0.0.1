@@ -180,6 +180,7 @@ export async function POST(request: NextRequest) {
     const transactions: algosdk.Transaction[] = []
 
     // Step 1: Create pool
+    // NOTE: The create_pool method now returns a pool_id that we need for subsequent calls
     const createPoolTxns = await poolClient.buildCreatePoolTxns({
       asset1Id,
       asset2Id,
@@ -188,9 +189,15 @@ export async function POST(request: NextRequest) {
     })
     transactions.push(...createPoolTxns)
 
-    // Step 2: Fund the pool (minimum balance + opt-in costs)
-    // Pool needs: base min balance (0.1) + asset opt-ins (2x0.1) + LP token creation (0.1) + buffer
-    const fundingAmount = 500000 // 0.5 ALGO
+    // Step 2: Compute pool_id locally (same logic as contract)
+    // The contract will return this from create_pool, but we can compute it ourselves
+    const poolId = poolClient.computePoolId(asset1Id, asset2Id)
+    console.log('Computed pool ID:', poolId)
+
+    // Step 3: Fund the pool (minimum balance + box storage costs)
+    // Pool needs: base min balance (0.1) + box storage (~0.0025 per box) + buffer
+    // NEW: Box storage is cheaper than global state!
+    const fundingAmount = 300000 // 0.3 ALGO (reduced from 0.5)
     const fundingTxn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
       sender: userAddress,
       receiver: poolAddress,
@@ -199,7 +206,7 @@ export async function POST(request: NextRequest) {
     })
     transactions.push(fundingTxn)
 
-    // Step 3: Create LP token
+    // Step 4: Create LP token (now requires pool_id)
     const asset1Info = asset1Id === 0
       ? { name: 'ALGO', unit: 'ALGO', decimals: 6 }
       : await (async () => {
@@ -237,6 +244,7 @@ export async function POST(request: NextRequest) {
 
     const createLPTokenTxn = await poolClient.buildCreateLPTokenTxn(
       userAddress,
+      poolId, // NEW: Required for multi-pool factory
       lpTotalSupply,
       lpDecimals,
       lpTokenName,
@@ -268,15 +276,16 @@ export async function POST(request: NextRequest) {
       txnsToSign,
       txnCount: txnsToSign.length,
       poolAddress,
+      poolId, // NEW: Include pool ID for future add_liquidity calls
       lpTokenName,
       lpTokenUnit,
       estimatedLiquidity: Math.sqrt(Number(amount1) * Number(amount2)), // Rough estimate
-      
+
       // Important: This is only STEP 1 of pool creation
       // After these transactions are confirmed, you need to:
       // 1. Get the LP token ID from the confirmed transaction
       // 2. Opt-in to the LP token
-      // 3. Add initial liquidity
+      // 3. Add initial liquidity (using the poolId)
       step: 'create_pool_and_token',
       nextStep: 'opt_in_and_add_liquidity',
       metadata: {
@@ -285,6 +294,7 @@ export async function POST(request: NextRequest) {
         amount1,
         amount2,
         feeBps,
+        poolId, // NEW: Store for later use
       }
     })
 
