@@ -29,6 +29,12 @@ export interface ContractConfig {
     appId: number;
     address: string;
   };
+
+  // Liquidity Pool Contract
+  liquidityPool?: {
+    appId: number;
+    address: string;
+  };
 }
 
 /**
@@ -56,6 +62,10 @@ export function getContractConfig(network: 'mainnet' | 'testnet'): ContractConfi
       autopilotRule: {
         appId: 749509231,
         address: 'KO5JO5GWYY5TIY3NQJ3VHNKF6DZSVWGWHBJI55LSFPA5PYQXMGSGWIEGS4',
+      },
+      liquidityPool: {
+        appId: parseInt(process.env.NEXT_PUBLIC_POOL_APP_ID || process.env.POOL_APP_ID || '0'),
+        address: process.env.NEXT_PUBLIC_POOL_APP_ADDRESS || process.env.POOL_APP_ADDRESS || '',
       },
     };
   }

@@ -46,6 +46,47 @@ export type AgentWallet = {
   lastUsedAt?: string
 }
 
+export type LaunchpadToken = {
+  id: string
+  assetId?: number // Algorand ASA ID (populated after deployment)
+  name: string
+  symbol: string
+  decimals: number
+  totalSupply: string
+  creatorAddress: string
+  description?: string
+  logoData?: string // Base64-encoded logo image data stored in database
+  logoMimeType?: string // MIME type of the logo (e.g., image/png)
+  website?: string
+  twitter?: string
+  telegram?: string
+  status: 'draft' | 'deployed' | 'cooldown' | 'active' // Token lifecycle status
+  cooldownEndTime?: string // When cooldown period ends
+  marketCap?: number // Calculated market cap in USD
+  initialPrice?: number // Initial price in USD
+  createdAt: string
+  deployedAt?: string
+}
+
+export type TokenWatchlist = {
+  id: string
+  userAddress: string
+  tokenId: string // Reference to LaunchpadToken.id
+  createdAt: string
+}
+
+export type AgentWalletStats = {
+  id: string
+  userAddress: string
+  totalSpendUSD: number // Total amount spent in USD
+  totalTrades: number // Total number of trades executed
+  successfulTrades: number // Number of successful trades
+  failedTrades: number // Number of failed trades
+  lastTradeAt?: string // Timestamp of last trade
+  createdAt: string
+  updatedAt: string
+}
+
 function str(v: any) { return v == null ? null : JSON.stringify(v) }
 function parseArr(v: any): string[] { if (!v) return []; try { const x = JSON.parse(String(v)); return Array.isArray(x) ? x : [] } catch { return [] } }
 function parseObj(v: any): Record<string, any> | undefined { if (!v) return undefined; try { const x = JSON.parse(String(v)); return (x && typeof x === 'object') ? x : undefined } catch { return undefined } }
@@ -83,6 +124,45 @@ export const tursoDriver = {
       encryptedMnemonic TEXT NOT NULL,
       createdAt TEXT NOT NULL,
       lastUsedAt TEXT
+    )`)
+    await client.execute(`CREATE TABLE IF NOT EXISTS launchpad_tokens (
+      id TEXT PRIMARY KEY,
+      assetId INTEGER,
+      name TEXT NOT NULL,
+      symbol TEXT NOT NULL,
+      decimals INTEGER NOT NULL,
+      totalSupply TEXT NOT NULL,
+      creatorAddress TEXT NOT NULL,
+      description TEXT,
+      logoData TEXT,
+      logoMimeType TEXT,
+      website TEXT,
+      twitter TEXT,
+      telegram TEXT,
+      status TEXT NOT NULL,
+      cooldownEndTime TEXT,
+      marketCap REAL,
+      initialPrice REAL,
+      createdAt TEXT NOT NULL,
+      deployedAt TEXT
+    )`)
+    await client.execute(`CREATE TABLE IF NOT EXISTS token_watchlists (
+      id TEXT PRIMARY KEY,
+      userAddress TEXT NOT NULL,
+      tokenId TEXT NOT NULL,
+      createdAt TEXT NOT NULL,
+      UNIQUE(userAddress, tokenId)
+    )`)
+    await client.execute(`CREATE TABLE IF NOT EXISTS agent_wallet_stats (
+      id TEXT PRIMARY KEY,
+      userAddress TEXT NOT NULL UNIQUE,
+      totalSpendUSD REAL NOT NULL DEFAULT 0,
+      totalTrades INTEGER NOT NULL DEFAULT 0,
+      successfulTrades INTEGER NOT NULL DEFAULT 0,
+      failedTrades INTEGER NOT NULL DEFAULT 0,
+      lastTradeAt TEXT,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL
     )`)
   },
   async createRule(rule: Rule): Promise<Rule> {
@@ -133,6 +213,38 @@ export const tursoDriver = {
     sql += ` ORDER BY datetime(createdAt) DESC`
     const { rows } = await client.execute({ sql, args })
     return rows.map((r: any) => ({ id: r.id, ownerAddress: r.ownerAddress, ruleId: r.ruleId ?? undefined, action: r.action, details: parseObj(r.details), status: r.status, createdAt: r.createdAt }))
+  },
+  async deleteBadExecuteLogs(): Promise<number> {
+    const client = await getClient()
+    try {
+      const res = await client.execute({
+        // Remove execute_rule logs with undefined or missing linkage/details
+        sql: `DELETE FROM logs 
+              WHERE UPPER(action) = 'EXECUTE_RULE' 
+                AND (
+                  ruleId IS NULL OR TRIM(COALESCE(ruleId, '')) = ''
+                  OR details IS NULL OR details = 'null'
+                  OR (
+                    json_extract(details, '$.plan') IS NULL 
+                    AND json_extract(details, '$.swap') IS NULL 
+                    AND json_extract(details, '$.txHash') IS NULL
+                  )
+                  OR (
+                    json_extract(details, '$.plan') IS NOT NULL AND (
+                      json_extract(details, '$.plan.assetId') IS NULL OR 
+                      json_extract(details, '$.plan.totalSpendAmount') IS NULL
+                    )
+                  )
+                  OR details LIKE '%undefined%'
+                )`,
+        args: []
+      })
+      const affected = (res as any).rowsAffected || (res as any).changes || (res as any).affectedRows || 0
+      return affected
+    } catch (e) {
+      console.error('Turso cleanup deleteBadExecuteLogs error:', e)
+      return 0
+    }
   },
   async updateRule(id: string, changes: Partial<Rule>): Promise<Rule | null> {
     const existing = await tursoDriver.getRuleById(id)
@@ -219,5 +331,339 @@ export const tursoDriver = {
   async deleteAllAgentWallets(): Promise<void> {
     const client = await getClient()
     await client.execute(`DELETE FROM agent_wallets`)
+  },
+
+  // Launchpad Token Operations
+  async createLaunchpadToken(token: LaunchpadToken): Promise<LaunchpadToken> {
+    const client = await getClient()
+    await client.execute({
+      sql: `INSERT INTO launchpad_tokens (id, assetId, name, symbol, decimals, totalSupply, creatorAddress, description, logoData, logoMimeType, website, twitter, telegram, status, cooldownEndTime, marketCap, initialPrice, createdAt, deployedAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        token.id,
+        token.assetId ?? null,
+        token.name,
+        token.symbol,
+        token.decimals,
+        token.totalSupply,
+        token.creatorAddress.toLowerCase(),
+        token.description ?? null,
+        token.logoData ?? null,
+        token.logoMimeType ?? null,
+        token.website ?? null,
+        token.twitter ?? null,
+        token.telegram ?? null,
+        token.status,
+        token.cooldownEndTime ?? null,
+        token.marketCap ?? null,
+        token.initialPrice ?? null,
+        token.createdAt,
+        token.deployedAt ?? null
+      ]
+    })
+    return token
+  },
+
+  async getLaunchpadTokens(filters?: {
+    status?: string
+    creatorAddress?: string
+    sortBy?: 'newest' | 'marketCap' | 'cooldown'
+    limit?: number
+    offset?: number
+  }): Promise<LaunchpadToken[]> {
+    const client = await getClient()
+    let sql = `SELECT * FROM launchpad_tokens WHERE 1=1`
+    const args: any[] = []
+
+    if (filters?.status) {
+      sql += ` AND status = ?`
+      args.push(filters.status)
+    }
+
+    if (filters?.creatorAddress) {
+      sql += ` AND creatorAddress = ?`
+      args.push(filters.creatorAddress.toLowerCase())
+    }
+
+    // Sorting
+    if (filters?.sortBy === 'newest') {
+      sql += ` ORDER BY datetime(createdAt) DESC`
+    } else if (filters?.sortBy === 'marketCap') {
+      sql += ` ORDER BY marketCap DESC NULLS LAST`
+    } else if (filters?.sortBy === 'cooldown') {
+      sql += ` ORDER BY datetime(cooldownEndTime) ASC`
+    } else {
+      sql += ` ORDER BY datetime(createdAt) DESC`
+    }
+
+    if (filters?.limit) {
+      sql += ` LIMIT ?`
+      args.push(filters.limit)
+    }
+
+    if (filters?.offset) {
+      sql += ` OFFSET ?`
+      args.push(filters.offset)
+    }
+
+    const { rows } = await client.execute({ sql, args })
+    return rows.map((r: any) => ({
+      id: r.id,
+      assetId: r.assetId ?? undefined,
+      name: r.name,
+      symbol: r.symbol,
+      decimals: r.decimals,
+      totalSupply: r.totalSupply,
+      creatorAddress: r.creatorAddress,
+      description: r.description ?? undefined,
+      logoData: r.logoData ?? undefined,
+      logoMimeType: r.logoMimeType ?? undefined,
+      website: r.website ?? undefined,
+      twitter: r.twitter ?? undefined,
+      telegram: r.telegram ?? undefined,
+      status: r.status,
+      cooldownEndTime: r.cooldownEndTime ?? undefined,
+      marketCap: r.marketCap ?? undefined,
+      initialPrice: r.initialPrice ?? undefined,
+      createdAt: r.createdAt,
+      deployedAt: r.deployedAt ?? undefined
+    }))
+  },
+
+  async getLaunchpadTokenById(id: string): Promise<LaunchpadToken | null> {
+    const client = await getClient()
+    const { rows } = await client.execute({
+      sql: `SELECT * FROM launchpad_tokens WHERE id = ?`,
+      args: [id]
+    })
+    const r: any = rows[0]
+    if (!r) return null
+    return {
+      id: r.id,
+      assetId: r.assetId ?? undefined,
+      name: r.name,
+      symbol: r.symbol,
+      decimals: r.decimals,
+      totalSupply: r.totalSupply,
+      creatorAddress: r.creatorAddress,
+      description: r.description ?? undefined,
+      logoData: r.logoData ?? undefined,
+      logoMimeType: r.logoMimeType ?? undefined,
+      website: r.website ?? undefined,
+      twitter: r.twitter ?? undefined,
+      telegram: r.telegram ?? undefined,
+      status: r.status,
+      cooldownEndTime: r.cooldownEndTime ?? undefined,
+      marketCap: r.marketCap ?? undefined,
+      initialPrice: r.initialPrice ?? undefined,
+      createdAt: r.createdAt,
+      deployedAt: r.deployedAt ?? undefined
+    }
+  },
+
+  async updateLaunchpadToken(id: string, changes: Partial<LaunchpadToken>): Promise<LaunchpadToken | null> {
+    const existing = await tursoDriver.getLaunchpadTokenById(id)
+    if (!existing) return null
+    
+    const merged: LaunchpadToken = { ...existing, ...changes, id: existing.id, createdAt: existing.createdAt }
+    const client = await getClient()
+    await client.execute({
+      sql: `UPDATE launchpad_tokens SET assetId=?, name=?, symbol=?, decimals=?, totalSupply=?, creatorAddress=?, description=?, logoData=?, logoMimeType=?, website=?, twitter=?, telegram=?, status=?, cooldownEndTime=?, marketCap=?, initialPrice=?, deployedAt=? WHERE id=?`,
+      args: [
+        merged.assetId ?? null,
+        merged.name,
+        merged.symbol,
+        merged.decimals,
+        merged.totalSupply,
+        merged.creatorAddress,
+        merged.description ?? null,
+        merged.logoData ?? null,
+        merged.logoMimeType ?? null,
+        merged.website ?? null,
+        merged.twitter ?? null,
+        merged.telegram ?? null,
+        merged.status,
+        merged.cooldownEndTime ?? null,
+        merged.marketCap ?? null,
+        merged.initialPrice ?? null,
+        merged.deployedAt ?? null,
+        merged.id
+      ]
+    })
+    return merged
+  },
+
+  async deleteLaunchpadToken(id: string, creatorAddress: string): Promise<boolean> {
+    const client = await getClient()
+    try {
+      const res = await client.execute({
+        sql: `DELETE FROM launchpad_tokens WHERE id = ? AND creatorAddress = ?`,
+        args: [id, creatorAddress.toLowerCase()]
+      })
+      const affected = res.rowsAffected || res.changes || res.affectedRows || 0
+      return affected > 0
+    } catch (error) {
+      console.error('Turso delete launchpad token error:', error)
+      return false
+    }
+  },
+
+  // Token Watchlist Operations
+  async addToWatchlist(watchlistItem: TokenWatchlist): Promise<TokenWatchlist> {
+    const client = await getClient()
+    await client.execute({
+      sql: `INSERT INTO token_watchlists (id, userAddress, tokenId, createdAt)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(userAddress, tokenId) DO NOTHING`,
+      args: [watchlistItem.id, watchlistItem.userAddress.toLowerCase(), watchlistItem.tokenId, watchlistItem.createdAt]
+    })
+    return watchlistItem
+  },
+
+  async removeFromWatchlist(userAddress: string, tokenId: string): Promise<boolean> {
+    const client = await getClient()
+    try {
+      const res = await client.execute({
+        sql: `DELETE FROM token_watchlists WHERE userAddress = ? AND tokenId = ?`,
+        args: [userAddress.toLowerCase(), tokenId]
+      })
+      const affected = res.rowsAffected || res.changes || res.affectedRows || 0
+      return affected > 0
+    } catch (error) {
+      console.error('Turso remove from watchlist error:', error)
+      return false
+    }
+  },
+
+  async getWatchlist(userAddress: string): Promise<string[]> {
+    const client = await getClient()
+    const { rows } = await client.execute({
+      sql: `SELECT tokenId FROM token_watchlists WHERE userAddress = ? ORDER BY datetime(createdAt) DESC`,
+      args: [userAddress.toLowerCase()]
+    })
+    return rows.map((r: any) => r.tokenId)
+  },
+
+  async isInWatchlist(userAddress: string, tokenId: string): Promise<boolean> {
+    const client = await getClient()
+    const { rows } = await client.execute({
+      sql: `SELECT 1 FROM token_watchlists WHERE userAddress = ? AND tokenId = ? LIMIT 1`,
+      args: [userAddress.toLowerCase(), tokenId]
+    })
+    return rows.length > 0
+  },
+
+  // Agent Wallet Stats Operations
+  async getAgentWalletStats(userAddress: string): Promise<AgentWalletStats | null> {
+    const client = await getClient()
+    const { rows } = await client.execute({
+      sql: `SELECT * FROM agent_wallet_stats WHERE userAddress = ?`,
+      args: [userAddress.toLowerCase()]
+    })
+    const r: any = rows[0]
+    if (!r) return null
+    return {
+      id: r.id,
+      userAddress: r.userAddress,
+      totalSpendUSD: r.totalSpendUSD ?? 0,
+      totalTrades: r.totalTrades ?? 0,
+      successfulTrades: r.successfulTrades ?? 0,
+      failedTrades: r.failedTrades ?? 0,
+      lastTradeAt: r.lastTradeAt ?? undefined,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt
+    }
+  },
+
+  async createAgentWalletStats(stats: AgentWalletStats): Promise<AgentWalletStats> {
+    const client = await getClient()
+    await client.execute({
+      sql: `INSERT INTO agent_wallet_stats (id, userAddress, totalSpendUSD, totalTrades, successfulTrades, failedTrades, lastTradeAt, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(userAddress) DO UPDATE SET
+              totalSpendUSD = excluded.totalSpendUSD,
+              totalTrades = excluded.totalTrades,
+              successfulTrades = excluded.successfulTrades,
+              failedTrades = excluded.failedTrades,
+              lastTradeAt = excluded.lastTradeAt,
+              updatedAt = excluded.updatedAt`,
+      args: [
+        stats.id,
+        stats.userAddress.toLowerCase(),
+        stats.totalSpendUSD,
+        stats.totalTrades,
+        stats.successfulTrades,
+        stats.failedTrades,
+        stats.lastTradeAt ?? null,
+        stats.createdAt,
+        stats.updatedAt
+      ]
+    })
+    return stats
+  },
+
+  async updateAgentWalletStats(userAddress: string, changes: Partial<AgentWalletStats>): Promise<AgentWalletStats | null> {
+    const existing = await tursoDriver.getAgentWalletStats(userAddress)
+    if (!existing) {
+      // Create new stats if doesn't exist
+      const newStats: AgentWalletStats = {
+        id: `stats_${userAddress.toLowerCase()}_${Date.now()}`,
+        userAddress: userAddress.toLowerCase(),
+        totalSpendUSD: changes.totalSpendUSD ?? 0,
+        totalTrades: changes.totalTrades ?? 0,
+        successfulTrades: changes.successfulTrades ?? 0,
+        failedTrades: changes.failedTrades ?? 0,
+        lastTradeAt: changes.lastTradeAt,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+      return await tursoDriver.createAgentWalletStats(newStats)
+    }
+
+    const merged: AgentWalletStats = {
+      ...existing,
+      ...changes,
+      id: existing.id,
+      userAddress: existing.userAddress,
+      createdAt: existing.createdAt,
+      updatedAt: new Date().toISOString()
+    }
+
+    const client = await getClient()
+    await client.execute({
+      sql: `UPDATE agent_wallet_stats SET totalSpendUSD=?, totalTrades=?, successfulTrades=?, failedTrades=?, lastTradeAt=?, updatedAt=? WHERE userAddress=?`,
+      args: [
+        merged.totalSpendUSD,
+        merged.totalTrades,
+        merged.successfulTrades,
+        merged.failedTrades,
+        merged.lastTradeAt ?? null,
+        merged.updatedAt,
+        merged.userAddress
+      ]
+    })
+    return merged
+  },
+
+  async incrementAgentTrade(userAddress: string, spendUSD: number, success: boolean): Promise<void> {
+    const stats = await tursoDriver.getAgentWalletStats(userAddress)
+    const current = stats ?? {
+      id: `stats_${userAddress.toLowerCase()}_${Date.now()}`,
+      userAddress: userAddress.toLowerCase(),
+      totalSpendUSD: 0,
+      totalTrades: 0,
+      successfulTrades: 0,
+      failedTrades: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+
+    await tursoDriver.updateAgentWalletStats(userAddress, {
+      totalSpendUSD: current.totalSpendUSD + spendUSD,
+      totalTrades: current.totalTrades + 1,
+      successfulTrades: current.successfulTrades + (success ? 1 : 0),
+      failedTrades: current.failedTrades + (success ? 0 : 1),
+      lastTradeAt: new Date().toISOString()
+    })
   },
 }

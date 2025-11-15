@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAlgodClient } from '@/lib/algorand';
 import { TinymanV2Client } from '@/lib/dex/tinyman-client';
 import { PactClient } from '@/lib/dex/pact-client';
+import { LiquidityPoolClient } from '@/lib/contracts/liquidity-pool-client';
 import type { PoolInfo } from '@/lib/dex/types';
 
 // Separate caches for testnet and mainnet
@@ -97,7 +98,80 @@ export async function GET(request: NextRequest) {
     // Combine all pools
     const allPools = [...tinymanPools, ...pactPools];
 
-    console.log(`✅ Fetched ${allPools.length} total ${network} pools (Tinyman: ${tinymanPools.length}, Pact: ${pactPools.length})`);
+    // Fetch 10xswap pools directly from blockchain
+    const poolClient = new LiquidityPoolClient(algodClient, network);
+    const tenXSwapPools: PoolInfo[] = [];
+    
+    try {
+      // Check if the pool contract is deployed
+      const isDeployed = await poolClient.isDeployed();
+      
+      if (isDeployed) {
+        console.log('🔍 Fetching 10xswap pool from blockchain...');
+        
+        // Get pool info from smart contract global state
+        const poolInfo = await poolClient.getPoolInfo();
+        
+        if (poolInfo && poolInfo.initialized) {
+          // Fetch asset information for both assets
+          const asset1Id = Number(poolInfo.asset1Id);
+          const asset2Id = Number(poolInfo.asset2Id);
+          
+          const [asset1Info, asset2Info] = await Promise.all([
+            asset1Id === 0 
+              ? Promise.resolve({ name: 'ALGO', unitName: 'ALGO', decimals: 6 })
+              : algodClient.getAssetByID(asset1Id).do().then(info => ({
+                  name: info.params.name || `Asset ${asset1Id}`,
+                  unitName: info.params.unitName || (info.params as any)['unit-name'] || 'ASA',
+                  decimals: info.params.decimals || 0
+                })).catch(() => ({ name: `Asset ${asset1Id}`, unitName: 'ASA', decimals: 0 })),
+            asset2Id === 0
+              ? Promise.resolve({ name: 'ALGO', unitName: 'ALGO', decimals: 6 })
+              : algodClient.getAssetByID(asset2Id).do().then(info => ({
+                  name: info.params.name || `Asset ${asset2Id}`,
+                  unitName: info.params.unitName || (info.params as any)['unit-name'] || 'ASA',
+                  decimals: info.params.decimals || 0
+                })).catch(() => ({ name: `Asset ${asset2Id}`, unitName: 'ASA', decimals: 0 }))
+          ]);
+          
+          tenXSwapPools.push({
+            poolId: `10xswap-${poolInfo.lpTokenId}`,
+            poolAddress: poolClient.getPoolAddress(),
+            asset1: {
+              id: asset1Id,
+              name: asset1Info.name,
+              symbol: asset1Info.unitName,
+              decimals: asset1Info.decimals,
+            },
+            asset2: {
+              id: asset2Id,
+              name: asset2Info.name,
+              symbol: asset2Info.unitName,
+              decimals: asset2Info.decimals,
+            },
+            reserve1: poolInfo.reserve1,
+            reserve2: poolInfo.reserve2,
+            totalLiquidity: poolInfo.totalLiquidity,
+            fee: poolInfo.feeBps,
+            dexName: '10xswap',
+            lpTokenId: Number(poolInfo.lpTokenId),
+          });
+          
+          console.log(`✅ Fetched 10xswap pool: ${asset1Info.unitName}/${asset2Info.unitName}`);
+        } else {
+          console.log('ℹ️ 10xswap pool contract exists but no pool initialized yet');
+        }
+      } else {
+        console.log('ℹ️ 10xswap pool contract not deployed on', network);
+      }
+    } catch (err) {
+      console.error('Error fetching 10xswap pool from blockchain:', err);
+    }
+    
+    // Add 10xswap pools to the combined list
+    allPools.push(...tenXSwapPools);
+
+    console.log(`✅ Fetched ${allPools.length} total ${network} pools (Tinyman: ${tinymanPools.length}, Pact: ${pactPools.length}, 10xswap: ${tenXSwapPools.length})`);
 
     // Convert BigInt values to strings for JSON serialization
     const serializedPools = allPools.map(pool => ({
@@ -128,6 +202,7 @@ export async function GET(request: NextRequest) {
         total: allPools.length,
         tinyman: tinymanPools.length,
         pact: pactPools.length,
+        '10xswap': tenXSwapPools.length,
       },
       cached: false,
       timestamp: now,

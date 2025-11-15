@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation"
 import BackgroundPaths from "@/components/shared/animated-background"
 import { SearchBar } from "@/components/shared/search-bar"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
-import { Loader2 } from "lucide-react"
+import { Loader2, TrendingUp, Activity, BarChart3 } from "lucide-react"
 import { useMemo, useState, useEffect } from "react"
 import type { PoolInfo } from "@/lib/dex/types"
 
@@ -187,6 +188,144 @@ export default function PoolPage() {
             </div>
           </div>
 
+          {/* Charts Section */}
+          {!loading && !error && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-6">
+              {/* Total TVL Chart */}
+              <Card className="relative">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-blue-500" />
+                    Total Value Locked
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="text-3xl font-bold font-mono">
+                      ${(pools.reduce((sum, p) => sum + (p.tvlUSD || 0), 0) / 1000000).toFixed(2)}M
+                    </div>
+                    <div className="h-24 relative">
+                      <svg className="w-full h-full" viewBox="0 0 280 96" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id="tvlGradient" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0%" stopColor="rgb(59, 130, 246)" stopOpacity="0.5" />
+                            <stop offset="100%" stopColor="rgb(59, 130, 246)" stopOpacity="0.05" />
+                          </linearGradient>
+                        </defs>
+                        <path
+                          d="M0,60 L20,52 L40,58 L60,45 L80,50 L100,42 L120,38 L140,45 L160,35 L180,32 L200,28 L220,30 L240,25 L260,22 L280,20 L280,96 L0,96 Z"
+                          fill="url(#tvlGradient)"
+                        />
+                        <path
+                          d="M0,60 L20,52 L40,58 L60,45 L80,50 L100,42 L120,38 L140,45 L160,35 L180,32 L200,28 L220,30 L240,25 L260,22 L280,20"
+                          fill="none"
+                          stroke="rgb(59, 130, 246)"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                      {/* Blur overlay for testnet */}
+                      {network === 'testnet' && (
+                        <div className="absolute inset-0 backdrop-blur-sm bg-white/50 dark:bg-black/50 flex items-center justify-center rounded">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white text-center px-4">
+                            This can&apos;t be shown on testnet
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Across {pools.length} pools
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 24h Volume Chart */}
+              <Card className="relative">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-green-500" />
+                    24h Trading Volume
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="text-3xl font-bold font-mono">
+                      ${(pools.reduce((sum, p) => sum + (p.volume24hUSD || 0), 0) / 1000000).toFixed(2)}M
+                    </div>
+                    <div className="h-24 relative">
+                      <svg className="w-full h-full" viewBox="0 0 280 96" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id="volumeGradient" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0%" stopColor="rgb(34, 197, 94)" stopOpacity="0.5" />
+                            <stop offset="100%" stopColor="rgb(34, 197, 94)" stopOpacity="0.05" />
+                          </linearGradient>
+                        </defs>
+                        <path
+                          d="M0,70 L20,65 L40,58 L60,52 L80,55 L100,48 L120,45 L140,40 L160,45 L180,38 L200,42 L220,35 L240,30 L260,32 L280,28 L280,96 L0,96 Z"
+                          fill="url(#volumeGradient)"
+                        />
+                        <path
+                          d="M0,70 L20,65 L40,58 L60,52 L80,55 L100,48 L120,45 L140,40 L160,45 L180,38 L200,42 L220,35 L240,30 L260,32 L280,28"
+                          fill="none"
+                          stroke="rgb(34, 197, 94)"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                      {/* Blur overlay for testnet */}
+                      {network === 'testnet' && (
+                        <div className="absolute inset-0 backdrop-blur-sm bg-white/50 dark:bg-black/50 flex items-center justify-center rounded">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white text-center px-4">
+                            This can&apos;t be shown on testnet
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Last 24 hours
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Top Pools by TVL */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-purple-500" />
+                    Top Pools by TVL
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {pools
+                      .sort((a, b) => (b.tvlUSD || 0) - (a.tvlUSD || 0))
+                      .slice(0, 3)
+                      .map((pool, index) => (
+                        <div key={pool.id} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-muted-foreground">
+                              #{index + 1}
+                            </span>
+                            <span className="text-sm font-medium">
+                              {pool.token0}/{pool.token1}
+                            </span>
+                          </div>
+                          <div className="text-sm font-mono text-muted-foreground">
+                            ${pool.tvlUSD ? (pool.tvlUSD / 1000).toFixed(1) + 'K' : '—'}
+                          </div>
+                        </div>
+                      ))}
+                    <div className="pt-2 border-t">
+                      <p className="text-xs text-muted-foreground">
+                        Top 3 of {pools.length} pools
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
           {error && ( 
             <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950 p-4">
               <p className="text-sm text-red-800 dark:text-red-200">
@@ -301,7 +440,7 @@ function PoolTable({ pools, emptyLabel = "No pools found." }: { pools: Pool[]; e
         {pools.map((p, index) => (
           <TableRow 
             key={p.id} 
-            className="cursor-pointer hover:bg-muted/50 transition-colors"
+            className="cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all hover:shadow-md hover:scale-[1.01] border-b border-gray-100 dark:border-gray-800"
             onClick={() => router.push(`/pool/${p.id}`)}
           >
             <TableCell className="text-center text-muted-foreground">
@@ -415,6 +554,8 @@ function getDexBadgeColor(dex: string) {
       return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
     case 'humble':
       return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
+    case '10xswap':
+      return 'bg-gradient-to-r from-red-100 to-yellow-100 text-red-800 dark:from-red-900/30 dark:to-yellow-900/30 dark:text-red-300 font-bold'
     default:
       return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
   }

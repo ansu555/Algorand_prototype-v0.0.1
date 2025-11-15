@@ -283,7 +283,7 @@ export default function TradePage() {
                                         </span>
                                         {d.txId && (
                                           <a 
-                                            href={`https://testnet.algoexplorer.io/tx/${d.txId}`}
+                                            href={`https://lora.algokit.io/testnet/transaction/${d.txId}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="text-xs text-blue-500 hover:underline"
@@ -543,7 +543,7 @@ export default function TradePage() {
                                       </span>
                                       {d.txId && (
                                         <a 
-                                          href={`https://testnet.algoexplorer.io/tx/${d.txId}`}
+                                          href={`https://lora.algokit.io/testnet/transaction/${d.txId}`}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="text-xs text-blue-500 hover:underline"

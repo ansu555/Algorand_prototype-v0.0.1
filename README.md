@@ -1,12 +1,54 @@
-# 10xSwap: AI-Powered Algorand DEX
+# 10xSwap: AI-Powered Algorand DEX + WaveBreak Token Launchpad + X Token Rewards
 
-10xSwap is a modern web application that allows users to explore cryptocurrency markets, manage assets, and execute transactions on the Algorand blockchain. It features an AI-powered chat agent that can understand natural language commands to perform actions like checking balances, getting token prices, and executing swaps and transfers.
+10xSwap is a comprehensive Algorand ecosystem platform featuring:
+1. **AI-Powered DEX** - Natural language trading and portfolio management
+2. **WaveBreak Launchpad** - Fair token launches using bonding curves with anti-bot protection 🚀
+3. **X Token Rewards System** - Quest-based rewards with levels, streaks, and badges 🎮
+4. **Multi-DEX Aggregation** - Best price routing across Tinyman and Pact
+5. **Automated Trading** - Auto-Pilot rules for DCA, rebalancing, and rotation strategies
+
+## 🎉 Hackathon Highlight: WaveBreak Launchpad
+
+**WaveBreak** is a revolutionary token launchpad using **bonding curves** for fair, bot-resistant token launches. Built for [Algorand Hack Series #2].
+
+### Key Features
+- ✅ **Smart Contract-Powered:** PyTeal bonding curve with ABI methods
+- ✅ **Anti-Bot Protection:** Rate limiting, cooldown, max purchase caps
+- ✅ **3 Pricing Curves:** Linear, Exponential, Sigmoid
+- ✅ **Early Buyer Rewards:** Points system incentivizes community building
+- ✅ **Auto-DEX Graduation:** Creates liquidity pools when target reached
+- ✅ **TestNet Verified:** All transactions viewable on AlgoExplorer
+- ✅ **Modular SDK:** One codebase powers 4+ industries (meme, DAO, gaming, creator tokens)
+
+### Quick Start (Launchpad)
+```bash
+# 1. Deploy smart contract
+pip install pyteal beaker py-algorand-sdk
+export CREATOR_MNEMONIC="your 25 words..."
+python scripts/deploy-bonding-curve.py
+
+# 2. Update config
+# Edit src/lib/launchpad/algorand.ts with your App ID
+
+# 3. Test on TestNet
+npm run dev
+# Visit http://localhost:3000/launchpad
+```
+
+**📖 Full Documentation:**
+- [Hackathon Submission Guide](docs/HACKATHON_SUBMISSION.md)
+- [Deployment Checklist](docs/DEPLOYMENT_CHECKLIST.md)
+- [What We Built](docs/WHAT_WE_BUILT.md)
+
+---
 
 ## Table of Contents
 
 - [✨ Features](#-features)
+- [🚀 WaveBreak Token Launchpad](#-wavebreak-token-launchpad)
+- [🎮 X Token Rewards System](#-x-token-rewards-system)
 - [🏗️ Project Structure](#️-project-structure)
-- [� Getting Started](#-getting-started)
+- [🛠️ Getting Started](#-getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#1-installation)
   - [Environment Setup](#2-environment-setup)
@@ -14,21 +56,258 @@
 - [🔧 API Keys & Configuration](#-api-keys--configuration)
 - [📡 API Endpoints](#-api-endpoints)
 - [🤖 AI Agent Features](#-ai-agent-features)
-- [� Supported Tokens](#-supported-tokens)
-- [�📖 Documentation](#-documentation)
+- [💎 Supported Tokens](#-supported-tokens)
+- [📖 Documentation](#-documentation)
 
 ## ✨ Features
 
+### Core Platform Features
 - **🤖 AI-Powered Chat Agent**: Natural language interface for blockchain operations
 - **🔐 Per-User Agent Wallets**: Dedicated Algorand wallet for each user with encrypted storage
-- **� Algorand Blockchain**: Fast, secure, and carbon-neutral blockchain integration
-- **💱 DEX Integration**: Swap tokens via Tinyman and Pact on Algorand
+- **🌿 Algorand Blockchain**: Fast, secure, and carbon-neutral blockchain integration
+- **💱 Multi-DEX Aggregation**: Intelligent routing across Tinyman and Pact DEXs
 - **👛 Multi-Wallet Support**: Pera, Defly, MyAlgo wallet connections
 - **📊 Real-Time Market Data**: Live cryptocurrency prices and analytics
-- **🔄 Automated Trading Rules**: DCA, Rebalance, and Rotation strategies
 - **⚡ Instant Finality**: Sub-3 second transaction confirmation on Algorand
 - **🎨 Modern UI**: Responsive design with dark mode support
 - **📦 On-Chain Smart Contracts**: Deployed autopilot rules and multi-hop swap router
+
+### 🚀 WaveBreak Token Launchpad
+- **Bonding Curve Mechanics**: Linear, Exponential, and Sigmoid price curves
+- **Anti-Bot Protection**: Cooldown periods, per-transaction limits, whale penalties
+- **Early Buyer Rewards**: 3x → 1x points multiplier based on purchase timing
+- **Automated DEX Graduation**: Auto-creates liquidity pools when funding target reached
+- **30-Day Vesting**: Fair token distribution with linear unlock schedule
+- **LP Lock**: 6-month liquidity pool locks for project credibility
+
+### 🎮 X Token Rewards System
+- **Quest-Based Earning**: Daily, weekly, milestone, and achievement quests
+- **30 Level Progression**: Level up from 1-30 with increasing XP thresholds
+- **Streak Multipliers**: Up to 3x rewards for maintaining daily login streaks
+- **Badge Collection**: Common, Rare, Epic, and Legendary badges with bonuses
+- **Referral System**: Earn 10% of referred users' quest rewards
+- **Leaderboards**: Compete globally on volume, swaps, and quest completion
+
+### 🔄 Automated Trading (Auto-Pilot)
+- **DCA Strategies**: Dollar-cost averaging with custom intervals
+- **Portfolio Rebalancing**: Maintain target allocations automatically
+- **Token Rotation**: Automated pair trading strategies
+- **Rule Scheduling**: Time-based and condition-based execution
+
+### 💰 Staking (Coming Soon)
+- **15% Base APY**: Earn passive rewards on staked X tokens
+- **VIP Tiers**: Unlock fee discounts and exclusive features
+- **Flexible Terms**: Choose lock periods for higher APY multipliers
+- **Governance Rights**: Stakers can vote on protocol changes
+
+---
+
+## 🚀 WaveBreak Token Launchpad
+
+**WaveBreak** is a revolutionary fair-launch platform using **bonding curves** to ensure transparent, bot-resistant token distribution on Algorand.
+
+### How It Works
+
+```
+Creator → Configure Launch → Bonding Curve Active → Users Buy → Target Reached → Auto-DEX Graduation
+```
+
+#### 1. **Project Creation**
+- Define token (name, symbol, supply, decimals)
+- Choose bonding curve type (Linear, Exponential, Sigmoid)
+- Set pricing (base price, max price, funding target)
+- Configure liquidity (DEX platform, LP lock duration)
+- Upload project assets (logo, social links)
+
+#### 2. **Bonding Curve Phase**
+- Users buy tokens at algorithmically determined prices
+- **Price Discovery**: Early buyers pay lower prices
+- **Fair Distribution**: No private sales or VCs
+- **Anti-Bot Protection**:
+  - 10-block cooldown between purchases (~33 seconds)
+  - Max 1% of supply per transaction
+  - Max 5% of supply per wallet
+  - Whale penalty for purchases >2.5% supply
+
+#### 3. **Early Buyer Rewards**
+Users earn **points** that convert to tokens after graduation:
+
+| Progress | Multiplier | Example ($100 purchase) |
+|----------|-----------|-------------------------|
+| 0-10% sold | 3x | 300 points → 300 tokens |
+| 10-25% sold | 2.5x | 250 points → 250 tokens |
+| 25-50% sold | 2x | 200 points → 200 tokens |
+| 50-75% sold | 1.5x | 150 points → 150 tokens |
+| 75-100% sold | 1x | 100 points → 100 tokens |
+
+**Vesting:** Points convert to tokens with 30-day linear unlock.
+
+#### 4. **Graduation to DEX**
+When funding target is reached:
+- Smart contract auto-creates liquidity pool on chosen DEX (Tinyman/Pact)
+- 80% of raised ALGO + equivalent tokens deposited as liquidity
+- LP tokens locked for 6 months (anti-rug protection)
+- Token becomes tradable on open market
+- Creator receives 20% of raised ALGO
+
+### Bonding Curve Types
+
+**Linear Curve:**
+```
+price = basePrice + (maxPrice - basePrice) * progress
+```
+- Steady, predictable price increase
+- Best for: Community tokens, DAOs
+
+**Exponential Curve:**
+```
+price = basePrice * (maxPrice/basePrice) ^ progress
+```
+- Rapid price acceleration near target
+- Best for: Meme coins, speculation plays
+
+**Sigmoid Curve:**
+```
+price = basePrice + (maxPrice - basePrice) * (progress²)
+```
+- S-curve: slow start, rapid middle, slow end
+- Best for: Balanced launches, gaming tokens
+
+### Launchpad Pages
+
+- **`/launchpad`** - Browse all active and graduated projects
+- **`/launchpad/create`** - Launch your own token
+- **`/launchpad/[projectId]`** - Project details, buy interface, analytics
+
+### Documentation
+
+- **[Token Launchpad Guide](./docs/TOKEN_LAUNCHPAD.md)** - User guide and feature overview
+- **[Launchpad Implementation](./docs/LAUNCHPAD_IMPLEMENTATION.md)** - Technical implementation details
+- **[Token Economics](./docs/TOKEN_ECONOMICS.md)** - Points system and tokenomics
+
+---
+
+## 🎮 X Token Rewards System
+
+**X Token** is the platform's utility token, earned through quests and activities, usable for staking, governance, and fee discounts.
+
+### Core Mechanics
+
+#### 🎯 Quest System
+Complete quests to earn X tokens:
+
+**Onboarding Quests:**
+- Connect Wallet → **10 X**
+- First Swap → **25 X**
+- First Liquidity → **40 X**
+- Create Auto-Pilot Rule → **30 X**
+
+**Daily Quests:**
+- Daily Login → **5 X** (stackable with streaks)
+- Complete 1 Swap → **10 X**
+- Check Liquidity → **8 X**
+
+**Milestone Quests:**
+- 5 Swaps → **50 X**
+- 25 Swaps → **150 X**
+- 100 Swaps → **500 X**
+- 500 Swaps → **1,500 X**
+
+**Achievement Quests:**
+- $10,000+ Volume → **500 X**
+- $50,000+ Volume → **2,500 X**
+- 90-Day LP Holder → **1,000 X** + 💎 Diamond Hands Badge
+
+#### 📊 Level Progression (1-30)
+Earn XP to level up and unlock rewards:
+
+| Level Range | XP Required | Unlocks |
+|-------------|-------------|---------|
+| 1-5 | 0 - 1,000 XP | Basic quests |
+| 6-10 | 2,000 - 11,000 XP | Weekly quests |
+| 11-15 | 15,000 - 41,000 XP | Achievement quests |
+| 16-20 | 50,000 - 96,000 XP | Referral bonuses, prediction markets |
+| 21-25 | 110,000 - 176,000 XP | Governance proposals |
+| 26-30 | 195,000 - 281,000 XP | Legendary quests (5,000 X rewards) |
+
+**XP Sources:**
+- Quest rewards: 1 XP per 1 X earned
+- Daily login: 5 XP
+- Swap: 10 XP each
+- LP position active: 50 XP/day
+- Auto-Pilot execution: 15 XP
+
+#### 🔥 Streak Multipliers
+Maintain daily login streaks for bonus rewards:
+
+| Streak | Multiplier | Example Reward |
+|--------|-----------|----------------|
+| 1-6 days | 1x | 5 X → 5 X |
+| 7-13 days | 1.5x | 5 X → 7.5 X |
+| 14-29 days | 2x | 5 X → 10 X |
+| 30+ days | 3x | 5 X → 15 X |
+
+**Streak Protection (Future):** Purchase shields with X tokens to protect streaks during absences.
+
+#### 🏆 Badge Collection
+Unlock badges for permanent bonuses:
+
+| Badge | Requirement | Reward | Bonus |
+|-------|------------|--------|-------|
+| Early Adopter 🥇 | Join first month | 500 X | +10% all rewards |
+| Diamond Hands 💎 | 90+ day LP | 1,000 X | +5% all rewards |
+| Whale Watcher 🐋 | $50,000+ volume | 2,500 X | - |
+| Master Trader 🏆 | 500+ swaps | 1,500 X | - |
+| Automation Expert 🤖 | 50+ agent trades | 800 X | - |
+| Social Butterfly 🦋 | 10+ referrals | 1,000 X | +2% referral |
+
+#### 🤝 Referral System
+Invite friends and earn lifetime rewards:
+
+- **Per Signup:** 50 X
+- **Friend's First Swap:** 25 X bonus
+- **Lifetime Earnings:** 10% of friend's quest rewards
+- **Milestones:**
+  - 5 referrals → 100 X bonus
+  - 10 referrals → 500 X + 🦋 Social Butterfly Badge
+  - 25 referrals → 2,000 X
+  - 50 referrals → 5,000 X + Influencer Badge
+
+### X Token Utility
+
+#### 🎫 Current Utilities
+- **Quest Rewards**: Primary earning method
+- **Platform Currency**: Foundation for future features
+- **Leaderboard Status**: Show off your X holdings
+
+#### 🔜 Coming Soon
+- **Trading Fee Discounts**: Up to 75% off (Diamond tier: 50,000+ X)
+- **Staking Rewards**: 15% base APY, up to 40% with lock periods
+- **VIP Benefits**:
+  - Early launchpad access (6 hours for Diamond tier)
+  - Priority customer support
+  - Exclusive governance proposals
+  - Higher referral commissions (15% vs 10%)
+- **Governance Voting**: 1 X = 1 vote on protocol decisions
+- **Prediction Markets**: Stake X on token launch outcomes
+
+#### 🔮 Future Vision
+- **DAO Treasury**: Community-controlled fund allocation
+- **Prediction Market Pools**: Earn from accurate predictions
+- **NFT Minting**: Use X to mint achievement NFTs
+- **Cross-Chain Bridge**: Bridge X to other ecosystems
+
+### Rewards Pages
+
+- **`/rewards`** - Quest dashboard, streak tracking, badge collection
+- **`/stake`** - Staking portal (coming soon with 15% APY)
+
+### Documentation
+
+- **[Token Economics](./docs/TOKEN_ECONOMICS.md)** - Complete X Token economics guide
+- **[Backend & Agent Spec](./docs/BACKEND_AND_AGENT_SPEC.md)** - Rewards system API and database schema
+
+---
 
 ## 🏗️ Project Structure
 
@@ -43,10 +322,27 @@ Algorand_prototype-v0.0.1/
 │   │   │   ├── agent/        # AI agent interface
 │   │   │   ├── wallet/       # Wallet management
 │   │   │   └── swap-demo/    # Token swap demo
+│   │   ├── launchpad/        # WaveBreak token launchpad
+│   │   │   ├── page.tsx      # Browse launches
+│   │   │   ├── create/       # Create new launch
+│   │   │   └── [projectId]/  # Project details & buy interface
+│   │   ├── rewards/          # X Token rewards system
+│   │   │   └── page.tsx      # Quest dashboard, streaks, badges
+│   │   ├── stake/            # Staking portal (coming soon)
 │   │   ├── api/              # API routes (serverless functions)
 │   │   │   ├── agent/        # AI agent endpoints
 │   │   │   ├── algorand/     # Algorand operations
 │   │   │   ├── analytics/    # Market analytics
+│   │   │   ├── launchpad/    # Launchpad API
+│   │   │   │   ├── projects/ # Project CRUD
+│   │   │   │   ├── purchase/ # Buy tokens, quotes, validation
+│   │   │   │   ├── user/     # User points & purchases
+│   │   │   │   └── ...more
+│   │   │   ├── rewards/      # Rewards system API
+│   │   │   │   ├── route.ts  # User rewards data
+│   │   │   │   ├── quests/   # Quest tracking
+│   │   │   │   ├── claim/    # Claim quest rewards
+│   │   │   │   └── track/    # Action tracking
 │   │   │   └── ...more
 │   │   └── ...other routes
 │   │
@@ -70,6 +366,16 @@ Algorand_prototype-v0.0.1/
 │   │   ├── algorand-wallet.ts # Wallet integration
 │   │   ├── tokens.ts         # Token registry
 │   │   ├── db.ts             # Database connection
+│   │   ├── launchpad/        # WaveBreak launchpad
+│   │   │   ├── algorand.ts   # Bonding curve interactions
+│   │   │   ├── db.ts         # Database operations
+│   │   │   ├── schema.sql    # Launchpad database schema
+│   │   │   ├── sdk.ts        # Launchpad SDK
+│   │   │   └── types.ts      # TypeScript types
+│   │   ├── rewards/          # X Token rewards system
+│   │   │   ├── db.ts         # Rewards database operations
+│   │   │   ├── schema.sql    # Rewards database schema
+│   │   │   └── types.ts      # Quest, badge, streak types
 │   │   └── ...more utilities
 │   │
 │   ├── hooks/                # Custom React hooks
@@ -80,22 +386,28 @@ Algorand_prototype-v0.0.1/
 ├── public/                   # Static assets
 ├── docs/                     # Documentation
 │   ├── FILE_STRUCTURE.md     # 📁 Detailed structure guide
-│   ├── SYSTEM_ARCHITECTURE.md # 🏗️ System design
-│   └── BACKEND_ARCHITECTURE.md # ⚙️ Backend details
+│   ├── SYSTEM_OVERVIEW.md    # 🏗️ System design
+│   ├── TOKEN_ECONOMICS.md    # 🎮 X Token rewards guide
+│   ├── TOKEN_LAUNCHPAD.md    # 🚀 WaveBreak launchpad
+│   └── BACKEND_AND_AGENT_SPEC.md # ⚙️ Backend details
 └── data/                     # Runtime data (logs, db)
 ```
 
 ### 📚 Documentation
 
-**Core Documentation** (7 canonical guides):
+**Core Documentation** (10 canonical guides):
 
 - **[🏗️ System Overview](./docs/SYSTEM_OVERVIEW.md)** - Architecture, components, and data flows
 - **[👨‍💻 Developer Guide](./docs/DEVELOPER_GUIDE.md)** - Setup, installation, testing, and troubleshooting
+- **[📁 File Structure](./docs/FILE_STRUCTURE.md)** - Detailed codebase organization guide
 - **[📦 Smart Contracts & Deployment](./docs/CONTRACTS_AND_DEPLOYMENT.md)** - Contract details and deployment procedures
+- **[💧 Liquidity Pools](./docs/LIQUIDITY_POOLS.md)** - Pool adapters, DEX integration, and pool management
 - **[🤖 Autopilot Module](./docs/AUTOPILOT_MODULE.md)** - Automated trading rules and execution
 - **[⚙️ Backend & Agent Spec](./docs/BACKEND_AND_AGENT_SPEC.md)** - API endpoints and database schema
 - **[🧠 AI Agent & MCP/NCP](./docs/AI_AGENT_AND_MCP_NCP_SPEC.md)** - AI capabilities and analytics engine
 - **[🔐 Agent Wallet System](./docs/AGENT_WALLET_SYSTEM.md)** - Per-user agent wallets and automated trading
+- **[🚀 Token Launchpad](./docs/TOKEN_LAUNCHPAD.md)** - WaveBreak launchpad guide
+- **[🎮 Token Economics](./docs/TOKEN_ECONOMICS.md)** - X Token rewards system and economics
 
 ### Key Architectural Decisions
 

@@ -8,11 +8,14 @@
 2. [System Architecture](#system-architecture)
 3. [Core Components](#core-components)
 4. [Multi-DEX Aggregation](#multi-dex-aggregation)
-5. [Smart Contracts](#smart-contracts)
-6. [Price Oracle & Market Data](#price-oracle--market-data)
-7. [Data Flow Diagrams](#data-flow-diagrams)
-8. [Technology Stack](#technology-stack)
-9. [Network Configuration](#network-configuration)
+5. [Token Launchpad Architecture](#token-launchpad-architecture)
+6. [Rewards System Architecture](#rewards-system-architecture)
+7. [Smart Contracts](#smart-contracts)
+8. [Price Oracle & Market Data](#price-oracle--market-data)
+9. [Data Flow Diagrams](#data-flow-diagrams)
+10. [Technology Stack](#technology-stack)
+11. [Network Configuration](#network-configuration)
+12. [Database Schema](#database-schema)
 
 ---
 
@@ -26,6 +29,8 @@
 - **AI-Powered Trading** - Natural language interface for blockchain operations
 - **Per-User Agent Wallets** - Dedicated encrypted wallets for automated trading
 - **Automated Trading Rules** - DCA, portfolio rebalancing, and rotation strategies
+- **WaveBreak Token Launchpad** - Fair token launches using bonding curves with anti-bot protection
+- **X Token Rewards System** - Quest-based rewards with levels, streaks, and badges
 - **Real-Time Market Data** - Live price feeds from multiple sources
 - **On-Chain Smart Contracts** - Autopilot rules and multi-hop swap router
 - **Multi-Wallet Support** - Pera, Defly, and MyAlgo wallet integration
@@ -127,11 +132,46 @@ src/components/
 │   ├── exchange/             # Swap interface
 │   ├── analytics/            # Charts and analytics
 │   ├── chat/                 # AI agent chat
-│   └── rules/                # Trading rules UI
+│   ├── rules/                # Trading rules UI
+│   └── trading/              # Trading components
+│       └── pool-liquidity-chart.tsx  # Pool liquidity visualization
 ├── layout/                    # Layout components
 ├── ui/                        # Base UI (Shadcn)
 └── providers/                 # React Context providers
 ```
+
+#### Liquidity Pool UI Pages
+
+**`/pool` - Pool Explorer**
+- Browse all available liquidity pools across DEXs
+- Network toggle (testnet/mainnet)
+- Sortable columns (TVL, volume, fee tier, APR)
+- Filter by DEX protocol (Tinyman, Pact)
+- Visual pool analytics:
+  - Total Value Locked (TVL) chart
+  - 24h Trading Volume chart
+  - Top 3 pools by TVL
+- Real-time pool data with 5-minute cache
+- Clickable rows navigate to pool details
+
+**`/pool/create` - Create Liquidity Position**
+- Two-step wizard interface:
+  - Step 1: Select token pair and fee tier
+  - Step 2: Set price range and deposit amounts
+- Token selector with available assets
+- Fee tier selection (0.05%, 0.30%, 1.00%)
+- Price range input (min/max) for concentrated liquidity
+- Deposit amount calculators for both tokens
+- Position preview before submission
+
+**`/pool/[id]` - Pool Details Page**
+- Detailed pool information and analytics
+- Liquidity depth charts
+- Price history graphs
+- Reserve ratio visualization
+- Recent transaction history
+- Add/remove liquidity interface
+- Pool statistics (created date, total trades, etc.)
 
 ### 2. API Routes
 
@@ -151,8 +191,39 @@ src/app/api/
 ├── price/                     # Price queries
 ├── rules/                     # Trading rules
 ├── trade/                     # Swap execution
-└── pool/                      # Pool data
+├── pool/                      # Pool data
+│   └── opt-in-pool/          # Opt user into pool assets
+└── pools/                     # Pool aggregation endpoints
+    ├── all/                   # Fetch all pools from DEXs
+    ├── market-data/           # Get TVL, volume, APR metrics
+    └── transactions/          # Pool transaction history
 ```
+
+#### Pool API Endpoints Details
+
+**`/api/pools/all`** - Aggregate pool discovery
+- Fetches pools from Tinyman and Pact in parallel
+- Implements 5-minute caching per network
+- Supports testnet and mainnet
+- Returns: pool ID, assets, reserves, fees, DEX name
+
+**`/api/pools/market-data`** - Market analytics
+- Fetches from external data sources (Vestige, DeFiLlama)
+- Calculates pool APR from fees and volume
+- Returns: TVL in USD, 24h volume, reward APR
+- 5-minute cache TTL
+
+**`/api/pools/transactions`** - Historical data
+- Queries Algorand indexer for pool transactions
+- Filters by pool ID
+- Returns swap events with amounts and timestamps
+- Pagination support
+
+**`/api/swap/opt-in-pool`** - Pool asset opt-in
+- Opts user wallet into required pool assets
+- Validates asset availability
+- Constructs opt-in transactions
+- Returns transaction group for signing
 
 ### 3. Core Libraries
 
@@ -357,10 +428,795 @@ The aggregator selects the best DEX based on:
 
 ### Supported DEXs
 
-| DEX | Protocol | Fee | Adapter Contract ID |
-|-----|----------|-----|---------------------|
-| **Tinyman V2** | AMM | 30 bps | 749360541 (testnet) |
-| **Pact Finance** | Stable AMM | 25 bps | 749341932 (testnet) |
+| DEX | Protocol | Fee | Adapter Contract ID | Pool Discovery |
+|-----|----------|-----|---------------------|----------------|
+| **Tinyman V2** | Constant Product AMM | 30 bps (0.3%) | 749360541 (testnet) | ✅ Tinyman Analytics API |
+| **Pact Finance** | Constant Product AMM | 25 bps (0.25%) | 749341932 (testnet) | ✅ Pact Pool API |
+
+### Liquidity Pool Integration
+
+10xSwap integrates with decentralized exchange liquidity pools to enable token swaps. Each supported DEX has dedicated pool adapter contracts that handle protocol-specific interactions.
+
+#### Pool Adapter Contracts
+
+**TinymanPoolAdapter (749360541)**
+- Enables interaction with Tinyman V2 constant product AMM pools
+- Handles Tinyman's specific ABI interface (method selector: `0xd71d146d`)
+- Supports all ASA-to-ASA and ALGO-to-ASA pool types
+- 0.30% fee tier on all swaps
+
+**PactPoolAdapter (749341932)**
+- Connects to Pact Finance constant product AMM pools  
+- Implements Pact's unique swap interface (method selector: `0xf4b4e0f4`)
+- Includes special handlers for native ALGO swaps
+- 0.25% fee tier (lower than Tinyman)
+
+#### Pool Discovery Mechanism
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              POOL DISCOVERY & SELECTION                 │
+└──────────────────┬──────────────────────────────────────┘
+                   │
+      ┌────────────▼─────────────┐
+      │   Fetch All Pools        │
+      │   - Tinyman Analytics    │
+      │   - Pact Pool API        │
+      │   - Vestige (optional)   │
+      └────────────┬─────────────┘
+                   │
+      ┌────────────▼─────────────┐
+      │   Filter & Validate      │
+      │   - Min liquidity check  │
+      │   - Asset availability   │
+      │   - Network compatibility│
+      └────────────┬─────────────┘
+                   │
+      ┌────────────▼─────────────┐
+      │   Get Quotes from Pools  │
+      │   - Calculate outputs    │
+      │   - Estimate price impact│
+      │   - Consider fees        │
+      └────────────┬─────────────┘
+                   │
+      ┌────────────▼─────────────┐
+      │   Rank & Select Best     │
+      │   1. Price impact < 5%   │
+      │   2. User preference     │
+      │   3. Highest output      │
+      │   4. Liquidity depth     │
+      └────────────┬─────────────┘
+                   │
+      ┌────────────▼─────────────┐
+      │   Return Selected Pool   │
+      │   + Adapter Contract ID  │
+      └──────────────────────────┘
+```
+
+#### Liquidity Pool Data Structure
+
+Each pool contains:
+- **Pool ID**: Unique identifier (typically DEX pool app ID)
+- **Token Pair**: Two assets (e.g., ALGO/USDC)
+- **Reserves**: Token balances in the pool
+- **Fee Tier**: Trading fee percentage (30 bps or 25 bps)
+- **DEX Name**: Source protocol (tinyman, pact)
+- **Pool Address**: Algorand address of pool contract
+- **Market Data**: TVL, volume, APR (mainnet only)
+
+#### Pool APIs
+
+**`GET /api/pools/all`** - Fetch all pools
+- Network parameter: testnet or mainnet
+- Returns pools from all supported DEXs
+- 5-minute cache to avoid rate limits
+
+**`GET /api/pools/market-data`** - Get market metrics
+- TVL (Total Value Locked)
+- 24h/1d/30d trading volume
+- Pool APR and reward APR
+- Fee revenue statistics
+
+**`GET /api/pools/transactions`** - Pool transaction history
+- Recent swaps and liquidity changes
+- Per-pool filtering
+- Pagination support
+
+---
+
+## Token Launchpad Architecture
+
+### WaveBreak Bonding Curve System
+
+The WaveBreak Token Launchpad implements a fair-launch mechanism using bonding curves for transparent, bot-resistant token distribution.
+
+#### Architecture Overview
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                    WAVEBREAK LAUNCHPAD ARCHITECTURE                       │
+└───────────────────────────────────────┬──────────────────────────────────┘
+                                        │
+            ┌───────────────────────────▼───────────────────────────┐
+            │               FRONTEND (Launchpad UI)                 │
+            │                                                       │
+            │  ┌──────────┐  ┌──────────┐  ┌────────────────────┐ │
+            │  │ Browse   │  │  Create  │  │  Project Detail   │ │
+            │  │ Projects │  │  Launch  │  │  & Buy Interface  │ │
+            │  └────┬─────┘  └────┬─────┘  └─────────┬─────────┘ │
+            └───────┼─────────────┼──────────────────┼────────────┘
+                    │             │                  │
+            ┌───────▼─────────────▼──────────────────▼────────────┐
+            │            LAUNCHPAD API LAYER                       │
+            │                                                      │
+            │  /api/launchpad/projects   - CRUD operations       │
+            │  /api/launchpad/purchase   - Buy, quote, validate  │
+            │  /api/launchpad/user       - Points & history      │
+            │  /api/launchpad/deploy     - Contract deployment   │
+            └───────┬──────────────────────────────────┬──────────┘
+                    │                                  │
+        ┌───────────▼──────────┐           ┌──────────▼──────────┐
+        │ Bonding Curve Logic  │           │  Anti-Bot Engine    │
+        │                      │           │                     │
+        │ • Linear pricing     │           │ • Cooldown tracking │
+        │ • Exponential curve  │           │ • Per-tx limits     │
+        │ • Sigmoid curve      │           │ • Per-user limits   │
+        │ • Price quotes       │           │ • Whale penalties   │
+        │ • Impact calculation │           │ • Bot flagging      │
+        └───────────┬──────────┘           └──────────┬──────────┘
+                    │                                  │
+        ┌───────────▼──────────────────────────────────▼──────────┐
+        │                  DATABASE LAYER                         │
+        │                                                          │
+        │  launch_projects      - Project config & status         │
+        │  token_purchases      - Purchase history                │
+        │  launchpad_points     - User points accumulation        │
+        │  launchpad_claims     - Vesting claims (30-day)         │
+        │  launchpad_antibot    - Security tracking               │
+        │  launchpad_liquidity  - DEX pool info after graduation  │
+        │  launchpad_metrics    - Analytics snapshots             │
+        └───────────┬──────────────────────────────────────────────┘
+                    │
+        ┌───────────▼──────────────────────────────────────────────┐
+        │              ALGORAND BLOCKCHAIN                         │
+        │                                                          │
+        │  ASA Creation       - Token deployment                   │
+        │  Payment Txns       - ALGO → Token purchases             │
+        │  DEX Integration    - Tinyman/Pact pool creation         │
+        │  LP Locks           - 6-month timelock contracts         │
+        └──────────────────────────────────────────────────────────┘
+```
+
+#### Bonding Curve Mechanics
+
+**Pricing Formulas:**
+
+1. **Linear Curve** (steady increase)
+   ```
+   price(progress) = basePrice + (maxPrice - basePrice) * progress
+   
+   Example: $0.01 → $0.10 over 100% progress
+   ```
+
+2. **Exponential Curve** (rapid acceleration)
+   ```
+   price(progress) = basePrice * (maxPrice/basePrice) ^ progress
+   
+   Example: $0.01 → exponential growth → $0.50
+   ```
+
+3. **Sigmoid Curve** (S-shaped, balanced)
+   ```
+   price(progress) = basePrice + (maxPrice - basePrice) * (progress²)
+   
+   Example: Slow start, rapid middle, slow end
+   ```
+
+**Progress Calculation:**
+```typescript
+const progress = tokensSold / totalSupply // 0.0 to 1.0
+```
+
+#### Early Buyer Rewards System
+
+Users earn **points** based on purchase timing:
+
+```
+┌────────────────────────────────────────────────────────────┐
+│           EARLY BUYER BONUS MULTIPLIER CURVE               │
+│                                                            │
+│  3x ┤●                                                     │
+│     │  ●●                                                  │
+│     │     ●●                                               │
+│  2x ┤        ●●●                                           │
+│     │            ●●●                                       │
+│     │                ●●●●                                  │
+│  1x ┤                     ●●●●●●●●●●●●●●●●●●●●●●         │
+│     └─────────────────────────────────────────────────────┤
+│     0%                  Progress                       100%│
+└────────────────────────────────────────────────────────────┘
+
+Multiplier = 3.0 - (progress * 2.0)  // Linear decay from 3x to 1x
+```
+
+**Points Conversion:**
+- After graduation: 1 point = 1 launched token
+- 30-day linear vesting: `dailyUnlock = totalPoints / 30`
+- Users claim unlocked tokens daily via UI
+
+#### Anti-Bot Protection
+
+**Four-Layer Defense:**
+
+1. **Cooldown Period**
+   - 10 blocks (~33 seconds) between purchases per wallet
+   - Prevents rapid bot sniping
+   - Tracked in `launchpad_antibot.last_purchase_round`
+
+2. **Per-Transaction Limit**
+   - Max 1% of total supply per purchase
+   - Prevents single whale buys
+   - Enforced: `tokenAmount <= totalSupply * 0.01`
+
+3. **Per-User Limit**
+   - Max 5% of total supply per wallet address
+   - Prevents single wallet dominance
+   - Enforced: `userTotalBought + tokenAmount <= totalSupply * 0.05`
+
+4. **Whale Penalty**
+   - Purchases >2.5% of supply flagged
+   - Reduced point multiplier (0.5x instead of early bonus)
+   - Still allowed, but economically discouraged
+
+#### Graduation & DEX Deployment
+
+**Graduation Trigger:**
+```
+if (algoRaised >= bondingTarget) {
+  status = 'graduated'
+  deployToDE
+
+X()
+}
+```
+
+**Automated Steps:**
+1. Create liquidity pool on chosen DEX (Tinyman/Pact)
+2. Deposit 80% of raised ALGO + equivalent tokens
+3. Mint LP tokens
+4. Lock LP tokens for 6 months (anti-rug)
+5. Transfer 20% of ALGO to project creator
+6. Enable token trading on DEX
+
+**Liquidity Pool Structure:**
+```typescript
+{
+  poolAddress: "ALGO_POOL_ADDRESS",
+  poolAppId: 123456789,
+  lpTokenId: 987654321,
+  algoDeposited: totalRaised * 0.8,
+  tokensDeposited: tokensForSale * 0.8,
+  lpTokensLocked: true,
+  lockExpiryRound: currentRound + (BLOCKS_PER_DAY * 180)  // 6 months
+}
+```
+
+#### Database Schema
+
+**Core Tables:**
+
+```sql
+-- Project Configuration
+CREATE TABLE launch_projects (
+  id TEXT PRIMARY KEY,
+  creator_address TEXT NOT NULL,
+  token_name TEXT NOT NULL,
+  token_symbol TEXT NOT NULL,
+  asa_id BIGINT,                    -- Algorand ASA ID
+  app_id BIGINT,                    -- Bonding curve contract
+  curve_type TEXT,                  -- 'linear', 'exponential', 'sigmoid'
+  base_price BIGINT,                -- Starting price (microALGO)
+  max_price BIGINT,                 -- Maximum price (microALGO)
+  bonding_target BIGINT,            -- Funding goal (microALGO)
+  tokens_for_sale BIGINT,
+  tokens_sold BIGINT DEFAULT 0,
+  algo_raised BIGINT DEFAULT 0,
+  status TEXT DEFAULT 'active',     -- 'pending', 'active', 'graduated'
+  liquidity_percentage INTEGER DEFAULT 80,
+  lp_lock_duration BIGINT,
+  dex_platform TEXT                 -- 'tinyman', 'pact'
+);
+
+-- Purchase History
+CREATE TABLE token_purchases (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL,
+  buyer_address TEXT NOT NULL,
+  tokens_amount BIGINT NOT NULL,
+  algo_paid BIGINT NOT NULL,
+  price_per_token BIGINT NOT NULL,
+  points_earned BIGINT NOT NULL,    -- Early buyer bonus points
+  transaction_id TEXT NOT NULL,
+  block_round BIGINT NOT NULL,
+  timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User Points (convert to tokens after graduation)
+CREATE TABLE launchpad_points (
+  user_address TEXT NOT NULL,
+  project_id TEXT NOT NULL,
+  points_balance BIGINT DEFAULT 0,
+  total_earned BIGINT DEFAULT 0,
+  total_claimed BIGINT DEFAULT 0,
+  last_claim_round BIGINT,
+  PRIMARY KEY (user_address, project_id)
+);
+
+-- Anti-Bot Tracking
+CREATE TABLE launchpad_antibot (
+  user_address TEXT NOT NULL,
+  project_id TEXT NOT NULL,
+  purchase_count INTEGER DEFAULT 0,
+  last_purchase_round BIGINT,       -- For cooldown check
+  total_tokens_bought BIGINT DEFAULT 0,
+  flagged_as_bot INTEGER DEFAULT 0,
+  whale_penalty INTEGER DEFAULT 0,
+  PRIMARY KEY (user_address, project_id)
+);
+```
+
+#### Data Flow: Token Purchase
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    TOKEN PURCHASE FLOW                              │
+└───────────────────────────────┬─────────────────────────────────────┘
+                                │
+            1. User Clicks "Buy X Tokens"
+                                │
+                    ┌───────────▼───────────┐
+                    │  GET Price Quote      │
+                    │  /api/launchpad/      │
+                    │  purchase?action=quote│
+                    │                       │
+                    │  • Calculate price    │
+                    │  • Apply early bonus  │
+                    │  • Show impact        │
+                    └───────────┬───────────┘
+                                │
+            2. Display Quote to User
+                                │
+                    ┌───────────▼───────────┐
+                    │  POST Validation      │
+                    │  action=validate      │
+                    │                       │
+                    │  ✓ Cooldown check     │
+                    │  ✓ Per-tx limit       │
+                    │  ✓ Per-user limit     │
+                    │  ✓ Sufficient ALGO    │
+                    └───────────┬───────────┘
+                                │
+            3. If Valid: User Signs Algorand Txn
+                                │
+                    ┌───────────▼───────────┐
+                    │  Algorand Payment     │
+                    │  User → Project       │
+                    │                       │
+                    │  amount: algoAmount   │
+                    │  receiver: projectAddr│
+                    │  note: "launchpad"    │
+                    └───────────┬───────────┘
+                                │
+            4. Transaction Confirmed On-Chain
+                                │
+                    ┌───────────▼───────────┐
+                    │  POST Record Purchase │
+                    │  action=record        │
+                    │                       │
+                    │  • Save to DB         │
+                    │  • Award points       │
+                    │  • Update antibot     │
+                    │  • Update project stats│
+                    │  • Check graduation   │
+                    └───────────┬───────────┘
+                                │
+            5. Success Response + Points Earned
+                                │
+                    ┌───────────▼───────────┐
+                    │  If Graduated:        │
+                    │  • Create DEX pool    │
+                    │  • Lock liquidity     │
+                    │  • Enable vesting     │
+                    └───────────────────────┘
+```
+
+#### API Endpoints
+
+**`GET /api/launchpad/projects`**
+- List all projects (with filters)
+- Query params: `id`, `status` (pending/active/graduated)
+
+**`POST /api/launchpad/projects`**
+- Create new token launch
+- Body: Project config, curve params, liquidity settings
+
+**`POST /api/launchpad/purchase`**
+- Three actions: `quote`, `validate`, `record`
+- Handles full purchase lifecycle
+
+**`GET /api/launchpad/user`**
+- Get user points and purchase history
+- Query params: `userAddress`, `projectId`, `action` (points/purchases)
+
+---
+
+## Rewards System Architecture
+
+### X Token Quest & Gamification Engine
+
+The X Token Rewards System gamifies platform usage through quests, levels, streaks, and badges.
+
+#### Architecture Overview
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                    X TOKEN REWARDS ARCHITECTURE                           │
+└───────────────────────────────────┬──────────────────────────────────────┘
+                                    │
+            ┌───────────────────────▼───────────────────────────┐
+            │            FRONTEND (Rewards UI)                  │
+            │                                                   │
+            │  ┌──────────┐  ┌──────────┐  ┌──────────────┐   │
+            │  │ Quest    │  │  Level   │  │  Leaderboard │   │
+            │  │Dashboard │  │Progress  │  │  & Badges    │   │
+            │  └────┬─────┘  └────┬─────┘  └──────┬───────┘   │
+            └───────┼─────────────┼────────────────┼───────────┘
+                    │             │                │
+            ┌───────▼─────────────▼────────────────▼───────────┐
+            │            REWARDS API LAYER                      │
+            │                                                   │
+            │  /api/rewards          - User rewards data       │
+            │  /api/rewards/quests   - Quest list & progress   │
+            │  /api/rewards/track    - Action tracking         │
+            │  /api/rewards/claim    - Claim quest rewards     │
+            └───────┬───────────────────────────────┬───────────┘
+                    │                               │
+        ┌───────────▼──────────┐       ┌───────────▼──────────┐
+        │  Quest Engine        │       │  Streak Tracker      │
+        │                      │       │                      │
+        │ • Track user actions │       │ • Daily login check  │
+        │ • Update progress    │       │ • Multiplier calc    │
+        │ • Award XP & X       │       │ • Reset logic        │
+        │ • Badge unlock       │       │ • Streak shields     │
+        └───────────┬──────────┘       └───────────┬──────────┘
+                    │                               │
+        ┌───────────▼───────────────────────────────▼──────────┐
+        │                  DATABASE LAYER                       │
+        │                                                       │
+        │  user_rewards        - Balance, level, XP, streaks   │
+        │  reward_transactions - Earn/spend history            │
+        │  quest_progress      - Per-user quest state          │
+        │  user_actions        - Trackable events log          │
+        │  daily_streaks       - Streak tracking               │
+        │  leaderboard_cache   - Performance optimization      │
+        └───────────┬───────────────────────────────────────────┘
+                    │
+        ┌───────────▼───────────────────────────────────────────┐
+        │           EVENT BUS (Action Tracking)                 │
+        │                                                       │
+        │  trackAction(userId, 'swap', metadata)                │
+        │  trackAction(userId, 'add_liquidity', metadata)       │
+        │  trackAction(userId, 'create_rule', metadata)         │
+        │  trackAction(userId, 'login', metadata)               │
+        └───────────────────────────────────────────────────────┘
+```
+
+#### Quest System
+
+**Quest Types:**
+
+| Type | Duration | Complexity | Reward Range |
+|------|----------|-----------|--------------|
+| Daily | 24 hours | Simple (1 action) | 5-20 X |
+| Weekly | 7 days | Moderate (5-10 actions) | 100-300 X |
+| Milestone | Permanent | Long-term (cumulative) | 25-2,500 X |
+| Achievement | Permanent | Difficult (elite goals) | 500-5,000 X |
+| Social | Ongoing | Community-based | Variable |
+
+**Quest Tracking Logic:**
+
+```typescript
+// Example: Swap completion
+async function onSwapComplete(userId, swapData) {
+  // Log action
+  await db.insert('user_actions', {
+    user_id: userId,
+    action_type: 'swap',
+    metadata: JSON.stringify(swapData)
+  })
+  
+  // Update relevant quest progress
+  const activeQuests = await getActiveQuests(userId)
+  
+  for (const quest of activeQuests) {
+    if (quest.requirement.action === 'swap') {
+      const newProgress = quest.progress + 1
+      
+      await updateQuestProgress(userId, quest.id, newProgress)
+      
+      // Check completion
+      if (newProgress >= quest.requirement.count) {
+        await completeQuest(userId, quest.id)
+      }
+    }
+  }
+  
+  // Award XP
+  await awardXP(userId, 10)  // 10 XP per swap
+}
+```
+
+#### Level Progression System
+
+**Level Thresholds (1-30):**
+
+```typescript
+const LEVEL_THRESHOLDS = [
+  0, 100, 250, 500, 1000, 2000, 3500, 5500, 8000, 11000,    // 1-10
+  15000, 20000, 26000, 33000, 41000, 50000, 60000, 71000,   // 11-18
+  83000, 96000, 110000, 125000, 141000, 158000, 176000,     // 19-25
+  195000, 215000, 236000, 258000, 281000                     // 26-30
+]
+```
+
+**Level Benefits:**
+
+| Level | Unlock |
+|-------|--------|
+| 5 | Weekly quests |
+| 10 | Achievement quests |
+| 15 | Referral bonuses |
+| 20 | Prediction markets |
+| 25 | Governance proposals |
+| 30 | Legendary quests (5,000 X rewards) |
+
+#### Streak Multiplier System
+
+```
+┌────────────────────────────────────────────────────────────┐
+│             STREAK MULTIPLIER PROGRESSION                  │
+│                                                            │
+│  3x ┤                                           ●●●●●●●●● │
+│     │                                                      │
+│     │                                                      │
+│  2x ┤                          ●●●●●●●●●●●●●●●●          │
+│     │                                                      │
+│     │                                                      │
+│ 1.5x┤             ●●●●●●●●                                │
+│     │                                                      │
+│     │                                                      │
+│  1x ┤●●●●●●●                                              │
+│     └─────────────────────────────────────────────────────┤
+│     0      7       14                    30+        days  │
+└────────────────────────────────────────────────────────────┘
+```
+
+**Streak Logic:**
+
+```typescript
+async function checkDailyLogin(userId) {
+  const user = await getUserRewards(userId)
+  const now = new Date()
+  const lastLogin = new Date(user.last_login_date)
+  
+  const hoursSinceLogin = (now - lastLogin) / (1000 * 60 * 60)
+  
+  if (hoursSinceLogin >= 24 && hoursSinceLogin < 48) {
+    // Maintain streak
+    user.streak_days += 1
+  } else if (hoursSinceLogin >= 48) {
+    // Streak broken
+    user.streak_days = 1
+  }
+  // else: Same day, no change
+  
+  user.last_login_date = now
+  
+  // Calculate multiplier
+  user.multiplier = getStreakMultiplier(user.streak_days)
+  
+  await updateUserRewards(userId, user)
+}
+
+function getStreakMultiplier(streakDays) {
+  if (streakDays >= 30) return 3.0
+  if (streakDays >= 14) return 2.0
+  if (streakDays >= 7) return 1.5
+  return 1.0
+}
+```
+
+#### Badge System
+
+**Badge Structure:**
+
+```typescript
+interface Badge {
+  id: string
+  name: string
+  description: string
+  icon: string
+  rarity: 'common' | 'rare' | 'epic' | 'legendary'
+  requirement: { type: string, value: number }
+  reward: number           // One-time X token bonus
+  multiplier?: number      // Permanent reward boost %
+}
+```
+
+**Example Badges:**
+
+```typescript
+const BADGES = [
+  {
+    id: 'early_adopter',
+    name: 'Early Adopter',
+    icon: '🥇',
+    rarity: 'legendary',
+    requirement: { type: 'join_date', value: 30 },  // First month
+    reward: 500,
+    multiplier: 10  // +10% all rewards
+  },
+  {
+    id: 'diamond_hands',
+    name: 'Diamond Hands',
+    icon: '💎',
+    rarity: 'epic',
+    requirement: { type: 'lp_days', value: 90 },
+    reward: 1000,
+    multiplier: 5   // +5% all rewards
+  }
+]
+```
+
+#### Database Schema
+
+```sql
+-- User Rewards
+CREATE TABLE user_rewards (
+  user_id TEXT PRIMARY KEY,
+  x_token_balance REAL DEFAULT 0,
+  total_earned REAL DEFAULT 0,
+  total_spent REAL DEFAULT 0,
+  level INTEGER DEFAULT 1,
+  experience_points INTEGER DEFAULT 0,
+  streak_days INTEGER DEFAULT 0,
+  last_login_date TEXT,
+  badges TEXT,              -- JSON array of badge IDs
+  completed_quests TEXT,    -- JSON array of quest IDs
+  referral_code TEXT UNIQUE,
+  referred_by TEXT,
+  referred_users TEXT       -- JSON array
+);
+
+-- Quest Progress
+CREATE TABLE quest_progress (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  quest_id TEXT NOT NULL,
+  progress INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'active',  -- 'active', 'completed', 'claimed'
+  started_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  completed_at TEXT,
+  claimed_at TEXT,
+  UNIQUE(user_id, quest_id)
+);
+
+-- User Actions (for quest tracking)
+CREATE TABLE user_actions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  action_type TEXT NOT NULL,  -- 'swap', 'add_liquidity', 'create_rule'
+  metadata TEXT,              -- JSON context
+  timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Reward Transactions
+CREATE TABLE reward_transactions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  type TEXT NOT NULL,      -- 'earn', 'spend', 'claim'
+  amount REAL NOT NULL,
+  source TEXT NOT NULL,    -- 'quest', 'streak', 'referral'
+  quest_id TEXT,
+  metadata TEXT,
+  timestamp TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### Data Flow: Quest Completion
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    QUEST COMPLETION FLOW                            │
+└───────────────────────────────┬─────────────────────────────────────┘
+                                │
+            1. User Performs Action (e.g., Swap)
+                                │
+                    ┌───────────▼───────────┐
+                    │  Log to user_actions  │
+                    │                       │
+                    │  INSERT INTO          │
+                    │  user_actions(        │
+                    │    user_id,           │
+                    │    action_type: 'swap'│
+                    │    metadata: {...}    │
+                    │  )                    │
+                    └───────────┬───────────┘
+                                │
+            2. Quest Engine Triggered
+                                │
+                    ┌───────────▼───────────┐
+                    │  Find Active Quests   │
+                    │  Matching Action      │
+                    │                       │
+                    │  SELECT * FROM        │
+                    │  quest_progress       │
+                    │  WHERE                │
+                    │    user_id = ? AND    │
+                    │    status = 'active'  │
+                    └───────────┬───────────┘
+                                │
+            3. Update Progress
+                                │
+                    ┌───────────▼───────────┐
+                    │  Increment Progress   │
+                    │                       │
+                    │  UPDATE quest_progress│
+                    │  SET                  │
+                    │    progress = progress│
+                    │              + 1      │
+                    │  WHERE id = ?         │
+                    └───────────┬───────────┘
+                                │
+            4. Check Completion
+                                │
+                    ┌───────────▼───────────┐
+                    │  progress >=          │
+                    │  requirement.count?   │
+                    │                       │
+                    │  If YES:              │
+                    │  • Set status =       │
+                    │    'completed'        │
+                    │  • Show notification  │
+                    └───────────┬───────────┘
+                                │
+            5. User Claims Reward
+                                │
+                    ┌───────────▼───────────┐
+                    │  POST /api/rewards/   │
+                    │  claim                │
+                    │                       │
+                    │  • Apply streak mult  │
+                    │  • Award X tokens     │
+                    │  • Award XP           │
+                    │  • Set status =       │
+                    │    'claimed'          │
+                    │  • Record transaction │
+                    └───────────┬───────────┘
+                                │
+            6. Update User Rewards
+                                │
+                    ┌───────────▼───────────┐
+                    │  UPDATE user_rewards  │
+                    │  SET                  │
+                    │    x_token_balance += │
+                    │    total_earned +=    │
+                    │    experience_points+=│
+                    │                       │
+                    │  Check level up       │
+                    │  Check badge unlock   │
+                    └───────────────────────┘
+```
 
 ---
 
@@ -397,24 +1253,74 @@ The aggregator selects the best DEX based on:
 ```
 ┌────────────────────────────────────────────────────┐
 │         MultihopSwapRouter (Main Contract)         │
+│                  App ID: 749360450                 │
 │                                                    │
 │  Methods:                                          │
-│  • execute_swap_2hop(pool1, pool2, adapter)       │
+│  • execute_swap_2hop(pool1, pool2, adapter1,      │
+│                      adapter2)                     │
 │  • execute_swap_1hop(pool, adapter)               │
+│  • execute_swap_3hop(pool1, pool2, pool3)         │
 │                                                    │
 │  Responsibilities:                                 │
-│  • Receives user assets                           │
-│  • Routes to appropriate adapter                  │
-│  • Validates minimum output                       │
+│  • Receives user assets via atomic group          │
+│  • Routes to appropriate adapter based on DEX     │
+│  • Validates minimum output (slippage protection) │
 │  • Returns swapped assets to user                 │
+│  • Supports multi-hop routing (1, 2, or 3 hops)   │
 └────────────┬───────────────────┬────────────────────┘
              │                   │
     ┌────────▼────────┐  ┌──────▼─────────┐
     │ TinymanAdapter  │  │  PactAdapter   │
+    │  (749360541)    │  │  (749341932)   │
     │                 │  │                │
-    │ • Tinyman ABI   │  │ • Pact ABI     │
-    │ • Pool calls    │  │ • Pool calls   │
-    └─────────────────┘  └────────────────┘
+    │ Methods:        │  │ Methods:       │
+    │ • swap_fixed_   │  │ • swap_fixed_  │
+    │   input()       │  │   input()      │
+    │                 │  │ • swap_algo_   │
+    │ Responsibilities│  │   to_asa()     │
+    │ • Tinyman ABI   │  │ • swap_asa_    │
+    │   (0xd71d146d)  │  │   to_algo()    │
+    │ • Pool calls    │  │                │
+    │ • Asset routing │  │ Responsibilities│
+    │ • Fee: 0.30%    │  │ • Pact ABI     │
+    │                 │  │   (0xf4b4e0f4) │
+    │                 │  │ • Pool calls   │
+    │                 │  │ • Asset routing │
+    │                 │  │ • Fee: 0.25%   │
+    └─────────┬───────┘  └────────┬────────┘
+              │                   │
+    ┌─────────▼──────────┐ ┌─────▼──────────┐
+    │  Tinyman V2 Pools  │ │  Pact Finance  │
+    │                    │ │  Pools         │
+    │ • 100+ pools       │ │ • 50+ pools    │
+    │ • Testnet/Mainnet  │ │ • Mainnet only │
+    │ • Constant Product │ │ • Constant     │
+    │   AMM (x*y=k)      │ │   Product AMM  │
+    └────────────────────┘ └────────────────┘
+```
+
+#### Pool Adapter Design Pattern
+
+The adapter pattern provides:
+
+1. **Protocol Abstraction** - Router doesn't need DEX-specific knowledge
+2. **Extensibility** - New DEXs require only new adapter contracts
+3. **Optimal Routing** - Can mix adapters in multi-hop swaps
+4. **Unified Interface** - Consistent `swap_fixed_input()` method
+5. **Gas Efficiency** - Fee pooling across all inner transactions
+
+#### Adapter Selection Flow
+
+```
+User Request → Aggregator → Quote All DEXs → Rank by Output
+                                                     ↓
+                                        Select Best Pool & Adapter
+                                                     ↓
+Router.execute_swap_2hop(pool_id, adapter_id, ...) 
+                                                     ↓
+                      Adapter executes swap on selected pool
+                                                     ↓
+                            Output returned to user
 ```
 
 ---
@@ -595,9 +1501,11 @@ const MAINNET_CONFIG = {
 - **[Autopilot Module](./AUTOPILOT_MODULE.md)** - Trading rules and automation
 - **[Contracts & Deployment](./CONTRACTS_AND_DEPLOYMENT.md)** - Smart contract details
 - **[AI Agent & MCP/NCP Spec](./AI_AGENT_AND_MCP_NCP_SPEC.md)** - AI agent capabilities
+- **[Token Launchpad](./TOKEN_LAUNCHPAD.md)** - WaveBreak launchpad guide
+- **[Token Economics](./TOKEN_ECONOMICS.md)** - X Token rewards and economics
 
 ---
 
-**Last Updated:** November 12, 2025  
-**Version:** 1.0.0  
-**Status:** Production Ready (Testnet)
+**Last Updated:** 2025-11-15  
+**Version:** 2.0.0  
+**Status:** Production Ready (Testnet) + Launchpad & Rewards System
