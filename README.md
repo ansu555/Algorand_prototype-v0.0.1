@@ -273,7 +273,7 @@ Invite friends and earn lifetime rewards:
 - **Platform Currency**: Foundation for future features
 - **Leaderboard Status**: Show off your X holdings
 
-#### 🔜 Coming Soon
+#### 🔜 Coming Soon (entirely conseptual)
 - **Trading Fee Discounts**: Up to 75% off (Diamond tier: 50,000+ X)
 - **Staking Rewards**: 15% base APY, up to 40% with lock periods
 - **VIP Benefits**:
