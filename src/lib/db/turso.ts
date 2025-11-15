@@ -46,6 +46,35 @@ export type AgentWallet = {
   lastUsedAt?: string
 }
 
+export type LaunchpadToken = {
+  id: string
+  assetId?: number // Algorand ASA ID (populated after deployment)
+  name: string
+  symbol: string
+  decimals: number
+  totalSupply: string
+  creatorAddress: string
+  description?: string
+  logoData?: string // Base64-encoded logo image data stored in database
+  logoMimeType?: string // MIME type of the logo (e.g., image/png)
+  website?: string
+  twitter?: string
+  telegram?: string
+  status: 'draft' | 'deployed' | 'cooldown' | 'active' // Token lifecycle status
+  cooldownEndTime?: string // When cooldown period ends
+  marketCap?: number // Calculated market cap in USD
+  initialPrice?: number // Initial price in USD
+  createdAt: string
+  deployedAt?: string
+}
+
+export type TokenWatchlist = {
+  id: string
+  userAddress: string
+  tokenId: string // Reference to LaunchpadToken.id
+  createdAt: string
+}
+
 function str(v: any) { return v == null ? null : JSON.stringify(v) }
 function parseArr(v: any): string[] { if (!v) return []; try { const x = JSON.parse(String(v)); return Array.isArray(x) ? x : [] } catch { return [] } }
 function parseObj(v: any): Record<string, any> | undefined { if (!v) return undefined; try { const x = JSON.parse(String(v)); return (x && typeof x === 'object') ? x : undefined } catch { return undefined } }
@@ -83,6 +112,34 @@ export const tursoDriver = {
       encryptedMnemonic TEXT NOT NULL,
       createdAt TEXT NOT NULL,
       lastUsedAt TEXT
+    )`)
+    await client.execute(`CREATE TABLE IF NOT EXISTS launchpad_tokens (
+      id TEXT PRIMARY KEY,
+      assetId INTEGER,
+      name TEXT NOT NULL,
+      symbol TEXT NOT NULL,
+      decimals INTEGER NOT NULL,
+      totalSupply TEXT NOT NULL,
+      creatorAddress TEXT NOT NULL,
+      description TEXT,
+      logoData TEXT,
+      logoMimeType TEXT,
+      website TEXT,
+      twitter TEXT,
+      telegram TEXT,
+      status TEXT NOT NULL,
+      cooldownEndTime TEXT,
+      marketCap REAL,
+      initialPrice REAL,
+      createdAt TEXT NOT NULL,
+      deployedAt TEXT
+    )`)
+    await client.execute(`CREATE TABLE IF NOT EXISTS token_watchlists (
+      id TEXT PRIMARY KEY,
+      userAddress TEXT NOT NULL,
+      tokenId TEXT NOT NULL,
+      createdAt TEXT NOT NULL,
+      UNIQUE(userAddress, tokenId)
     )`)
   },
   async createRule(rule: Rule): Promise<Rule> {
@@ -251,5 +308,225 @@ export const tursoDriver = {
   async deleteAllAgentWallets(): Promise<void> {
     const client = await getClient()
     await client.execute(`DELETE FROM agent_wallets`)
+  },
+
+  // Launchpad Token Operations
+  async createLaunchpadToken(token: LaunchpadToken): Promise<LaunchpadToken> {
+    const client = await getClient()
+    await client.execute({
+      sql: `INSERT INTO launchpad_tokens (id, assetId, name, symbol, decimals, totalSupply, creatorAddress, description, logoData, logoMimeType, website, twitter, telegram, status, cooldownEndTime, marketCap, initialPrice, createdAt, deployedAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        token.id,
+        token.assetId ?? null,
+        token.name,
+        token.symbol,
+        token.decimals,
+        token.totalSupply,
+        token.creatorAddress.toLowerCase(),
+        token.description ?? null,
+        token.logoData ?? null,
+        token.logoMimeType ?? null,
+        token.website ?? null,
+        token.twitter ?? null,
+        token.telegram ?? null,
+        token.status,
+        token.cooldownEndTime ?? null,
+        token.marketCap ?? null,
+        token.initialPrice ?? null,
+        token.createdAt,
+        token.deployedAt ?? null
+      ]
+    })
+    return token
+  },
+
+  async getLaunchpadTokens(filters?: {
+    status?: string
+    creatorAddress?: string
+    sortBy?: 'newest' | 'marketCap' | 'cooldown'
+    limit?: number
+    offset?: number
+  }): Promise<LaunchpadToken[]> {
+    const client = await getClient()
+    let sql = `SELECT * FROM launchpad_tokens WHERE 1=1`
+    const args: any[] = []
+
+    if (filters?.status) {
+      sql += ` AND status = ?`
+      args.push(filters.status)
+    }
+
+    if (filters?.creatorAddress) {
+      sql += ` AND creatorAddress = ?`
+      args.push(filters.creatorAddress.toLowerCase())
+    }
+
+    // Sorting
+    if (filters?.sortBy === 'newest') {
+      sql += ` ORDER BY datetime(createdAt) DESC`
+    } else if (filters?.sortBy === 'marketCap') {
+      sql += ` ORDER BY marketCap DESC NULLS LAST`
+    } else if (filters?.sortBy === 'cooldown') {
+      sql += ` ORDER BY datetime(cooldownEndTime) ASC`
+    } else {
+      sql += ` ORDER BY datetime(createdAt) DESC`
+    }
+
+    if (filters?.limit) {
+      sql += ` LIMIT ?`
+      args.push(filters.limit)
+    }
+
+    if (filters?.offset) {
+      sql += ` OFFSET ?`
+      args.push(filters.offset)
+    }
+
+    const { rows } = await client.execute({ sql, args })
+    return rows.map((r: any) => ({
+      id: r.id,
+      assetId: r.assetId ?? undefined,
+      name: r.name,
+      symbol: r.symbol,
+      decimals: r.decimals,
+      totalSupply: r.totalSupply,
+      creatorAddress: r.creatorAddress,
+      description: r.description ?? undefined,
+      logoData: r.logoData ?? undefined,
+      logoMimeType: r.logoMimeType ?? undefined,
+      website: r.website ?? undefined,
+      twitter: r.twitter ?? undefined,
+      telegram: r.telegram ?? undefined,
+      status: r.status,
+      cooldownEndTime: r.cooldownEndTime ?? undefined,
+      marketCap: r.marketCap ?? undefined,
+      initialPrice: r.initialPrice ?? undefined,
+      createdAt: r.createdAt,
+      deployedAt: r.deployedAt ?? undefined
+    }))
+  },
+
+  async getLaunchpadTokenById(id: string): Promise<LaunchpadToken | null> {
+    const client = await getClient()
+    const { rows } = await client.execute({
+      sql: `SELECT * FROM launchpad_tokens WHERE id = ?`,
+      args: [id]
+    })
+    const r: any = rows[0]
+    if (!r) return null
+    return {
+      id: r.id,
+      assetId: r.assetId ?? undefined,
+      name: r.name,
+      symbol: r.symbol,
+      decimals: r.decimals,
+      totalSupply: r.totalSupply,
+      creatorAddress: r.creatorAddress,
+      description: r.description ?? undefined,
+      logoData: r.logoData ?? undefined,
+      logoMimeType: r.logoMimeType ?? undefined,
+      website: r.website ?? undefined,
+      twitter: r.twitter ?? undefined,
+      telegram: r.telegram ?? undefined,
+      status: r.status,
+      cooldownEndTime: r.cooldownEndTime ?? undefined,
+      marketCap: r.marketCap ?? undefined,
+      initialPrice: r.initialPrice ?? undefined,
+      createdAt: r.createdAt,
+      deployedAt: r.deployedAt ?? undefined
+    }
+  },
+
+  async updateLaunchpadToken(id: string, changes: Partial<LaunchpadToken>): Promise<LaunchpadToken | null> {
+    const existing = await tursoDriver.getLaunchpadTokenById(id)
+    if (!existing) return null
+    
+    const merged: LaunchpadToken = { ...existing, ...changes, id: existing.id, createdAt: existing.createdAt }
+    const client = await getClient()
+    await client.execute({
+      sql: `UPDATE launchpad_tokens SET assetId=?, name=?, symbol=?, decimals=?, totalSupply=?, creatorAddress=?, description=?, logoData=?, logoMimeType=?, website=?, twitter=?, telegram=?, status=?, cooldownEndTime=?, marketCap=?, initialPrice=?, deployedAt=? WHERE id=?`,
+      args: [
+        merged.assetId ?? null,
+        merged.name,
+        merged.symbol,
+        merged.decimals,
+        merged.totalSupply,
+        merged.creatorAddress,
+        merged.description ?? null,
+        merged.logoData ?? null,
+        merged.logoMimeType ?? null,
+        merged.website ?? null,
+        merged.twitter ?? null,
+        merged.telegram ?? null,
+        merged.status,
+        merged.cooldownEndTime ?? null,
+        merged.marketCap ?? null,
+        merged.initialPrice ?? null,
+        merged.deployedAt ?? null,
+        merged.id
+      ]
+    })
+    return merged
+  },
+
+  async deleteLaunchpadToken(id: string, creatorAddress: string): Promise<boolean> {
+    const client = await getClient()
+    try {
+      const res = await client.execute({
+        sql: `DELETE FROM launchpad_tokens WHERE id = ? AND creatorAddress = ?`,
+        args: [id, creatorAddress.toLowerCase()]
+      })
+      const affected = res.rowsAffected || res.changes || res.affectedRows || 0
+      return affected > 0
+    } catch (error) {
+      console.error('Turso delete launchpad token error:', error)
+      return false
+    }
+  },
+
+  // Token Watchlist Operations
+  async addToWatchlist(watchlistItem: TokenWatchlist): Promise<TokenWatchlist> {
+    const client = await getClient()
+    await client.execute({
+      sql: `INSERT INTO token_watchlists (id, userAddress, tokenId, createdAt)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(userAddress, tokenId) DO NOTHING`,
+      args: [watchlistItem.id, watchlistItem.userAddress.toLowerCase(), watchlistItem.tokenId, watchlistItem.createdAt]
+    })
+    return watchlistItem
+  },
+
+  async removeFromWatchlist(userAddress: string, tokenId: string): Promise<boolean> {
+    const client = await getClient()
+    try {
+      const res = await client.execute({
+        sql: `DELETE FROM token_watchlists WHERE userAddress = ? AND tokenId = ?`,
+        args: [userAddress.toLowerCase(), tokenId]
+      })
+      const affected = res.rowsAffected || res.changes || res.affectedRows || 0
+      return affected > 0
+    } catch (error) {
+      console.error('Turso remove from watchlist error:', error)
+      return false
+    }
+  },
+
+  async getWatchlist(userAddress: string): Promise<string[]> {
+    const client = await getClient()
+    const { rows } = await client.execute({
+      sql: `SELECT tokenId FROM token_watchlists WHERE userAddress = ? ORDER BY datetime(createdAt) DESC`,
+      args: [userAddress.toLowerCase()]
+    })
+    return rows.map((r: any) => r.tokenId)
+  },
+
+  async isInWatchlist(userAddress: string, tokenId: string): Promise<boolean> {
+    const client = await getClient()
+    const { rows } = await client.execute({
+      sql: `SELECT 1 FROM token_watchlists WHERE userAddress = ? AND tokenId = ? LIMIT 1`,
+      args: [userAddress.toLowerCase(), tokenId]
+    })
+    return rows.length > 0
   },
 }
