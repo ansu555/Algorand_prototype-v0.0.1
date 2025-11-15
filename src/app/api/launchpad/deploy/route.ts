@@ -73,15 +73,15 @@ export async function POST(req: NextRequest) {
     const assetName = token.name
     const unitName = token.symbol
     const assetURL = token.website || ''
-    const assetMetadataHash = undefined
     const manager = account.addr
     const reserve = account.addr
     const freeze = account.addr
     const clawback = account.addr
 
-    const txn = algosdk.makeAssetCreateTxnWithSuggestedParamsFromObject({
-      from: account.addr,
-      total: totalSupply,
+    const txn = algosdk.makeAssetCreateTxnWithSuggestedParams(
+      account.addr,
+      undefined,
+      totalSupply,
       decimals,
       defaultFrozen,
       manager,
@@ -91,19 +91,20 @@ export async function POST(req: NextRequest) {
       unitName,
       assetName,
       assetURL,
-      assetMetadataHash,
+      undefined,
       suggestedParams
-    })
+    )
 
     // Sign transaction
     const signedTxn = txn.signTxn(account.sk)
 
     // Submit transaction
-    const { txId } = await algodClient.sendRawTransaction(signedTxn).do()
+    const txResponse = await algodClient.sendRawTransaction(signedTxn).do()
+    const txId = txResponse.txId
 
     // Wait for confirmation
     const confirmedTxn = await algosdk.waitForConfirmation(algodClient, txId, 4)
-    const assetId = confirmedTxn['asset-index']
+    const assetId = confirmedTxn.assetIndex || (confirmedTxn as any)['asset-index']
 
     if (!assetId) {
       throw new Error('Asset creation failed - no asset ID returned')

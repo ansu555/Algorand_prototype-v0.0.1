@@ -4,10 +4,11 @@ import { getLaunchpadTokenById, updateLaunchpadToken, deleteLaunchpadToken } fro
 // GET /api/launchpad/tokens/[id] - Get a specific token
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = await getLaunchpadTokenById(params.id)
+    const { id } = await context.params
+    const token = await getLaunchpadTokenById(id)
     
     if (!token) {
       return NextResponse.json(
@@ -32,14 +33,15 @@ export async function GET(
 // PATCH /api/launchpad/tokens/[id] - Update a token
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     const body = await req.json()
     const { creatorAddress, ...changes } = body
 
     // Verify ownership if creatorAddress is provided
-    const existing = await getLaunchpadTokenById(params.id)
+    const existing = await getLaunchpadTokenById(id)
     if (!existing) {
       return NextResponse.json(
         { success: false, error: 'Token not found' },
@@ -54,7 +56,7 @@ export async function PATCH(
       )
     }
 
-    const updated = await updateLaunchpadToken(params.id, changes)
+    const updated = await updateLaunchpadToken(id, changes)
 
     return NextResponse.json({
       success: true,
@@ -72,9 +74,10 @@ export async function PATCH(
 // DELETE /api/launchpad/tokens/[id] - Delete a token
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     const { searchParams } = new URL(req.url)
     const creatorAddress = searchParams.get('creatorAddress')
 
@@ -85,7 +88,7 @@ export async function DELETE(
       )
     }
 
-    const success = await deleteLaunchpadToken(params.id, creatorAddress)
+    const success = await deleteLaunchpadToken(id, creatorAddress)
 
     if (!success) {
       return NextResponse.json(
