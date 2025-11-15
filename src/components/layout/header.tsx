@@ -10,7 +10,7 @@ import { ModeToggle } from "@/components/shared/mode-toggle";
 import AlgorandWalletConnect from "@/components/features/algorand/algorand-wallet-connect";
 import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider";
 import { cn } from "@/lib/utils";
-import { Menu, X, ChevronDown, Sparkles } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import { useViewport } from "@/hooks/use-viewport";
 import { describeRule } from "@/lib/shared/rules";
 import { createRule } from "@/features/agent/api/client";
@@ -26,68 +26,12 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [rules, setRules] = useState<any[]>([]);
   const [exploreDropdownOpen, setExploreDropdownOpen] = useState(false);
-  const [xTokenBalance, setXTokenBalance] = useState<number>(0);
   const { isMobile } = useViewport();
   const { activeAccount } = useWalletConnection();
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const modeToggleRef = useRef<HTMLDivElement>(null);
   // Use Algorand wallet address or fallback to placeholder
   const address = activeAccount?.address || "0x0000000000000000000000000000000000000000";
-
-  // Fetch X token balance
-  useEffect(() => {
-    const fetchBalance = async () => {
-      if (!activeAccount?.address) {
-        setXTokenBalance(0)
-        return
-      }
-      
-      try {
-        const res = await fetch(`/api/rewards?userId=${activeAccount.address}`)
-        const data = await res.json()
-        if (data.success) {
-          setXTokenBalance(data.data.xTokenBalance || 0)
-        }
-      } catch (error) {
-        console.error('Failed to fetch X token balance:', error)
-      }
-    }
-    
-    fetchBalance()
-    
-    // Refresh balance every 30 seconds
-    const interval = setInterval(fetchBalance, 30000)
-    return () => clearInterval(interval)
-  }, [activeAccount])
-
-  // Check for claimable quests
-  const [hasClaimableQuests, setHasClaimableQuests] = useState(false)
-  
-  useEffect(() => {
-    const checkClaimable = async () => {
-      if (!activeAccount?.address) {
-        setHasClaimableQuests(false)
-        return
-      }
-      
-      try {
-        const res = await fetch(`/api/rewards/quests?userId=${activeAccount.address}`)
-        const data = await res.json()
-        if (data.success) {
-          const hasCompleted = data.data.some((q: any) => q.status === 'completed')
-          setHasClaimableQuests(hasCompleted)
-        }
-      } catch (error) {
-        console.error('Failed to check claimable quests:', error)
-      }
-    }
-    
-    checkClaimable()
-    
-    // Check every 30 seconds
-    const interval = setInterval(checkClaimable, 30000)
-    return () => clearInterval(interval)
-  }, [activeAccount])
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -144,9 +88,7 @@ export function Header() {
     { name: "Home", href: "/" },
     { name: "Trade", href: "/trade" },
     { name: "Stake", href: "/stake" },
-    { name: "Launchpad", href: "/launchpad" },
     { name: "Portfolio", href: "/portfolio" },
-    { name: "Rewards", href: "/rewards" },
   ];
 
   const exploreItems = [
@@ -186,7 +128,7 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur dark:bg-[#171717]/95 shadow" suppressHydrationWarning>
+    <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur dark:bg-[#171717]/95 shadow">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
        <Link href="/" className="flex items-center font-extrabold text-lg md:text-xl tracking-tight">
@@ -268,23 +210,6 @@ export function Header() {
 
         {/* Desktop wallet connect and mode toggle */}
         <div className="hidden md:flex items-center gap-2">
-          {activeAccount && (
-            <div className="relative">
-              <Link href="/rewards">
-                <div className="flex items-center gap-1.5 h-9 px-3 py-1.5 rounded-full border border-amber-200 dark:border-amber-800/30 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 hover:from-amber-100 hover:to-orange-100 dark:hover:from-amber-900/30 dark:hover:to-orange-900/30 transition-all cursor-pointer shadow-sm hover:shadow-md">
-                  <Sparkles className="h-4 w-4 text-amber-600 dark:text-amber-500" />
-                  <span className="font-mono font-semibold text-sm text-amber-900 dark:text-amber-400">{xTokenBalance.toFixed(0)}</span>
-                  <span className="text-xs font-medium text-amber-700 dark:text-amber-500">X</span>
-                </div>
-              </Link>
-              {hasClaimableQuests && (
-                <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                </span>
-              )}
-            </div>
-          )}
           <AlgorandWalletConnect variant="dropdown" />
           <ModeToggle />
         </div>

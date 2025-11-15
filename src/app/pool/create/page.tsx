@@ -286,10 +286,10 @@ export default function CreatePoolPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="0">ALGO (0)</SelectItem>
+                          <SelectItem value="0">ALGO</SelectItem>
                           {assets.filter(a => a.id !== 0).map((asset) => (
                             <SelectItem key={asset.id} value={String(asset.id)}>
-                              {asset.symbol || asset.unitName || `Asset ${asset.id}`} ({asset.id})
+                              {asset.symbol || asset.unitName || `Asset ${asset.id}`}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -302,10 +302,10 @@ export default function CreatePoolPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="0">ALGO (0)</SelectItem>
+                          <SelectItem value="0">ALGO</SelectItem>
                           {assets.filter(a => a.id !== 0).map((asset) => (
                             <SelectItem key={asset.id} value={String(asset.id)}>
-                              {asset.symbol || asset.unitName || `Asset ${asset.id}`} ({asset.id})
+                              {asset.symbol || asset.unitName || `Asset ${asset.id}`}
                             </SelectItem>
                           ))}
                         </SelectContent>
