@@ -24,6 +24,12 @@ export async function GET(request: NextRequest) {
     
     const quests = getUserQuestProgress(userId)
     
+    // DEBUG: Log quest statuses being returned
+    const dailyLogin = quests.find(q => q.id === 'daily_login')
+    if (dailyLogin) {
+      console.log(`[QUESTS API] Daily Login Quest - Status: ${dailyLogin.status}, Progress: ${dailyLogin.progress}`)
+    }
+    
     const response = NextResponse.json({
       success: true,
       data: quests,
