@@ -11,7 +11,7 @@
 
 - [✨ Features](#-features)
 - [🎯 Use Cases](#-use-cases)
-- [🚀 WaveBreak Token Launchpad](#-wavebreak-token-launchpad)
+- [🚀 Token Launchpad](#-wavebreak-token-launchpad)
 - [🌍 Open-Source](#-open-source)
 - [🎮 X Token Rewards System](#-x-token-rewards-system)
 - [🏗️ Project Structure](#️-project-structure)
@@ -40,7 +40,7 @@
 - **🎨 Modern UI**: Responsive design with dark mode support
 - **📦 On-Chain Smart Contracts**: Deployed autopilot rules and multi-hop swap router
 
-### 🚀 WaveBreak Token Launchpad
+### 🚀  Token Launchpad
 - **Bonding Curve Mechanics**: Linear, Exponential, and Sigmoid price curves
 - **Anti-Bot Protection**: Cooldown periods, per-transaction limits, whale penalties
 - **Early Buyer Rewards**: 3x → 1x points multiplier based on purchase timing
@@ -100,7 +100,7 @@ This SDK is a feature-complete, developer-ready module. It manages the entire la
 ### 3. For the Project Founder: A Fair & Secure Token Launch
 * **The Persona:** Elena, a developer with a new GameFi project on Algorand, has a utility token ($GAME) but limited capital and wants to avoid the pitfalls of traditional launches.
 * **The Problem:** IDOs are often dominated by bots, and creating a liquidity pool requires significant upfront capital, exposing the project to immediate volatility. Elena needs to distribute her token fairly, build liquidity, and attract a real community.
-* **The Solution:** Elena uses the **WaveBreak Token Launchpad**. She configures a bonding curve for fair price discovery, while anti-bot protections and vesting schedules help build a genuine community. When the funding target is met, the platform automatically creates and locks the DEX liquidity pool, securing her project's foundation.
+* **The Solution:** Elena uses the ** Token Launchpad**. She configures a bonding curve for fair price discovery, while anti-bot protections and vesting schedules help build a genuine community. When the funding target is met, the platform automatically creates and locks the DEX liquidity pool, securing her project's foundation.
 
 ### 4. For the Sophisticated Trader: Automated Arbitrage
 * **The Persona:** Kenji, a sophisticated trader who profits from small price differences for the same asset across different DEXs.
@@ -114,9 +114,9 @@ This SDK is a feature-complete, developer-ready module. It manages the entire la
 
 ---
 
-## 🚀 WaveBreak Token Launchpad
+## 🚀  Token Launchpad
 
-**WaveBreak** is a revolutionary fair-launch platform using **bonding curves** to ensure transparent, bot-resistant token distribution on Algorand.
+**** is a revolutionary fair-launch platform using **bonding curves** to ensure transparent, bot-resistant token distribution on Algorand.
 
 ### How It Works
 
@@ -334,7 +334,7 @@ Algorand_prototype-v0.0.1/
 │   │   │   ├── agent/        # AI agent interface
 │   │   │   ├── wallet/       # Wallet management
 │   │   │   └── swap-demo/    # Token swap demo
-│   │   ├── launchpad/        # WaveBreak token launchpad
+│   │   ├── launchpad/        #  token launchpad
 │   │   │   ├── page.tsx      # Browse launches
 │   │   │   ├── create/       # Create new launch
 │   │   │   └── [projectId]/  # Project details & buy interface
@@ -378,7 +378,7 @@ Algorand_prototype-v0.0.1/
 │   │   ├── algorand-wallet.ts # Wallet integration
 │   │   ├── tokens.ts         # Token registry
 │   │   ├── db.ts             # Database connection
-│   │   ├── launchpad/        # WaveBreak launchpad
+│   │   ├── launchpad/        #  launchpad
 │   │   │   ├── algorand.ts   # Bonding curve interactions
 │   │   │   ├── db.ts         # Database operations
 │   │   │   ├── schema.sql    # Launchpad database schema
@@ -400,7 +400,7 @@ Algorand_prototype-v0.0.1/
 │   ├── FILE_STRUCTURE.md     # 📁 Detailed structure guide
 │   ├── SYSTEM_OVERVIEW.md    # 🏗️ System design
 │   ├── TOKEN_ECONOMICS.md    # 🎮 X Token rewards guide
-│   ├── TOKEN_LAUNCHPAD.md    # 🚀 WaveBreak launchpad
+│   ├── TOKEN_LAUNCHPAD.md    # 🚀  launchpad
 │   └── BACKEND_AND_AGENT_SPEC.md # ⚙️ Backend details
 └── data/                     # Runtime data (logs, db)
 ```
@@ -418,7 +418,7 @@ Algorand_prototype-v0.0.1/
 - **[⚙️ Backend & Agent Spec](./docs/BACKEND_AND_AGENT_SPEC.md)** - API endpoints and database schema
 - **[🧠 AI Agent & MCP/NCP](./docs/AI_AGENT_AND_MCP_NCP_SPEC.md)** - AI capabilities and analytics engine
 - **[🔐 Agent Wallet System](./docs/AGENT_WALLET_SYSTEM.md)** - Per-user agent wallets and automated trading
-- **[🚀 Token Launchpad](./docs/TOKEN_LAUNCHPAD.md)** - WaveBreak launchpad guide
+- **[🚀 Token Launchpad](./docs/TOKEN_LAUNCHPAD.md)** -  launchpad guide
 - **[🎮 Token Economics](./docs/TOKEN_ECONOMICS.md)** - X Token rewards system and economics
 
 ### Key Architectural Decisions
