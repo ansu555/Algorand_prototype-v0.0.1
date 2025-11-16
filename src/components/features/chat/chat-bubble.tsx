@@ -82,8 +82,8 @@ export default function ChatBubble({ variant = "floating", align = "right" }: Ch
   const nativeSymbol = 'ALGO'
 
   const renderImage = (url: string, alt: string, key: string) => {
-    // Check if this is a chart (SVG from MCP server)
-    const isChart = url.includes('/charts/') && url.endsWith('.svg')
+    // Check if this is a chart (SVG from MCP server or data URL)
+    const isChart = (url.includes('/charts/') && url.endsWith('.svg')) || url.startsWith('data:image/svg+xml')
     
     return (
       <button
@@ -181,7 +181,8 @@ export default function ChatBubble({ variant = "floating", align = "right" }: Ch
   }
 
   const renderContent = (text: string) => {
-    const markdownImageRegex = /!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g
+    // Updated regex to match both http(s) URLs and data URLs
+    const markdownImageRegex = /!\[([^\]]*)\]\(((?:https?:\/\/|data:)[^\s)]+)\)/g
     const pieces: React.ReactNode[] = []
     const lines = text.split("\n")
 

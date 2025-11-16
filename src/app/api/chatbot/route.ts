@@ -338,11 +338,8 @@ export async function POST(request: NextRequest) {
           if (data.charts && Array.isArray(data.charts)) {
             message += '**📈 Charts:**\n\n'
             data.charts.forEach((chart: any) => {
-              // Convert relative URLs to absolute URLs for markdown image rendering
-              const chartUrl = chart.url.startsWith('http') 
-                ? chart.url 
-                : `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}${chart.url}`
-              message += `![${chart.title}](${chartUrl})\n\n`
+              // Charts are now returned as base64 data URLs - embed directly
+              message += `![${chart.title}](${chart.url})\n\n`
             })
           }
           
