@@ -10,6 +10,7 @@
 ## Table of Contents
 
 - [✨ Features](#-features)
+- [🎯 Use Cases](#-use-cases)
 - [🚀 WaveBreak Token Launchpad](#-wavebreak-token-launchpad)
 - [🎮 X Token Rewards System](#-x-token-rewards-system)
 - [🏗️ Project Structure](#️-project-structure)
@@ -65,6 +66,35 @@
 - **VIP Tiers**: Unlock fee discounts and exclusive features
 - **Flexible Terms**: Choose lock periods for higher APY multipliers
 - **Governance Rights**: Stakers can vote on protocol changes
+
+---
+
+## 🎯 Use Cases
+
+### 1. For the Busy Professional: "Set & Forget" Investing
+* **The Persona:** David, a busy professional who believes in Algorand's long-term potential but has no time to watch charts or manually execute trades.
+* **The Problem:** David wants to employ strategies like "buying the dip" or "taking profits," but his job prevents him from acting at the right moment. Setting up external trading bots is too technical and feels insecure.
+* **The Solution:** David uses our **Auto-Pilot Trading tool**. The platform's AI agent monitors the market 24/7 and automatically executes his trades, using the DEX aggregator to find the best price. David can now "set and forget" his strategy, knowing the platform is working for him.
+
+### 2. For the Newcomer: A Safe On-Ramp to DeFi
+* **The Persona:** Alex, a tech-savvy individual new to cryptocurrency, is overwhelmed by DeFi and afraid of making a costly mistake.
+* **The Problem:** The crypto world feels chaotic. Alex doesn't know how to tell a legitimate project from a scam, finds Discord confusing, and feels that using a DEX by copying contract addresses is too technical and risky.
+* **The Solution:** Alex discovers 10xSwap as the perfect "all-in-one" on-ramp. The **AI-Powered Chat Agent** lets him use natural language (e.g., "buy $20 of USDC") instead of complex UIs. The platform's aggregation and curated features provide a safe, clear starting point, removing the technical barriers and fear.
+
+### 3. For the Project Founder: A Fair & Secure Token Launch
+* **The Persona:** Elena, a developer with a new GameFi project on Algorand, has a utility token ($GAME) but limited capital and wants to avoid the pitfalls of traditional launches.
+* **The Problem:** IDOs are often dominated by bots, and creating a liquidity pool requires significant upfront capital, exposing the project to immediate volatility. Elena needs to distribute her token fairly, build liquidity, and attract a real community.
+* **The Solution:** Elena uses the **WaveBreak Token Launchpad**. She configures a bonding curve for fair price discovery, while anti-bot protections and vesting schedules help build a genuine community. When the funding target is met, the platform automatically creates and locks the DEX liquidity pool, securing her project's foundation.
+
+### 4. For the Sophisticated Trader: Automated Arbitrage
+* **The Persona:** Kenji, a sophisticated trader who profits from small price differences for the same asset across different DEXs.
+* **The Problem:** Arbitrage is a game of speed. Manually executing trades across multiple DEX UIs is too slow, and writing custom bots is complex and hard to maintain.
+* **The Solution:** Kenji uses the **Auto-Pilot feature** for high-frequency trading. He sets an AI Agent rule to automatically execute an arbitrage trade (e.g., buy on DEX A, sell on DEX B) when a specific price difference is detected. The platform's backend monitors the pools and instantly executes the atomic transaction to secure the profit.
+
+### 5. For the Ecosystem Partner: Driving Real Engagement
+* **The Persona:** A community manager for a partner protocol (e.g., a lending platform) on Algorand.
+* **The Problem:** The manager needs to drive user engagement and educate the community. Traditional marketing has a low conversion rate, and they need a way to incentivize tangible user actions.
+* **The Solution:** The partner protocol sponsors a quest on the **X Token Rewards System**. They create an on-chain quest (e.g., "Supply 100 ALGO to our lending pool"). Users complete the task, and after on-chain verification, they claim rewards on 10xSwap. The partner gets genuine user interaction and TVL, while users are rewarded for engaging with the ecosystem.
 
 ---
 
