@@ -732,6 +732,23 @@ All contract source code, TEAL, and ABI specifications are available in:
 
 For detailed contract documentation, deployment procedures, and integration guides, see **[Smart Contracts & Deployment](./docs/CONTRACTS_AND_DEPLOYMENT.md)**
 
+### Liquidity Pool Integration
+
+10xSwap aggregates liquidity from multiple DEX protocols to provide optimal swap rates:
+
+- **Tinyman V2 Pools**: 100+ liquidity pools with 0.30% trading fee
+- **Pact Finance Pools**: 50+ liquidity pools with 0.25% trading fee
+- **Pool Discovery**: Automatic selection of best pool based on output amount and liquidity depth
+- **Multi-hop Routing**: Intelligent routing through multiple pools for optimal pricing
+
+The platform uses dedicated **pool adapter contracts** (TinymanPoolAdapter and PactPoolAdapter) to interact with each DEX's liquidity pools through a unified interface. This architecture enables:
+- ✅ Seamless multi-DEX aggregation
+- ✅ Automatic best-price selection
+- ✅ Slippage protection across all pools
+- ✅ Optimized gas costs
+
+For complete liquidity pool documentation, see **[Liquidity Pools Guide](./docs/LIQUIDITY_POOLS.md)**
+
 ## 📖 Documentation
 
 ### 📚 Complete Documentation
@@ -742,8 +759,8 @@ This project includes comprehensive documentation to help you understand and con
 - **[📁 File Structure Guide](./docs/FILE_STRUCTURE.md)** - Detailed walkthrough of every folder, file, and their purposes. Perfect for new developers to understand the codebase organization.
 
 #### 🏗️ Architecture & Design  
-- **[🏗️ System Architecture](./docs/SYSTEM_ARCHITECTURE.md)** - High-level system design, multi-chain infrastructure, technology stack, data flow, and security considerations.
-- **[⚙️ Backend Architecture](./docs/BACKEND_ARCHITECTURE.md)** - Detailed technical implementation, agent factory patterns, transaction pipeline, AI integration, and performance optimization.
+- **[🏗️ System Overview](./docs/SYSTEM_OVERVIEW.md)** - High-level system design, architecture, components, and data flows
+- **[⚙️ Backend & Agent Spec](./docs/BACKEND_AND_AGENT_SPEC.md)** - Backend architecture, API endpoints, and database schema
 
 ### 🚀 Quick Links
 
