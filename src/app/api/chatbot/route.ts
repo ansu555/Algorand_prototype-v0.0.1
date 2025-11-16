@@ -294,9 +294,19 @@ export async function POST(request: NextRequest) {
         const coinId = tokenMap[token] || token
         
         const mcpUrl = process.env.MCP_BASE_URL || 'http://localhost:8080'
+        const mcpApiKey = process.env.MCP_ANALYTICS_API_KEY
+        
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json'
+        }
+        
+        if (mcpApiKey) {
+          headers['Authorization'] = `Bearer ${mcpApiKey}`
+        }
+        
         const response = await fetch(`${mcpUrl}/analyze`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({
             coin: coinId,
             horizonDays: 30,
@@ -340,9 +350,11 @@ export async function POST(request: NextRequest) {
           }
           
           if (data.charts && Array.isArray(data.charts)) {
-            message += '**Charts:**\n'
-            data.charts.forEach((chart: any) => {
-              message += `• [${chart.title}](${chart.url})\n`
+            message += '**📈 Interactive Charts:**\n\n'
+            data.charts.forEach((chart: any, index: number) => {
+              // Use markdown image syntax to display charts inline
+              message += `**${index + 1}. ${chart.title}**\n`
+              message += `![${chart.title}](${chart.url})\n\n`
             })
           }
           
@@ -362,9 +374,9 @@ export async function POST(request: NextRequest) {
     
     // General conversation fallback
     const generalResponses: Record<string, string> = {
-      'hello': '👋 Hi! I can help you with:\n• ALGO & Algorand ASA token analysis\n• Balance checks\n• Portfolio viewing\n• Sending ALGO/USDC/USDT/ALFG to any address\n\nTry asking: "what\'s my balance?" or "send 1 ALGO to [address]"',
+      'hello': '👋 Hi! I can help you with:\n• ALGO & Algorand ASA token analysis\n• Balance checks\n• Portfolio viewing\n• Sending ALGO/USDC/USDT/ALFG to any address\n\nTry asking: "analyze ALGO" or "what\'s my balance?"',
       'hi': '👋 Hello! I\'m your 10xSwap AI assistant for Algorand. How can I help you today?',
-      'help': '🤖 **Available Commands:**\n\n• "what\'s my address?" - View your wallet address\n• "check my balance" - See your ALGO and ASA balances\n• "show my portfolio" - View all holdings\n• "send X ALGO to [address]" - Transfer ALGO/USDC/USDT/ALFG\n• "analyze ALGO" - Get Algorand token analysis\n• "price of USDC" - Check token price\n\n**Supported Assets:**\n• ALGO (native)\n• USDC (ID: 10458941)\n• USDT (ID: 67396430)\n• ALFG (ID: 70283957)\n\nJust ask naturally!',
+      'help': '🤖 **Available Commands:**\n\n• "what\'s my address?" - View your wallet address\n• "check my balance" - See your ALGO and ASA balances\n• "show my portfolio" - View all holdings\n• "send X ALGO to [address]" - Transfer ALGO/USDC/USDT/ALFG\n• "analyze ALGO" or "ALGO analysis" - Get detailed Algorand analysis with price predictions\n• "price of USDC" - Check token price\n\n**Supported Assets:**\n• ALGO (native)\n• USDC (ID: 10458941)\n• USDT (ID: 67396430)\n• ALFG (ID: 70283957)\n\nJust ask naturally!',
     }
     
     const lowerText = userText.toLowerCase()
@@ -380,7 +392,7 @@ export async function POST(request: NextRequest) {
     // Default helpful response
     return NextResponse.json({
       ok: true,
-      message: '🤔 I can help you with Algorand ecosystem queries: balance checks, portfolio viewing, ALGO analysis, and sending transactions.\n\nTry asking:\n• "what\'s my balance?"\n• "show my portfolio"\n• "send 1 ALGO to [paste address here]"\n• "analyze Algorand"\n\n**Supported assets:** ALGO, USDC, USDT, ALFG'
+      message: '🤔 I can help you with Algorand ecosystem queries: balance checks, portfolio viewing, ALGO analysis, and sending transactions.\n\nTry asking:\n• "analyze ALGO" - Get detailed market analysis with predictions\n• "what\'s my balance?" - Check your wallet balance\n• "show my portfolio" - View all your assets\n• "send 1 ALGO to [address]" - Transfer tokens\n\n**Supported assets:** ALGO, USDC, USDT, ALFG'
     })
     
   } catch (error: any) {
@@ -432,7 +444,9 @@ export async function GET(request: NextRequest) {
       { description: 'View address', message: 'show my address' },
       { description: 'Send ALGO', message: 'send 1 ALGO to ABC123...' },
       { description: 'Send USDC', message: 'transfer 5 USDC to XYZ...' },
-      { description: 'Analyze ALGO', message: 'analyze Algorand' },
+      { description: 'Analyze ALGO (short)', message: 'analyze ALGO' },
+      { description: 'ALGO analysis', message: 'ALGO analysis' },
+      { description: 'Analyze Algorand', message: 'analyze Algorand' },
       { description: 'Get help', message: 'help' }
     ]
   })

@@ -81,21 +81,34 @@ export default function ChatBubble({ variant = "floating", align = "right" }: Ch
   const explorerBase = 'https://testnet.algoexplorer.io'
   const nativeSymbol = 'ALGO'
 
-  const renderImage = (url: string, alt: string, key: string) => (
-    <button
-      key={key}
-      type="button"
-      onClick={() => setActiveImage({ src: url, alt })}
-      className="group mt-2 block overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm transition hover:border-red-400/60 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60 dark:border-white/10 dark:bg-white/5 dark:hover:border-[#F3C623]/60"
-    >
-      <img
-        src={url}
-        alt={alt || "Shared image"}
-        className="max-h-72 w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-        loading="lazy"
-      />
-    </button>
-  )
+  const renderImage = (url: string, alt: string, key: string) => {
+    // Check if this is a chart (SVG from MCP server)
+    const isChart = url.includes('/charts/') && url.endsWith('.svg')
+    
+    return (
+      <button
+        key={key}
+        type="button"
+        onClick={() => setActiveImage({ src: url, alt })}
+        className={`group mt-2 block overflow-hidden rounded-xl border transition hover:shadow-lg focus:outline-none focus-visible:ring-2 ${
+          isChart 
+            ? 'border-slate-300 bg-white p-3 shadow-md hover:border-red-400/60 focus-visible:ring-red-400/60 dark:border-white/20 dark:bg-slate-900/50 dark:hover:border-[#F3C623]/60'
+            : 'border-slate-200 bg-slate-100 shadow-sm hover:border-red-400/60 focus-visible:ring-red-400/60 dark:border-white/10 dark:bg-white/5 dark:hover:border-[#F3C623]/60'
+        }`}
+      >
+        <img
+          src={url}
+          alt={alt || "Shared image"}
+          className={`w-full transition duration-300 group-hover:scale-[1.02] ${
+            isChart 
+              ? 'max-h-96 object-contain' // Larger for charts, use contain to preserve aspect ratio
+              : 'max-h-72 object-cover'    // Original size for regular images
+          }`}
+          loading="lazy"
+        />
+      </button>
+    )
+  }
 
   const renderTextWithUrls = (segment: string, keyPrefix: string) => {
     const nodes: React.ReactNode[] = []
