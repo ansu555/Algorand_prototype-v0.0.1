@@ -12,7 +12,7 @@
 - [✨ Features](#-features)
 - [🎯 Use Cases](#-use-cases)
 - [🚀 WaveBreak Token Launchpad](#-wavebreak-token-launchpad)
-- [🌍 Open-Source SDK](#-open-source-sdk)
+- [🌍 Open-Source](#-open-source)
 - [🎮 X Token Rewards System](#-x-token-rewards-system)
 - [🏗️ Project Structure](#️-project-structure)
 - [🛠️ Getting Started](#-getting-started)
@@ -50,15 +50,15 @@
 
 ---
 
-## 🌍 Open-Source SDK
+## 🌍 Open-Source
 
-This SDK is a feature-complete, developer-ready module. It manages the entire launchpad lifecycle, from project creation to bonding curve mechanics and DEX graduation. It is designed for an optimal developer experience (DX) with clear documentation and a logical, extensible structure. Its transparent design means that it can be packaged and published.
+### 10xSwap Launchpad SDK
+This SDK is a feature-complete, developer-ready module. It manages the entire launchpad lifecycle, handling both on-chain actions and off-chain database interactions. It provides an excellent developer experience (DX) with clear documentation and a logical, extensible structure. Its transparent design builds trust, making it ready to be packaged and published.
 
-Our open-source initiative includes:
-
-* **AI Agent Core:** Open-source the Natural Language Processing engine to become the standard for on-chain transactions in Web3, allowing other dApps to build on our technology.
-* **DEX Aggregator SDK:** Open-source the multi-DEX routing logic as a standalone library to provide a core DeFi building block for the ecosystem, solving a major developer need and enabling new applications.
-* **Gamified Quest System:** Open-source the quest framework as a plug-and-play module to help other projects drive engagement, adaptable to any protocol's needs.
+### Future Plans:
+* **AI Agent Core:** Open-source the natural language processing engine to become the standard for on-chain transactions in Web3, allowing other dApps to build on our technology.
+* **DEX Aggregator & Smart Order Router:** Release the smart order router as a standalone library to provide a core DeFi building block for the ecosystem, solving a major developer need and creating a potential new revenue stream.
+* **Gamified Quest System:** Open-source the quest framework as a plug-and-play module to help other dApps easily add gamified engagement and retention features.
 * **PyTeal Smart Contracts:** Open-source all smart contracts, starting with the launchpad, to build trust through public audits and community verification, establishing our SDK as reliable infrastructure.
 
 ---
