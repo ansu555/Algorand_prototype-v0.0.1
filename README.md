@@ -22,6 +22,7 @@
 - [📡 API Endpoints](#-api-endpoints)
 - [🤖 AI Agent Features](#-ai-agent-features)
 - [💎 Supported Tokens](#-supported-tokens)
+- [📜 Smart Contracts](#-smart-contracts)
 - [📖 Documentation](#-documentation)
 
 ## ✨ Features
@@ -702,6 +703,34 @@ All API routes are located in `src/app/api/`:
 | `/api/poller` | Background polling service | `src/app/api/poller/` |
 | `/api/price` | Token price queries | `src/app/api/price/` |
 | `/api/rules` | Trading rules management | `src/app/api/rules/` |
+
+## 📜 Smart Contracts
+
+10xSwap uses four main smart contracts deployed on Algorand Testnet for multi-DEX aggregation and automated trading.
+
+### Testnet Deployments
+
+| Contract | App ID | Address | Explorer Links |
+|----------|--------|---------|----------------|
+| **MultihopSwapRouter** | `749360450` | `OL7STUUNPYHLP3I73MG3ESSFWU2HGIFQ522TUOADK4WHD66W2T4A6M4B3Y` | [Application](https://lora.algokit.io/testnet/application/749360450) • [Transaction](https://lora.algokit.io/testnet/transaction/W6JEYCEWVHLQTYRAQZJ433DVPXDV25L3PJ7ALTFA766CZ72PLQVA) |
+| **TinymanPoolAdapter** | `749360541` | `IRIK74M646IKDJV2F3QGMVTKHRGRH4PW7C7EOZV5YUYFNT2DYBFJVDJILM` | [Application](https://lora.algokit.io/testnet/application/749360541) • [Transaction](https://lora.algokit.io/testnet/transaction/I7BH4U4HHZZIURVDRKO4O3RUNRYPM2KMTELQVPXDSQEWX7DJ6RQA) |
+| **PactPoolAdapter** | `749341932` | `5MF2XA5DFO2JKZCSNRGO64LYADV7ZUSF4VE2ZQFPUKPRGG2ZOLBIUOITQU` | [Application](https://lora.algokit.io/testnet/application/749341932) • [Transaction](https://lora.algokit.io/testnet/transaction/4DOBHUDTL26N5ZWRPYSGZNIP5NBVJIKRSYYVJHHSQ65AG5QAD7LA) |
+| **AutoPilotRuleContract** | `749509231` | `KO5JO5GWYY5TIY3NQJ3VHNKF6DZSVWGWHBJI55LSFPA5PYQXMGSGWIEGS4` | [Application](https://lora.algokit.io/testnet/application/749509231) |
+
+### Contract Purposes
+
+- **MultihopSwapRouter**: Main routing contract for executing multi-hop swaps across different DEXs
+- **TinymanPoolAdapter**: Adapter for Tinyman V2 DEX integration (0.30% fee)
+- **PactPoolAdapter**: Adapter for Pact Finance DEX integration (0.25% fee)
+- **AutoPilotRuleContract**: Smart contract for automated trading rules (DCA, rebalancing, rotation)
+
+### Source Files
+
+All contract source code, TEAL, and ABI specifications are available in:
+- **Source Code**: `Blockchain/projects/10x_Swap/smart_contracts/`
+- **Compiled Artifacts**: `artifacts/` (TEAL files and ARC56 JSON specifications)
+
+For detailed contract documentation, deployment procedures, and integration guides, see **[Smart Contracts & Deployment](./docs/CONTRACTS_AND_DEPLOYMENT.md)**
 
 ## 📖 Documentation
 
