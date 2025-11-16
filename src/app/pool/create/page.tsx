@@ -108,15 +108,13 @@ export default function CreatePoolPage() {
     setIsCreating(true)
 
     try {
-      // Convert amounts to base units
-      const amount1BaseUnits = Math.floor(Number(amount0) * Math.pow(10, token0Info.decimals))
-      const amount2BaseUnits = Math.floor(Number(amount1) * Math.pow(10, token1Info?.decimals || 6))
-
+      // NOTE: Backend now expects HUMAN units (display units) and will convert to base units
+      // using fetched asset decimals. Do NOT convert here.
       console.log('Creating pool with params:', {
         asset1Id: token0Id,
         asset2Id: token1Id,
-        amount1: amount1BaseUnits,
-        amount2: amount2BaseUnits,
+        amount1: amount0,
+        amount2: amount1,
         feeBps,
         userAddress: activeAccount.address
       })
@@ -128,8 +126,8 @@ export default function CreatePoolPage() {
         body: JSON.stringify({
           asset1Id: token0Id,
           asset2Id: token1Id,
-          amount1: amount1BaseUnits.toString(),
-          amount2: amount2BaseUnits.toString(),
+          amount1: amount0,  // Send human units as string
+          amount2: amount1,  // Send human units as string
           feeBps,
           userAddress: activeAccount.address,
         })
@@ -173,8 +171,8 @@ export default function CreatePoolPage() {
             poolId: prepareData.poolId, // NEW: Include pool ID from multi-pool factory
             asset1Id: token0Id,
             asset2Id: token1Id,
-            amount1: amount1BaseUnits.toString(),
-            amount2: amount2BaseUnits.toString(),
+            amount1: amount0,  // Human units
+            amount2: amount1,  // Human units
             feeBps,
             poolAddress: prepareData.poolAddress,
             lpTokenName: prepareData.lpTokenName,
