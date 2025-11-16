@@ -282,7 +282,7 @@ export async function POST(request: NextRequest) {
     const tokenMatch = userText.match(/\b(algo|algorand|usdc|usdt|opul|planets|gard|gobtc|goeth|defly|yldy)\b/i)
     
     if ((wantsAnalysis || wantsPrice) && tokenMatch) {
-      // Redirect to MCP analysis endpoint
+      // Use internal MCP analytics API (serverless)
       try {
         const token = tokenMatch[1].toLowerCase()
         // Map Algorand ecosystem tokens
@@ -293,36 +293,22 @@ export async function POST(request: NextRequest) {
         }
         const coinId = tokenMap[token] || token
         
-        const mcpUrl = process.env.MCP_BASE_URL || 'http://localhost:8080'
-        const mcpApiKey = process.env.MCP_ANALYTICS_API_KEY
+        // Import the analytics engine directly (no fetch needed!)
+        const { analyzeCoin } = await import('@/lib/mcp')
         
-        const headers: HeadersInit = {
-          'Content-Type': 'application/json'
-        }
-        
-        if (mcpApiKey) {
-          headers['Authorization'] = `Bearer ${mcpApiKey}`
-        }
-        
-        const response = await fetch(`${mcpUrl}/analyze`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            coin: coinId,
-            horizonDays: 30,
-            tasks: wantsAnalysis ? ['analysis', 'prediction', 'strategy', 'charts'] : ['analysis'],
-            chartType: wantsAnalysis ? 'candlestick' : 'line'
-          })
+        const data = await analyzeCoin({
+          coin: coinId,
+          horizonDays: 30,
+          tasks: wantsAnalysis ? ['analysis', 'prediction', 'strategy', 'charts'] : ['analysis'],
+          chartType: wantsAnalysis ? 'candlestick' : 'line'
         })
         
-        if (response.ok) {
-          const data = await response.json()
-          
+        if (data.ok) {
           if (wantsPrice && !wantsAnalysis) {
             // Just show price info
             return NextResponse.json({
               ok: true,
-              message: `💰 **${token.toUpperCase()} Price:**\n\n${data.summary || data.currentPrice || 'Price data retrieved. Check MCP for details.'}`
+              message: `💰 **${token.toUpperCase()} Price:**\n\n${data.summary || 'Price data retrieved. Check MCP for details.'}`
             })
           }
           
@@ -350,11 +336,13 @@ export async function POST(request: NextRequest) {
           }
           
           if (data.charts && Array.isArray(data.charts)) {
-            message += '**📈 Interactive Charts:**\n\n'
-            data.charts.forEach((chart: any, index: number) => {
-              // Use markdown image syntax to display charts inline
-              message += `**${index + 1}. ${chart.title}**\n`
-              message += `![${chart.title}](${chart.url})\n\n`
+            message += '**📈 Charts:**\n\n'
+            data.charts.forEach((chart: any) => {
+              // Convert relative URLs to absolute URLs for markdown image rendering
+              const chartUrl = chart.url.startsWith('http') 
+                ? chart.url 
+                : `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}${chart.url}`
+              message += `![${chart.title}](${chartUrl})\n\n`
             })
           }
           
@@ -362,12 +350,18 @@ export async function POST(request: NextRequest) {
             ok: true,
             message: message.trim()
           })
+        } else {
+          // Analysis failed
+          return NextResponse.json({
+            ok: true,
+            message: `❌ ${data.error || 'Analysis failed'}\n\n${data.suggestion || 'Try another cryptocurrency or check the logs.'}`
+          })
         }
       } catch (error: any) {
         console.error('MCP analysis error:', error)
         return NextResponse.json({
           ok: true,
-          message: `❌ Could not fetch analysis for ${tokenMatch[1].toUpperCase()}. The MCP analytics server might be unavailable.\n\nTry: "what's my balance?" or "send 1 ALGO to [address]"`
+          message: `❌ Could not analyze ${tokenMatch[1].toUpperCase()}. ${error.message || 'Unknown error'}\n\nTry: "what's my balance?" or "send 1 ALGO to [address]"`
         })
       }
     }
