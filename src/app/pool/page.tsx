@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
-import { Loader2, TrendingUp, Activity, BarChart3 } from "lucide-react"
+import { Loader2, TrendingUp, Activity, BarChart3, Copy, Check } from "lucide-react"
 import { useMemo, useState, useEffect } from "react"
 import type { PoolInfo } from "@/lib/dex/types"
 
@@ -461,6 +461,14 @@ export default function PoolPage() {
 
 function PoolTable({ pools, emptyLabel = "No pools found." }: { pools: Pool[]; emptyLabel?: string }) {
   const router = useRouter()
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
+
+  const copyToClipboard = (e: React.MouseEvent, address: string) => {
+    e.stopPropagation() // Prevent row click
+    navigator.clipboard.writeText(address)
+    setCopiedAddress(address)
+    setTimeout(() => setCopiedAddress(null), 2000)
+  }
   
   if (!pools.length) {
     return (
@@ -538,9 +546,22 @@ function PoolTable({ pools, emptyLabel = "No pools found." }: { pools: Pool[]; e
                 <div className="flex flex-col items-start min-w-0">
                   <span className="font-semibold whitespace-nowrap">{p.token0}/{p.token1}</span>
                   {p.poolAddress && (
-                    <span className="text-xs text-muted-foreground font-mono">
-                      {p.poolAddress.slice(0, 6)}...{p.poolAddress.slice(-4)}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {p.poolAddress.slice(0, 6)}...{p.poolAddress.slice(-4)}
+                      </span>
+                      <button
+                        onClick={(e) => copyToClipboard(e, p.poolAddress!)}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                        title="Copy pool address"
+                      >
+                        {copiedAddress === p.poolAddress ? (
+                          <Check className="w-3 h-3 text-green-500" />
+                        ) : (
+                          <Copy className="w-3 h-3 text-muted-foreground" />
+                        )}
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
