@@ -60,6 +60,11 @@ class LiquidityPoolContract(ARC4Contract):
         # Track total number of pools
         self.total_pools = UInt64(0)
 
+    @arc4.abimethod(allow_actions=["UpdateApplication"])
+    def update_application(self) -> None:
+        """Allow creator to update the contract"""
+        assert Txn.sender == Global.creator_address, "Only creator can update"
+
     @subroutine
     def get_pool_key(self, asset_1_id: UInt64, asset_2_id: UInt64) -> Bytes:
         """
@@ -93,9 +98,6 @@ class LiquidityPoolContract(ARC4Contract):
         Returns:
             Pool ID (hex encoded key)
         """
-        # Verify caller is creator
-        assert Txn.sender == Global.creator_address, "Only creator can create pools"
-
         # Verify assets are different
         assert asset_1.id != asset_2.id, "Assets must be different"
 
@@ -178,8 +180,6 @@ class LiquidityPoolContract(ARC4Contract):
         Returns:
             LP token asset ID
         """
-        assert Txn.sender == Global.creator_address, "Only creator can create LP token"
-
         # Extract raw bytes from arc4.DynamicBytes (no length prefix)
         pool_key = pool_id.native
 

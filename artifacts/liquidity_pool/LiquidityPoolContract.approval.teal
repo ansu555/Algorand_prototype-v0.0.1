@@ -3,7 +3,7 @@
 
 // algopy.arc4.ARC4Contract.approval_program() -> uint64:
 main:
-    intcblock 0 1 8 2 400 10000 1000
+    intcblock 0 1 8 4 400 10000 1000
     bytecblock 0x151f7c75 0x00 "total_pools" ""
     txn ApplicationID
     bnz main_after_if_else@2
@@ -18,18 +18,36 @@ main_after_if_else@2:
     // contract.py:50
     // class LiquidityPoolContract(ARC4Contract):
     txn NumAppArgs
-    bz main___algopy_default_create@18
+    bz main___algopy_default_create@20
+    pushbytes 0xb53e2593 // method "update_application()void"
+    txna ApplicationArgs 0
+    match main_update_application_route@5
+
+main_switch_case_next@6:
+    // contract.py:50
+    // class LiquidityPoolContract(ARC4Contract):
     txn OnCompletion
     !
     assert // OnCompletion must be NoOp
     txn ApplicationID
     assert
-    pushbytess 0x5f3e6d21 0xb0b21b2f 0x97ef8251 0xf810beef 0x27be2f06 0x6ec13590 0x1eba3a51 0xc269cd36 0x6dbe456f // method "create_pool(uint64,uint64,uint16)string", method "create_lp_token(string,uint64,uint32,string,string)uint64", method "add_liquidity(string,axfer,axfer,uint64)uint64", method "remove_liquidity(string,axfer,uint64,uint64)(uint64,uint64)", method "swap(string,axfer,uint64,uint64)uint64", method "get_pool_info(string)(uint64,uint64,uint64,uint64,uint64,uint16,uint64,bool)", method "get_total_pools()uint64", method "compute_pool_id(uint64,uint64)string", method "get_swap_quote(string,uint64,uint64,uint64)uint64"
+    pushbytess 0x5f3e6d21 0x0fb50785 0xefd15773 0xa540f78c 0x9459b07e 0xa5887ab4 0x1eba3a51 0xc269cd36 0x98c5b112 // method "create_pool(uint64,uint64,uint16)string", method "create_lp_token(byte[],uint64,uint32,string,string)uint64", method "add_liquidity(byte[],axfer,axfer,uint64)uint64", method "remove_liquidity(byte[],axfer,uint64,uint64)(uint64,uint64)", method "swap(byte[],axfer,uint64,uint64)uint64", method "get_pool_info(byte[])(uint64,uint64,uint64,uint64,uint64,uint16,uint64,bool)", method "get_total_pools()uint64", method "compute_pool_id(uint64,uint64)string", method "get_swap_quote(byte[],uint64,uint64,uint64)uint64"
     txna ApplicationArgs 0
     match create_pool create_lp_token add_liquidity remove_liquidity swap get_pool_info get_total_pools compute_pool_id get_swap_quote
     err
 
-main___algopy_default_create@18:
+main_update_application_route@5:
+    // contract.py:63
+    // @arc4.abimethod(allow_actions=["UpdateApplication"])
+    txn OnCompletion
+    intc_3 // UpdateApplication
+    ==
+    txn ApplicationID
+    &&
+    assert // OnCompletion must be UpdateApplication && can only call when not creating
+    b update_application
+
+main___algopy_default_create@20:
     txn OnCompletion
     !
     txn ApplicationID
@@ -40,9 +58,23 @@ main___algopy_default_create@18:
     return
 
 
+// contract.LiquidityPoolContract.update_application[routing]() -> void:
+update_application:
+    // contract.py:66
+    // assert Txn.sender == Global.creator_address, "Only creator can update"
+    txn Sender
+    global CreatorAddress
+    ==
+    assert // Only creator can update
+    // contract.py:63
+    // @arc4.abimethod(allow_actions=["UpdateApplication"])
+    intc_1 // 1
+    return
+
+
 // contract.LiquidityPoolContract.create_pool[routing]() -> void:
 create_pool:
-    // contract.py:78
+    // contract.py:83
     // @arc4.abimethod(allow_actions=["NoOp"])
     txna ApplicationArgs 1
     dup
@@ -67,24 +99,17 @@ create_pool:
     txna ApplicationArgs 3
     dup
     len
-    intc_3 // 2
+    pushint 2 // 2
     ==
     assert // invalid number of bytes for arc4.uint16
-    // contract.py:96-97
-    // # Verify caller is creator
-    // assert Txn.sender == Global.creator_address, "Only creator can create pools"
-    txn Sender
-    global CreatorAddress
-    ==
-    assert // Only creator can create pools
-    // contract.py:99-100
+    // contract.py:101-102
     // # Verify assets are different
     // assert asset_1.id != asset_2.id, "Assets must be different"
     dig 3
     dig 2
     !=
     assert // Assets must be different
-    // contract.py:102-103
+    // contract.py:104-105
     // # Verify fee is reasonable
     // assert fee_bps.native <= MAX_FEE_BPS, "Fee too high"
     dup
@@ -94,7 +119,7 @@ create_pool:
     intc 6 // 1000
     <=
     assert // Fee too high
-    // contract.py:105-106
+    // contract.py:107-108
     // # Generate pool key
     // pool_key = self.get_pool_key(asset_1.id, asset_2.id)
     dig 3
@@ -102,17 +127,17 @@ create_pool:
     callsub get_pool_key
     dup
     cover 5
-    // contract.py:108-109
+    // contract.py:110-111
     // # Check if pool already exists
     // _existing_data, exists = op.Box.get(pool_key)
     dup
     box_len
     bury 1
-    // contract.py:110
+    // contract.py:112
     // assert not exists, "Pool already exists for this pair"
     !
     assert // Pool already exists for this pair
-    // contract.py:112-122
+    // contract.py:114-124
     // # Create pool data
     // pool_data = PoolData(
     //     asset_1_id=arc4.UInt64(asset_1.id),
@@ -133,11 +158,11 @@ create_pool:
     concat
     pushbytes 0x000000000000000080
     concat
-    // contract.py:124-125
+    // contract.py:126-127
     // # Store in box
     // op.Box.put(pool_key, pool_data.bytes)
     box_put
-    // contract.py:127-128
+    // contract.py:129-130
     // # Increment pool count
     // self.total_pools += 1
     intc_0 // 0
@@ -149,34 +174,34 @@ create_pool:
     bytec_2 // "total_pools"
     swap
     app_global_put
-    // contract.py:130-131
+    // contract.py:132-133
     // # Opt contract into assets via inner transactions (skip if ALGO)
     // if asset_1.id != 0:
     bz create_pool_after_if_else@4
-    // contract.py:132-136
+    // contract.py:134-138
     // itxn.AssetTransfer(
     //     xfer_asset=asset_1.id,
     //     asset_receiver=Global.current_application_address,
     //     asset_amount=0,
     // ).submit()
     itxn_begin
-    // contract.py:134
+    // contract.py:136
     // asset_receiver=Global.current_application_address,
     global CurrentApplicationAddress
-    // contract.py:135
+    // contract.py:137
     // asset_amount=0,
     intc_0 // 0
     itxn_field AssetAmount
     itxn_field AssetReceiver
     dig 3
     itxn_field XferAsset
-    // contract.py:132
+    // contract.py:134
     // itxn.AssetTransfer(
-    pushint 4 // axfer
+    intc_3 // axfer
     itxn_field TypeEnum
     intc_0 // 0
     itxn_field Fee
-    // contract.py:132-136
+    // contract.py:134-138
     // itxn.AssetTransfer(
     //     xfer_asset=asset_1.id,
     //     asset_receiver=Global.current_application_address,
@@ -185,34 +210,34 @@ create_pool:
     itxn_submit
 
 create_pool_after_if_else@4:
-    // contract.py:138
+    // contract.py:140
     // if asset_2.id != 0:
     dig 2
     bz create_pool_after_if_else@7
-    // contract.py:139-143
+    // contract.py:141-145
     // itxn.AssetTransfer(
     //     xfer_asset=asset_2.id,
     //     asset_receiver=Global.current_application_address,
     //     asset_amount=0,
     // ).submit()
     itxn_begin
-    // contract.py:141
+    // contract.py:143
     // asset_receiver=Global.current_application_address,
     global CurrentApplicationAddress
-    // contract.py:142
+    // contract.py:144
     // asset_amount=0,
     intc_0 // 0
     itxn_field AssetAmount
     itxn_field AssetReceiver
     dig 2
     itxn_field XferAsset
-    // contract.py:139
+    // contract.py:141
     // itxn.AssetTransfer(
-    pushint 4 // axfer
+    intc_3 // axfer
     itxn_field TypeEnum
     intc_0 // 0
     itxn_field Fee
-    // contract.py:139-143
+    // contract.py:141-145
     // itxn.AssetTransfer(
     //     xfer_asset=asset_2.id,
     //     asset_receiver=Global.current_application_address,
@@ -221,47 +246,47 @@ create_pool_after_if_else@4:
     itxn_submit
 
 create_pool_after_if_else@7:
-    // contract.py:147
+    // contract.py:149
     // arc4.String("POOL_CREATED").bytes
     pushbytes 0x000c504f4f4c5f43524541544544
-    // contract.py:147-148
+    // contract.py:149-150
     // arc4.String("POOL_CREATED").bytes
     // + pool_key
     dig 1
     dup
     cover 2
     concat
-    // contract.py:149
+    // contract.py:151
     // + op.itob(asset_1.id)
     dig 5
     itob
-    // contract.py:147-149
+    // contract.py:149-151
     // arc4.String("POOL_CREATED").bytes
     // + pool_key
     // + op.itob(asset_1.id)
     concat
-    // contract.py:150
+    // contract.py:152
     // + op.itob(asset_2.id)
     dig 4
     itob
-    // contract.py:147-150
+    // contract.py:149-152
     // arc4.String("POOL_CREATED").bytes
     // + pool_key
     // + op.itob(asset_1.id)
     // + op.itob(asset_2.id)
     concat
-    // contract.py:151
+    // contract.py:153
     // + op.itob(fee_bps.native)
     dig 3
     itob
-    // contract.py:147-151
+    // contract.py:149-153
     // arc4.String("POOL_CREATED").bytes
     // + pool_key
     // + op.itob(asset_1.id)
     // + op.itob(asset_2.id)
     // + op.itob(fee_bps.native)
     concat
-    // contract.py:145-152
+    // contract.py:147-154
     // # Log pool creation
     // log(
     //     arc4.String("POOL_CREATED").bytes
@@ -271,7 +296,7 @@ create_pool_after_if_else@7:
     //     + op.itob(fee_bps.native)
     // )
     log
-    // contract.py:78
+    // contract.py:83
     // @arc4.abimethod(allow_actions=["NoOp"])
     bytec_0 // 0x151f7c75
     swap
@@ -283,13 +308,13 @@ create_pool_after_if_else@7:
 
 // contract.LiquidityPoolContract.create_lp_token[routing]() -> void:
 create_lp_token:
-    // contract.py:159
+    // contract.py:161
     // @arc4.abimethod(allow_actions=["NoOp"])
     txna ApplicationArgs 1
     dup
     intc_0 // 0
     extract_uint16 // on error: invalid array length header
-    intc_3 // 2
+    pushint 2 // 2
     +
     dig 1
     len
@@ -304,14 +329,14 @@ create_lp_token:
     txna ApplicationArgs 3
     dup
     len
-    pushint 4 // 4
+    intc_3 // 4
     ==
     assert // invalid number of bytes for arc4.uint32
     txna ApplicationArgs 4
     dup
     intc_0 // 0
     extract_uint16 // on error: invalid array length header
-    intc_3 // 2
+    pushint 2 // 2
     +
     dig 1
     len
@@ -321,22 +346,21 @@ create_lp_token:
     dup
     intc_0 // 0
     extract_uint16 // on error: invalid array length header
-    intc_3 // 2
+    pushint 2 // 2
     +
     dig 1
     len
     ==
     assert // invalid number of bytes for arc4.dynamic_array<arc4.uint8>
-    // contract.py:181
-    // assert Txn.sender == Global.creator_address, "Only creator can create LP token"
-    txn Sender
-    global CreatorAddress
-    ==
-    assert // Only creator can create LP token
+    // contract.py:183-184
+    // # Extract raw bytes from arc4.DynamicBytes (no length prefix)
+    // pool_key = pool_id.native
+    uncover 4
+    extract 2 0
     // contract.py:186-187
     // # Get pool data from box
     // pool_data_bytes, exists = op.Box.get(pool_key)
-    dig 4
+    dup
     box_get
     // contract.py:188
     // assert exists, "Pool does not exist"
@@ -376,19 +400,19 @@ create_lp_token:
     itxn_begin
     // contract.py:197
     // total=total.native,
-    uncover 4
+    uncover 5
     btoi
     // contract.py:198
     // decimals=decimals.native,
-    uncover 4
+    uncover 5
     btoi
     // contract.py:199
     // asset_name=name.native,
-    uncover 4
+    uncover 5
     extract 2 0
     // contract.py:200
     // unit_name=unit_name.native,
-    uncover 4
+    uncover 5
     extract 2 0
     // contract.py:201
     // manager=Global.current_application_address,
@@ -453,7 +477,7 @@ create_lp_token:
     dig 1
     concat
     log
-    // contract.py:159
+    // contract.py:161
     // @arc4.abimethod(allow_actions=["NoOp"])
     bytec_0 // 0x151f7c75
     swap
@@ -470,21 +494,21 @@ add_liquidity:
     // contract.py:217
     // @arc4.abimethod(allow_actions=["NoOp"])
     txna ApplicationArgs 1
-    dupn 2
+    dup
     intc_0 // 0
     extract_uint16 // on error: invalid array length header
-    intc_3 // 2
+    pushint 2 // 2
     +
     dig 1
     len
     ==
     assert // invalid number of bytes for arc4.dynamic_array<arc4.uint8>
     txn GroupIndex
-    intc_3 // 2
+    pushint 2 // 2
     -
     dup
     gtxns TypeEnum
-    pushint 4 // axfer
+    intc_3 // axfer
     ==
     assert // transaction type is axfer
     txn GroupIndex
@@ -492,7 +516,7 @@ add_liquidity:
     -
     dup
     gtxns TypeEnum
-    pushint 4 // axfer
+    intc_3 // axfer
     ==
     assert // transaction type is axfer
     txna ApplicationArgs 2
@@ -502,10 +526,16 @@ add_liquidity:
     intc_2 // 8
     ==
     assert // invalid number of bytes for arc4.uint64
+    // contract.py:237-238
+    // # Decode pool ID - extract bytes from arc4.String
+    // pool_key = pool_id.native
+    uncover 2
+    extract 2 0
+    dup
+    cover 3
     // contract.py:240-241
     // # Get pool data from box
     // pool_data_bytes, exists = op.Box.get(pool_key)
-    uncover 2
     box_get
     swap
     dup
@@ -631,7 +661,7 @@ add_liquidity_after_if_else@4:
     // contract.py:282-283
     // # Verify slippage tolerance
     // assert lp_tokens_to_mint >= min_lp_tokens.native, "Slippage exceeded"
-    dig 5
+    dig 6
     btoi
     dig 11
     dup
@@ -665,7 +695,7 @@ add_liquidity_after_if_else@4:
     // contract.py:289-290
     // # Save updated pool data
     // op.Box.put(pool_key, pool_data.bytes)
-    dig 9
+    dig 8
     dup
     cover 2
     dig 1
@@ -692,7 +722,7 @@ add_liquidity_after_if_else@4:
     // contract.py:292-293
     // # Send LP tokens to user
     // itxn.AssetTransfer(
-    pushint 4 // axfer
+    intc_3 // axfer
     itxn_field TypeEnum
     intc_0 // 0
     itxn_field Fee
@@ -770,7 +800,7 @@ add_liquidity_after_if_else@7:
     dup
     intc_1 // 1
     +
-    intc_3 // 2
+    pushint 2 // 2
     /
     bury 9
     bury 7
@@ -792,7 +822,7 @@ add_liquidity_while_top@8:
     /
     dig 1
     +
-    intc_3 // 2
+    pushint 2 // 2
     /
     swap
     bury 8
@@ -860,7 +890,7 @@ remove_liquidity:
     dup
     intc_0 // 0
     extract_uint16 // on error: invalid array length header
-    intc_3 // 2
+    pushint 2 // 2
     +
     dig 1
     len
@@ -871,7 +901,7 @@ remove_liquidity:
     -
     dup
     gtxns TypeEnum
-    pushint 4 // axfer
+    intc_3 // axfer
     ==
     assert // transaction type is axfer
     txna ApplicationArgs 2
@@ -886,10 +916,15 @@ remove_liquidity:
     intc_2 // 8
     ==
     assert // invalid number of bytes for arc4.uint64
+    // contract.py:330-331
+    // # Decode pool ID - extract bytes from arc4.String
+    // pool_key = pool_id.native
+    uncover 3
+    extract 2 0
     // contract.py:333-334
     // # Get pool data from box
     // pool_data_bytes, exists = op.Box.get(pool_key)
-    dig 3
+    dup
     box_get
     // contract.py:335
     // assert exists, "Pool does not exist"
@@ -916,20 +951,20 @@ remove_liquidity:
     // contract.py:342-343
     // # Verify LP token payment
     // assert lp_token_payment.asset_receiver == Global.current_application_address
-    dig 4
+    dig 5
     gtxns AssetReceiver
     global CurrentApplicationAddress
     ==
     assert
     // contract.py:344
     // assert lp_token_payment.xfer_asset.id == pool_data.lp_token_id.native
-    dig 4
+    dig 5
     gtxns XferAsset
     ==
     assert
     // contract.py:346
     // lp_tokens = lp_token_payment.asset_amount
-    uncover 3
+    uncover 4
     gtxns AssetAmount
     // contract.py:347
     // assert lp_tokens > 0, "LP tokens must be positive"
@@ -965,14 +1000,14 @@ remove_liquidity:
     // contract.py:354-355
     // # Verify slippage tolerance
     // assert amount_1 >= min_asset_1.native, "Asset 1 slippage exceeded"
-    uncover 6
+    uncover 7
     btoi
     dig 2
     <=
     assert // Asset 1 slippage exceeded
     // contract.py:356
     // assert amount_2 >= min_asset_2.native, "Asset 2 slippage exceeded"
-    uncover 5
+    uncover 6
     btoi
     dig 1
     <=
@@ -1034,7 +1069,7 @@ remove_liquidity:
     // contract.py:366-367
     // # Send assets back to user
     // itxn.AssetTransfer(
-    pushint 4 // axfer
+    intc_3 // axfer
     itxn_field TypeEnum
     intc_0 // 0
     itxn_field Fee
@@ -1066,7 +1101,7 @@ remove_liquidity:
     itxn_field XferAsset
     // contract.py:373
     // itxn.AssetTransfer(
-    pushint 4 // axfer
+    intc_3 // axfer
     itxn_field TypeEnum
     intc_0 // 0
     itxn_field Fee
@@ -1149,10 +1184,10 @@ swap:
     // contract.py:390
     // @arc4.abimethod(allow_actions=["NoOp"])
     txna ApplicationArgs 1
-    dupn 2
+    dup
     intc_0 // 0
     extract_uint16 // on error: invalid array length header
-    intc_3 // 2
+    pushint 2 // 2
     +
     dig 1
     len
@@ -1164,7 +1199,7 @@ swap:
     dup
     cover 2
     gtxns TypeEnum
-    pushint 4 // axfer
+    intc_3 // axfer
     ==
     assert // transaction type is axfer
     txna ApplicationArgs 2
@@ -1181,6 +1216,11 @@ swap:
     intc_2 // 8
     ==
     assert // invalid number of bytes for arc4.uint64
+    // contract.py:410-411
+    // # Decode pool ID - extract bytes from arc4.String
+    // pool_key = pool_id.native
+    extract 2 0
+    dup
     // contract.py:413-414
     // # Get pool data from box
     // pool_data_bytes, exists = op.Box.get(pool_key)
@@ -1222,7 +1262,7 @@ swap_bool_merge@5:
     // contract.py:422-423
     // # Verify payment
     // assert asset_in_payment.asset_receiver == Global.current_application_address
-    dig 4
+    dig 5
     dup
     gtxns AssetReceiver
     global CurrentApplicationAddress
@@ -1253,7 +1293,7 @@ swap_bool_merge@5:
     bury 9
     ==
     bz swap_bool_false@8
-    dig 3
+    dig 4
     btoi
     dig 2
     intc_2 // 8
@@ -1272,7 +1312,7 @@ swap_bool_merge@9:
     dig 10
     ==
     bz swap_bool_false@12
-    dig 3
+    dig 4
     btoi
     dig 7
     ==
@@ -1332,7 +1372,7 @@ swap_after_if_else@16:
     // contract.py:450-451
     // # Verify slippage tolerance
     // assert amount_out >= min_amount_out.native, "Slippage exceeded"
-    dig 4
+    dig 5
     btoi
     dig 1
     <=
@@ -1369,7 +1409,7 @@ swap_after_if_else@19:
     // contract.py:462-463
     // # Save updated pool data
     // op.Box.put(pool_key, pool_data.bytes)
-    dig 6
+    dig 3
     dup
     uncover 2
     box_put
@@ -1383,7 +1423,7 @@ swap_after_if_else@19:
     itxn_begin
     // contract.py:467
     // xfer_asset=asset_out_id.native,
-    dig 4
+    dig 5
     btoi
     // contract.py:469
     // asset_receiver=Txn.sender,
@@ -1398,7 +1438,7 @@ swap_after_if_else@19:
     // contract.py:465-466
     // # Send output asset to user
     // itxn.AssetTransfer(
-    pushint 4 // axfer
+    intc_3 // axfer
     itxn_field TypeEnum
     intc_0 // 0
     itxn_field Fee
@@ -1536,12 +1576,16 @@ get_pool_info:
     dup
     intc_0 // 0
     extract_uint16 // on error: invalid array length header
-    intc_3 // 2
+    pushint 2 // 2
     +
     dig 1
     len
     ==
     assert // invalid number of bytes for arc4.dynamic_array<arc4.uint8>
+    // contract.py:495-496
+    // # Extract raw bytes from arc4.DynamicBytes
+    // pool_key = pool_id.native
+    extract 2 0
     // contract.py:497
     // pool_data_bytes, exists = op.Box.get(pool_key)
     box_get
@@ -1620,7 +1664,7 @@ get_swap_quote:
     dup
     intc_0 // 0
     extract_uint16 // on error: invalid array length header
-    intc_3 // 2
+    pushint 2 // 2
     +
     dig 1
     len
@@ -1647,6 +1691,10 @@ get_swap_quote:
     intc_2 // 8
     ==
     assert // invalid number of bytes for arc4.uint64
+    // contract.py:542-543
+    // # Decode pool ID - extract bytes from arc4.String
+    // pool_key = pool_id.native
+    extract 2 0
     // contract.py:544
     // pool_data_bytes, exists = op.Box.get(pool_key)
     box_get
@@ -1808,18 +1856,18 @@ get_swap_quote_bool_false@4:
 
 // contract.LiquidityPoolContract.get_pool_key(asset_1_id: uint64, asset_2_id: uint64) -> bytes:
 get_pool_key:
-    // contract.py:63-64
+    // contract.py:68-69
     // @subroutine
     // def get_pool_key(self, asset_1_id: UInt64, asset_2_id: UInt64) -> Bytes:
     proto 2 1
-    // contract.py:69-70
+    // contract.py:74-75
     // # Sort asset IDs to ensure consistent key
     // if asset_1_id < asset_2_id:
     frame_dig -2
     frame_dig -1
     <
     bz get_pool_key_else_body@2
-    // contract.py:71
+    // contract.py:76
     // key_data = op.itob(asset_1_id) + op.itob(asset_2_id)
     frame_dig -2
     itob
@@ -1828,14 +1876,14 @@ get_pool_key:
     concat
 
 get_pool_key_after_if_else@3:
-    // contract.py:75-76
+    // contract.py:80-81
     // # Use first 32 bytes of sha256 hash as key
     // return op.sha256(key_data)
     sha256
     retsub
 
 get_pool_key_else_body@2:
-    // contract.py:73
+    // contract.py:78
     // key_data = op.itob(asset_2_id) + op.itob(asset_1_id)
     frame_dig -1
     itob
