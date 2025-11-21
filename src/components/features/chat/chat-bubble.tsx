@@ -112,33 +112,81 @@ export default function ChatBubble({ variant = "floating", align = "right" }: Ch
 
   const renderTextWithUrls = (segment: string, keyPrefix: string) => {
     const nodes: React.ReactNode[] = []
-    const urlRegex = /(https?:\/\/[^\s]+)/g
+    // Combined regex for markdown formatting, URLs, and inline code
+    const combinedRegex = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|\[([^\]]+)\]\(([^)]+)\)|(https?:\/\/[^\s]+))/g
     const imageExtensionRegex = /(\.png|\.jpe?g|\.gif|\.svg|\.webp|\.avif)(\?.*)?$/i
     let lastIndex = 0
     let match: RegExpExecArray | null
+    let matchIndex = 0
 
-    while ((match = urlRegex.exec(segment)) !== null) {
-      const [fullUrl] = match
-      if (match.index > lastIndex) {
-        nodes.push(segment.slice(lastIndex, match.index))
+    while ((match = combinedRegex.exec(segment)) !== null) {
+      const [full, , linkText, linkUrl, plainUrl] = match
+      const start = match.index ?? 0
+
+      // Add text before the match
+      if (start > lastIndex) {
+        nodes.push(segment.slice(lastIndex, start))
       }
 
-      if (imageExtensionRegex.test(fullUrl)) {
-        nodes.push(renderImage(fullUrl, "Shared image", `${keyPrefix}-img-${match.index}`))
-      } else {
+      // Handle different markdown patterns
+      if (full.startsWith('**') && full.endsWith('**')) {
+        // Bold: **text**
+        nodes.push(
+          <strong key={`${keyPrefix}-bold-${matchIndex}`} className="font-semibold">
+            {full.slice(2, -2)}
+          </strong>
+        )
+      } else if (full.startsWith('*') && full.endsWith('*') && !full.startsWith('**')) {
+        // Italic: *text*
+        nodes.push(
+          <em key={`${keyPrefix}-italic-${matchIndex}`} className="italic">
+            {full.slice(1, -1)}
+          </em>
+        )
+      } else if (full.startsWith('`') && full.endsWith('`')) {
+        // Inline code: `text`
+        nodes.push(
+          <code
+            key={`${keyPrefix}-code-${matchIndex}`}
+            className="rounded bg-slate-200 px-1 py-0.5 font-mono text-xs dark:bg-slate-700"
+          >
+            {full.slice(1, -1)}
+          </code>
+        )
+      } else if (linkText && linkUrl) {
+        // Markdown link: [text](url)
         nodes.push(
           <a
-            key={`${keyPrefix}-link-${match.index}`}
-            href={fullUrl}
+            key={`${keyPrefix}-mdlink-${matchIndex}`}
+            href={linkUrl}
             target="_blank"
             rel="noreferrer"
             className="text-red-500 underline underline-offset-2 transition hover:text-red-600 dark:text-[#F3C623] dark:hover:text-[#F3C623]/90"
           >
-            {fullUrl}
+            {linkText}
           </a>
         )
+      } else if (plainUrl) {
+        // Plain URL
+        if (imageExtensionRegex.test(plainUrl)) {
+          nodes.push(renderImage(plainUrl, "Shared image", `${keyPrefix}-img-${matchIndex}`))
+        } else {
+          nodes.push(
+            <a
+              key={`${keyPrefix}-link-${matchIndex}`}
+              href={plainUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-red-500 underline underline-offset-2 transition hover:text-red-600 dark:text-[#F3C623] dark:hover:text-[#F3C623]/90"
+            >
+              {plainUrl}
+            </a>
+          )
+        }
       }
-      lastIndex = match.index + fullUrl.length
+
+      lastIndex = start + full.length
+      matchIndex++
     }
 
     if (lastIndex < segment.length) {
@@ -218,11 +266,14 @@ export default function ChatBubble({ variant = "floating", align = "right" }: Ch
   }
 
   const presets: { label: string; prompt: string }[] = [
-    { label: "My address", prompt: "what's my address?" },
-    { label: `${nativeSymbol} balance`, prompt: "get my balances" },
-    { label: "Token Analysis", prompt: "analyze Bitcoin" },
-    { label: "ALGO Price", prompt: "what's the current price of ALGO?" },
-    { label: "Send ALGO", prompt: "send 1 ALGO to [paste recipient address here]" },
+    { label: "🔥 Trending Coins", prompt: "show me trending coins" },
+    { label: "📊 Fear & Greed", prompt: "what's the market sentiment?" },
+    { label: "💎 Analyze BTC", prompt: "analyze Bitcoin" },
+    { label: "📈 ALGO Analysis", prompt: "analyze ALGO" },
+    { label: "💰 My Balance", prompt: "what's my balance?" },
+    { label: "📍 My Address", prompt: "what's my address?" },
+    { label: "💸 Send ALGO", prompt: "send 1 ALGO to [paste address]" },
+    { label: "🎯 Portfolio", prompt: "show my portfolio" },
   ]
 
   const usePreset = (p: string, autoSend = true) => {
@@ -375,12 +426,12 @@ export default function ChatBubble({ variant = "floating", align = "right" }: Ch
                       <div>
                         <div className="mb-1 font-medium text-slate-900 dark:text-slate-200">🤖 What I Can Do</div>
                         <ul className="list-disc space-y-1 pl-5">
-                          <li><strong>Analyze Tokens</strong> — e.g. "analyze Bitcoin" or "give me ALGO analysis"</li>
-                          <li><strong>Check Prices</strong> — e.g. "ALGO price" or "what's the price of Ethereum?"</li>
-                          <li><strong>View Balances</strong> — e.g. "get my balances" or "check my USDC balance"</li>
+                          <li><strong>Market Insights</strong> — e.g. "trending coins" or "market sentiment"</li>
+                          <li><strong>Analyze 25+ Tokens</strong> — e.g. "analyze BTC", "ETH analysis", or "ALGO price"</li>
+                          <li><strong>View Balances</strong> — e.g. "my balance" or "check my USDC balance"</li>
                           <li><strong>View Portfolio</strong> — e.g. "show my portfolio" or "what assets do I have?"</li>
                           <li><strong>Send Transactions</strong> — e.g. "send 5 ALGO to [address]" or "transfer 10 USDC to [address]"</li>
-                          <li><strong>General Chat</strong> — Ask about DeFi, Algorand, trading strategies, etc.</li>
+                          <li><strong>General Chat</strong> — Ask about DeFi, trading strategies, Fear & Greed Index, etc.</li>
                         </ul>
                       </div>
                       <div>
@@ -415,12 +466,13 @@ export default function ChatBubble({ variant = "floating", align = "right" }: Ch
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
                   <div className="mb-2 font-semibold">👋 Welcome! I can help you with:</div>
                   <ul className="space-y-1 text-xs">
-                    <li>📊 Token analysis & price checks</li>
+                    <li>🔥 Trending coins & market sentiment</li>
+                    <li>📊 Analyze 25+ cryptocurrencies (BTC, ETH, ALGO, SOL, etc.)</li>
                     <li>💰 Balance & portfolio queries</li>
-                    <li>💸 Send ALGO/ASA to any address</li>
-                    <li>💬 DeFi & Algorand questions</li>
+                    <li>💸 Send ALGO/USDC/USDT to any address</li>
+                    <li>💬 DeFi strategies & Algorand insights</li>
                   </ul>
-                  <div className="mt-2 text-xs italic">Try: "analyze ALGO", "my balance", or "send 1 ALGO to [address]"</div>
+                  <div className="mt-2 text-xs italic">💡 Click any suggestion above to get started!</div>
                 </div>
               )}
               {messages.map((m, i) => (

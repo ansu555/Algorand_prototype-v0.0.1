@@ -64,6 +64,36 @@ export interface AnalyzeResponse {
     confidence: string
     calculations?: string
   }
+  marketData?: {
+    price: number
+    priceChange24h: number
+    priceChangePercentage24h: number
+    marketCap: number
+    marketCapRank?: number
+    volume24h: number
+    circulatingSupply: number
+    totalSupply: number
+    maxSupply?: number
+    ath: number
+    athDate: string
+    athChangePercentage: number
+    atl: number
+    atlDate: string
+    atlChangePercentage: number
+    links: {
+      homepage: string[]
+      blockchain: string[]
+      officialForum: string[]
+      twitter?: string
+      telegram?: string
+      reddit?: string
+      github?: string[]
+      explorer?: string[]
+      exchanges: Array<{ name: string; url: string }>
+    }
+    description?: string
+    lastUpdated: string
+  }
   error?: string
   suggestion?: string
 }

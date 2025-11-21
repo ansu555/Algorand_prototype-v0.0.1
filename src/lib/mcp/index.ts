@@ -1,18 +1,35 @@
 // Main MCP Analytics Engine
-import { 
-  AnalyzeRequest, 
+import {
+  AnalyzeRequest,
   AnalyzeResponse,
   OHLCV,
   Indicators,
   Prediction,
-  Strategy 
+  Strategy
 } from './types'
-import { fetchHistoricalData, validateCoinId } from './data-fetcher'
+import {
+  fetchHistoricalData,
+  validateCoinId,
+  fetchEnhancedMarketData,
+  EnhancedMarketData
+} from './data-fetcher'
 import { computeIndicators } from './indicators'
 import { generatePredictionsDetailed } from './predictions'
 import { generateStrategies } from './strategies'
 import { generateSummary, generateInsights, generateOverallAnalysis } from './analysis'
 import { generateCharts } from './charts'
+
+// Re-export for convenience
+export {
+  fetchEnhancedMarketData,
+  fetchAlgorandAssetInfo,
+  fetchTrendingCoins,
+  fetchCryptoNews,
+  fetchFearGreedIndex,
+  fetchTrendingAlgorandTokens,
+  fetchTopAlgorandASAs
+} from './data-fetcher'
+export type { EnhancedMarketData, AlgorandAssetInfo } from './data-fetcher'
 
 /**
  * Main analysis function
@@ -31,9 +48,12 @@ export async function analyzeCoin(request: AnalyzeRequest): Promise<AnalyzeRespo
     // Validate coin ID
     const coinId = validateCoinId(coin)
 
-    // Fetch historical data
-    const data = await fetchHistoricalData(coinId, horizonDays, granularity)
-    
+    // Fetch historical data and enhanced market data in parallel
+    const [data, enhancedData] = await Promise.all([
+      fetchHistoricalData(coinId, horizonDays, granularity),
+      fetchEnhancedMarketData(coinId).catch(() => null), // Don't fail if enhanced data unavailable
+    ])
+
     if (data.length === 0) {
       return {
         ok: false,
@@ -47,8 +67,11 @@ export async function analyzeCoin(request: AnalyzeRequest): Promise<AnalyzeRespo
     // Compute indicators
     const indicators = computeIndicators(data)
 
-    // Initialize response
-    const response: AnalyzeResponse = { ok: true }
+    // Initialize response with enhanced market data
+    const response: AnalyzeResponse = {
+      ok: true,
+      marketData: enhancedData || undefined,
+    }
 
     // Analysis
     if (tasks.includes('analysis')) {
