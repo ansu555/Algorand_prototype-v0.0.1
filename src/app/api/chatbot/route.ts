@@ -274,22 +274,145 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // Check for trending/news queries
+    const wantsTrending = /\b(trending|hot|popular|top)\b/i.test(userText)
+    const wantsNews = /\b(news|latest|headlines)\b/i.test(userText)
+    const wantsFearGreed = /\b(fear|greed|sentiment|market sentiment)\b/i.test(userText)
+
+    // Handle trending coins - Algorand focused
+    if (wantsTrending && !wantsNews) {
+      try {
+        const { fetchTrendingAlgorandTokens, fetchTopAlgorandASAs } = await import('@/lib/mcp')
+        const [algoTokens, topASAs] = await Promise.all([
+          fetchTrendingAlgorandTokens(),
+          fetchTopAlgorandASAs()
+        ])
+
+        let message = '🔥 **Trending Algorand Ecosystem:**\n\n'
+
+        // Show Algorand ecosystem tokens first
+        if (algoTokens.length > 0) {
+          message += '**💎 Algorand Tokens:**\n'
+          algoTokens.forEach((coin, i) => {
+            const changeEmoji = coin.priceChange24h >= 0 ? '📈' : '📉'
+            message += `${i + 1}. **${coin.name}** (${coin.symbol})\n`
+            message += `   ${changeEmoji} ${coin.priceChange24h >= 0 ? '+' : ''}${coin.priceChange24h.toFixed(2)}% (24h)\n`
+            if (coin.marketCap && coin.marketCap > 0) {
+              message += `   💰 Market Cap: $${(coin.marketCap / 1_000_000).toFixed(2)}M\n`
+            }
+            if (coin.volume24h && coin.volume24h > 0) {
+              message += `   📊 Volume: $${(coin.volume24h / 1_000_000).toFixed(2)}M\n`
+            }
+            message += '\n'
+          })
+        }
+
+        // Show popular ASAs
+        if (topASAs.length > 0) {
+          message += '**🪙 Popular Algorand ASAs:**\n'
+          topASAs.forEach((asa, i) => {
+            message += `${i + 1}. **${asa.name}** (${asa.unitName})\n`
+            message += `   🆔 Asset ID: ${asa.assetId}\n`
+            message += `   🔗 [View on Explorer](${asa.explorerUrl})\n\n`
+          })
+        }
+
+        if (algoTokens.length === 0 && topASAs.length === 0) {
+          message = '❌ Could not fetch Algorand trending data. Try again later.'
+        } else {
+          message += '\nType `analyze [coin]` for detailed analysis!'
+        }
+
+        return NextResponse.json({
+          ok: true,
+          message
+        })
+      } catch (error: any) {
+        return NextResponse.json({
+          ok: true,
+          message: `❌ Error fetching trending coins: ${error.message}`
+        })
+      }
+    }
+
+    // Handle Fear & Greed Index
+    if (wantsFearGreed) {
+      try {
+        const { fetchFearGreedIndex } = await import('@/lib/mcp')
+        const fgi = await fetchFearGreedIndex()
+
+        if (fgi) {
+          const emoji = fgi.value >= 75 ? '🤑' : fgi.value >= 50 ? '😊' : fgi.value >= 25 ? '😐' : '😰'
+          let message = `${emoji} **Crypto Fear & Greed Index**\n\n`
+          message += `**Score:** ${fgi.value}/100\n`
+          message += `**Sentiment:** ${fgi.valueClassification}\n\n`
+
+          // Interpretation
+          if (fgi.value >= 75) {
+            message += '📊 **Extreme Greed** - Market may be overbought. Consider taking profits.'
+          } else if (fgi.value >= 50) {
+            message += '📊 **Greed** - Positive sentiment. Good for holding.'
+          } else if (fgi.value >= 25) {
+            message += '📊 **Fear** - Market uncertainty. Good buying opportunity for long-term.'
+          } else {
+            message += '📊 **Extreme Fear** - High pessimism. Potentially great buying opportunity!'
+          }
+
+          return NextResponse.json({
+            ok: true,
+            message
+          })
+        } else {
+          return NextResponse.json({
+            ok: true,
+            message: '❌ Could not fetch Fear & Greed Index. Try again later.'
+          })
+        }
+      } catch (error: any) {
+        return NextResponse.json({
+          ok: true,
+          message: `❌ Error fetching sentiment: ${error.message}`
+        })
+      }
+    }
+
     // Check for token analysis or price queries
     const wantsAnalysis = /\b(analyz[e]?|analysis|insight|forecast|prediction)\b/i.test(userText)
     const wantsPrice = /\b(price|cost|value|worth)\b/i.test(userText)
-    
-    // Extract token symbol - support Algorand ecosystem only
-    const tokenMatch = userText.match(/\b(algo|algorand|usdc|usdt|opul|planets|gard|gobtc|goeth|defly|yldy)\b/i)
+
+    // Extract token symbol - support major cryptocurrencies and Algorand ecosystem
+    const tokenMatch = userText.match(/\b(algo|algorand|btc|bitcoin|eth|ethereum|usdc|usdt|bnb|xrp|sol|solana|ada|cardano|doge|dogecoin|dot|polkadot|matic|polygon|avax|avalanche|link|chainlink|uni|uniswap|opul|planets|gard|gobtc|goeth|defly|yldy|alfg|algf)\b/i)
     
     if ((wantsAnalysis || wantsPrice) && tokenMatch) {
       // Use internal MCP analytics API (serverless)
       try {
         const token = tokenMatch[1].toLowerCase()
-        // Map Algorand ecosystem tokens
+        // Map token symbols to CoinGecko IDs
         const tokenMap: Record<string, string> = {
           'algo': 'algorand',
+          'btc': 'bitcoin',
+          'eth': 'ethereum',
           'usdc': 'usd-coin',
-          'usdt': 'tether'
+          'usdt': 'tether',
+          'bnb': 'binancecoin',
+          'xrp': 'ripple',
+          'sol': 'solana',
+          'ada': 'cardano',
+          'doge': 'dogecoin',
+          'dot': 'polkadot',
+          'matic': 'matic-network',
+          'avax': 'avalanche-2',
+          'link': 'chainlink',
+          'uni': 'uniswap',
+          'alfg': 'algorand', // Algorand ASA - fallback to ALGO
+          'algf': 'algorand', // Algorand ASA - fallback to ALGO
+          'opul': 'algorand', // Opulous on Algorand
+          'planets': 'algorand', // Planets on Algorand
+          'gard': 'algorand', // Gardens on Algorand
+          'gobtc': 'bitcoin', // Wrapped BTC on Algorand
+          'goeth': 'ethereum', // Wrapped ETH on Algorand
+          'defly': 'algorand', // Defly on Algorand
+          'yldy': 'algorand', // Yieldly on Algorand
         }
         const coinId = tokenMap[token] || token
         
@@ -305,20 +428,58 @@ export async function POST(request: NextRequest) {
         
         if (data.ok) {
           if (wantsPrice && !wantsAnalysis) {
-            // Just show price info
+            // Just show price info with market data
+            let message = `💰 **${token.toUpperCase()} Price:**\n\n${data.summary || 'Price data retrieved.'}`
+
+            if (data.marketData) {
+              const md = data.marketData
+              message += `\n\n**Market Overview:**`
+              message += `\n💵 Price: $${md.price.toFixed(6)} (${md.priceChangePercentage24h >= 0 ? '📈' : '📉'} ${md.priceChangePercentage24h.toFixed(2)}% 24h)`
+              message += `\n📊 Market Cap: $${(md.marketCap / 1_000_000_000).toFixed(2)}B`
+              if (md.marketCapRank) message += ` (#${md.marketCapRank})`
+              message += `\n💹 24h Volume: $${(md.volume24h / 1_000_000).toFixed(2)}M`
+
+              // Add links
+              if (md.links.exchanges.length > 0) {
+                message += `\n\n**📍 Trade on:**`
+                md.links.exchanges.slice(0, 3).forEach(ex => {
+                  message += `\n• [${ex.name}](${ex.url})`
+                })
+              }
+            }
+
             return NextResponse.json({
               ok: true,
-              message: `💰 **${token.toUpperCase()} Price:**\n\n${data.summary || 'Price data retrieved. Check MCP for details.'}`
+              message
             })
           }
-          
-          // Full analysis
+
+          // Full analysis with enhanced data
           let message = `📊 **${token.toUpperCase()} Analysis:**\n\n`
-          
+
+          // Market Data Section
+          if (data.marketData) {
+            const md = data.marketData
+            message += `**💰 Market Overview:**\n`
+            message += `Price: $${md.price.toFixed(6)} (${md.priceChangePercentage24h >= 0 ? '📈' : '📉'} ${md.priceChangePercentage24h.toFixed(2)}% 24h)\n`
+            message += `Market Cap: $${(md.marketCap / 1_000_000_000).toFixed(2)}B`
+            if (md.marketCapRank) message += ` (#${md.marketCapRank})`
+            message += `\n24h Volume: $${(md.volume24h / 1_000_000).toFixed(2)}M\n`
+            message += `Circulating Supply: ${(md.circulatingSupply / 1_000_000_000).toFixed(2)}B ${token.toUpperCase()}\n`
+
+            // ATH/ATL
+            message += `\n**📈 All-Time High:** $${md.ath.toFixed(4)}`
+            message += ` (${md.athChangePercentage >= 0 ? '↑' : '↓'} ${Math.abs(md.athChangePercentage).toFixed(1)}% from ATH)`
+            message += `\n**📉 All-Time Low:** $${md.atl.toFixed(6)}`
+            message += ` (${md.atlChangePercentage >= 0 ? '↑' : '↓'} ${Math.abs(md.atlChangePercentage).toFixed(1)}% from ATL)\n\n`
+          }
+
+          // Summary
           if (data.summary) {
             message += `${data.summary}\n\n`
           }
-          
+
+          // Insights
           if (data.insights && Array.isArray(data.insights)) {
             message += '**Key Insights:**\n'
             data.insights.slice(0, 3).forEach((insight: string) => {
@@ -326,7 +487,8 @@ export async function POST(request: NextRequest) {
             })
             message += '\n'
           }
-          
+
+          // Predictions
           if (data.predictions && Array.isArray(data.predictions) && data.predictions.length > 0) {
             message += '**Price Forecast:**\n'
             data.predictions.slice(0, 2).forEach((pred: any) => {
@@ -334,15 +496,56 @@ export async function POST(request: NextRequest) {
             })
             message += '\n'
           }
-          
+
+          // Links Section
+          if (data.marketData?.links) {
+            const links = data.marketData.links
+            message += `**🔗 Useful Links:**\n`
+
+            // Official
+            if (links.homepage && links.homepage.length > 0) {
+              message += `• [Official Website](${links.homepage[0]})\n`
+            }
+
+            // Social Media
+            if (links.twitter) {
+              message += `• [Twitter](${links.twitter})\n`
+            }
+            if (links.telegram) {
+              message += `• [Telegram](${links.telegram})\n`
+            }
+            if (links.reddit) {
+              message += `• [Reddit](${links.reddit})\n`
+            }
+
+            // Blockchain Explorers
+            if (links.explorer && links.explorer.length > 0) {
+              message += `• [Explorer](${links.explorer[0]})\n`
+            }
+
+            // GitHub
+            if (links.github && links.github.length > 0) {
+              message += `• [GitHub](${links.github[0]})\n`
+            }
+
+            // Exchanges
+            if (links.exchanges && links.exchanges.length > 0) {
+              message += `\n**📍 Trade on:**\n`
+              links.exchanges.slice(0, 3).forEach(ex => {
+                message += `• [${ex.name}](${ex.url})\n`
+              })
+            }
+            message += '\n'
+          }
+
+          // Charts
           if (data.charts && Array.isArray(data.charts)) {
             message += '**📈 Charts:**\n\n'
             data.charts.forEach((chart: any) => {
-              // Charts are now returned as base64 data URLs - embed directly
               message += `![${chart.title}](${chart.url})\n\n`
             })
           }
-          
+
           return NextResponse.json({
             ok: true,
             message: message.trim()
@@ -365,9 +568,9 @@ export async function POST(request: NextRequest) {
     
     // General conversation fallback
     const generalResponses: Record<string, string> = {
-      'hello': '👋 Hi! I can help you with:\n• ALGO & Algorand ASA token analysis\n• Balance checks\n• Portfolio viewing\n• Sending ALGO/USDC/USDT/ALFG to any address\n\nTry asking: "analyze ALGO" or "what\'s my balance?"',
-      'hi': '👋 Hello! I\'m your 10xSwap AI assistant for Algorand. How can I help you today?',
-      'help': '🤖 **Available Commands:**\n\n• "what\'s my address?" - View your wallet address\n• "check my balance" - See your ALGO and ASA balances\n• "show my portfolio" - View all holdings\n• "send X ALGO to [address]" - Transfer ALGO/USDC/USDT/ALFG\n• "analyze ALGO" or "ALGO analysis" - Get detailed Algorand analysis with price predictions\n• "price of USDC" - Check token price\n\n**Supported Assets:**\n• ALGO (native)\n• USDC (ID: 10458941)\n• USDT (ID: 67396430)\n• ALFG (ID: 70283957)\n\nJust ask naturally!',
+      'hello': '👋 Hi! I can help you with:\n• Crypto analysis (BTC, ETH, ALGO, SOL, and 20+ more)\n• Balance checks & portfolio viewing\n• Sending ALGO/USDC/USDT/ALFG to any address\n• Real-time market data with links to exchanges\n\nTry asking: "analyze BTC" or "what\'s my balance?"',
+      'hi': '👋 Hello! I\'m your 10xSwap AI assistant. I can analyze 25+ cryptocurrencies and help with Algorand transactions!',
+      'help': '🤖 **Available Commands:**\n\n**Wallet Operations:**\n• "what\'s my address?" - View your wallet address\n• "check my balance" - See your ALGO and ASA balances\n• "show my portfolio" - View all holdings\n• "send X ALGO to [address]" - Transfer ALGO/USDC/USDT/ALFG\n\n**Market Analysis:**\n• "analyze BTC" - Get comprehensive Bitcoin analysis\n• "analyze ALGO" - Algorand analysis with predictions\n• "price of ETH" - Check Ethereum price\n• "analyze SOL" - Solana market overview\n\n**Supported Analysis (25+ coins):**\n• Major: BTC, ETH, BNB, XRP, SOL, ADA, DOGE\n• DeFi: UNI, LINK, AVAX, DOT, MATIC\n• Algorand: ALGO, USDC, USDT, and Algorand ASAs\n\n**Transaction Assets:**\n• ALGO (native)\n• USDC (ID: 10458941)\n• USDT (ID: 67396430)\n• ALFG (ID: 70283957)\n\nJust ask naturally!',
     }
     
     const lowerText = userText.toLowerCase()
@@ -383,7 +586,7 @@ export async function POST(request: NextRequest) {
     // Default helpful response
     return NextResponse.json({
       ok: true,
-      message: '🤔 I can help you with Algorand ecosystem queries: balance checks, portfolio viewing, ALGO analysis, and sending transactions.\n\nTry asking:\n• "analyze ALGO" - Get detailed market analysis with predictions\n• "what\'s my balance?" - Check your wallet balance\n• "show my portfolio" - View all your assets\n• "send 1 ALGO to [address]" - Transfer tokens\n\n**Supported assets:** ALGO, USDC, USDT, ALFG'
+      message: '🤔 I can help you with crypto analysis and Algorand transactions!\n\n**Try asking:**\n• "analyze BTC" - Bitcoin analysis with market data, links & charts\n• "analyze ETH" - Ethereum price forecast & trends\n• "analyze ALGO" - Algorand detailed analysis\n• "price of SOL" - Solana quick price check\n• "what\'s my balance?" - Check your wallet\n• "send 1 ALGO to [address]" - Transfer tokens\n\n**25+ supported coins:** BTC, ETH, ALGO, SOL, ADA, XRP, DOGE, MATIC, AVAX, UNI, LINK, and more!\n\n**Transaction assets:** ALGO, USDC, USDT, ALFG'
     })
     
   } catch (error: any) {
@@ -407,15 +610,23 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     ok: true,
     endpoint: '/api/chatbot',
-    description: 'AI Chatbot for Algorand Ecosystem - Transaction & Analysis Support',
+    description: 'AI Chatbot for Multi-Chain Crypto Analysis & Algorand Transactions',
     features: [
       'Natural conversation',
-      'Algorand & ASA token analysis',
+      '25+ cryptocurrency analysis (BTC, ETH, ALGO, SOL, ADA, XRP, DOGE, etc.)',
+      'Real-time market data with exchange links',
       'Balance and portfolio checks',
-      'Send ALGO/USDC/USDT to any Algorand address',
-      'Real-time blockchain interaction'
+      'Send ALGO/USDC/USDT/ALFG to any Algorand address',
+      'Price predictions and technical indicators',
+      'ATH/ATL tracking and social media links'
     ],
-    supportedAssets: [
+    supportedAnalysis: [
+      'Bitcoin (BTC)', 'Ethereum (ETH)', 'Algorand (ALGO)', 'Solana (SOL)',
+      'Cardano (ADA)', 'XRP', 'Dogecoin (DOGE)', 'Polkadot (DOT)',
+      'Polygon (MATIC)', 'Avalanche (AVAX)', 'Chainlink (LINK)',
+      'Uniswap (UNI)', 'BNB', 'USDC', 'USDT', 'and more...'
+    ],
+    supportedTransactions: [
       { symbol: 'ALGO', id: 0, name: 'Algorand (native)' },
       { symbol: 'USDC', id: 10458941, name: 'USD Coin' },
       { symbol: 'USDT', id: 67396430, name: 'Tether' },
@@ -431,13 +642,14 @@ export async function GET(request: NextRequest) {
       }
     },
     examples: [
+      { description: 'Bitcoin analysis', message: 'analyze BTC' },
+      { description: 'Ethereum analysis', message: 'analyze ETH' },
+      { description: 'Algorand analysis', message: 'analyze ALGO' },
+      { description: 'Solana price', message: 'price of SOL' },
       { description: 'Check balance', message: 'what\'s my balance?' },
       { description: 'View address', message: 'show my address' },
       { description: 'Send ALGO', message: 'send 1 ALGO to ABC123...' },
       { description: 'Send USDC', message: 'transfer 5 USDC to XYZ...' },
-      { description: 'Analyze ALGO (short)', message: 'analyze ALGO' },
-      { description: 'ALGO analysis', message: 'ALGO analysis' },
-      { description: 'Analyze Algorand', message: 'analyze Algorand' },
       { description: 'Get help', message: 'help' }
     ]
   })
