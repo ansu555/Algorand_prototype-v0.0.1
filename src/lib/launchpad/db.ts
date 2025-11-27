@@ -72,8 +72,10 @@ export async function createProject(project: Omit<LaunchProject, 'id' | 'created
       id, creator_address, token_name, token_symbol, token_decimals, total_supply,
       description, logo_url, website_url, twitter_url, telegram_url,
       curve_type, base_price, max_price, bonding_target, tokens_for_sale,
-      liquidity_percentage, lp_lock_duration, dex_platform, status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      liquidity_percentage, lp_lock_duration, dex_platform, status,
+      asa_id, app_id, config_tx_id, bootstrap_tx_id, funding_tx_id,
+      max_buy_per_tx, max_buy_per_user, cooldown_blocks
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [
       projectId,
       project.creatorAddress,
@@ -94,7 +96,15 @@ export async function createProject(project: Omit<LaunchProject, 'id' | 'created
       project.liquidityPercentage,
       project.lpLockDuration.toString(),
       project.dexPlatform,
-      project.status
+      project.status,
+      project.asaId?.toString() || null,
+      project.appId?.toString() || null,
+      project.configTxId || null,
+      project.bootstrapTxId || null,
+      project.fundingTxId || null,
+      project.maxBuyPerTx?.toString() || null,
+      project.maxBuyPerUser?.toString() || null,
+      project.cooldownBlocks?.toString() || null
     ]
   })
 
@@ -126,6 +136,9 @@ export async function getProject(projectId: string): Promise<LaunchProject | nul
     telegramUrl: row.telegram_url,
     asaId: row.asa_id ? BigInt(row.asa_id) : undefined,
     appId: row.app_id ? BigInt(row.app_id) : undefined,
+    configTxId: row.config_tx_id,
+    bootstrapTxId: row.bootstrap_tx_id,
+    fundingTxId: row.funding_tx_id,
     curveType: row.curve_type as CurveType,
     basePrice: BigInt(row.base_price),
     maxPrice: BigInt(row.max_price),
@@ -140,6 +153,9 @@ export async function getProject(projectId: string): Promise<LaunchProject | nul
     liquidityPercentage: row.liquidity_percentage,
     lpLockDuration: BigInt(row.lp_lock_duration),
     dexPlatform: row.dex_platform,
+    maxBuyPerTx: row.max_buy_per_tx ? BigInt(row.max_buy_per_tx) : undefined,
+    maxBuyPerUser: row.max_buy_per_user ? BigInt(row.max_buy_per_user) : undefined,
+    cooldownBlocks: row.cooldown_blocks ? BigInt(row.cooldown_blocks) : undefined,
     createdAt: row.created_at,
     launchedAt: row.launched_at,
     graduatedAt: row.graduated_at,
@@ -155,7 +171,7 @@ export async function getAllProjects(status?: ProjectStatus): Promise<LaunchProj
     ? await client.execute({ sql: 'SELECT * FROM launch_projects WHERE status = ? ORDER BY created_at DESC', args: [status] })
     : await client.execute('SELECT * FROM launch_projects ORDER BY created_at DESC')
 
-  return rows.map((row: { id: any; creator_address: any; token_name: any; token_symbol: any; token_decimals: any; total_supply: string | number | bigint | boolean; description: any; logo_url: any; website_url: any; twitter_url: any; telegram_url: any; asa_id: string | number | bigint | boolean; app_id: string | number | bigint | boolean; curve_type: string; base_price: string | number | bigint | boolean; max_price: string | number | bigint | boolean; bonding_target: string | number | bigint | boolean; tokens_for_sale: string | number | bigint | boolean; status: string; tokens_sold: string | number | bigint | boolean; algo_raised: string | number | bigint | boolean; participant_count: any; launch_round: string | number | bigint | boolean; graduation_round: string | number | bigint | boolean; liquidity_percentage: any; lp_lock_duration: string | number | bigint | boolean; dex_platform: any; created_at: any; launched_at: any; graduated_at: any; updated_at: any }) => ({
+  return rows.map((row: { id: any; creator_address: any; token_name: any; token_symbol: any; token_decimals: any; total_supply: string | number | bigint | boolean; description: any; logo_url: any; website_url: any; twitter_url: any; telegram_url: any; asa_id: string | number | bigint | boolean; app_id: string | number | bigint | boolean; config_tx_id: any; bootstrap_tx_id: any; funding_tx_id: any; curve_type: string; base_price: string | number | bigint | boolean; max_price: string | number | bigint | boolean; bonding_target: string | number | bigint | boolean; tokens_for_sale: string | number | bigint | boolean; status: string; tokens_sold: string | number | bigint | boolean; algo_raised: string | number | bigint | boolean; participant_count: any; launch_round: string | number | bigint | boolean; graduation_round: string | number | bigint | boolean; liquidity_percentage: any; lp_lock_duration: string | number | bigint | boolean; dex_platform: any; max_buy_per_tx: string | number | bigint | boolean; max_buy_per_user: string | number | bigint | boolean; cooldown_blocks: string | number | bigint | boolean; created_at: any; launched_at: any; graduated_at: any; updated_at: any }) => ({
     id: row.id,
     creatorAddress: row.creator_address,
     tokenName: row.token_name,
@@ -169,6 +185,9 @@ export async function getAllProjects(status?: ProjectStatus): Promise<LaunchProj
     telegramUrl: row.telegram_url,
     asaId: row.asa_id ? BigInt(row.asa_id) : undefined,
     appId: row.app_id ? BigInt(row.app_id) : undefined,
+    configTxId: row.config_tx_id,
+    bootstrapTxId: row.bootstrap_tx_id,
+    fundingTxId: row.funding_tx_id,
     curveType: row.curve_type as CurveType,
     basePrice: BigInt(row.base_price),
     maxPrice: BigInt(row.max_price),
@@ -183,6 +202,9 @@ export async function getAllProjects(status?: ProjectStatus): Promise<LaunchProj
     liquidityPercentage: row.liquidity_percentage,
     lpLockDuration: BigInt(row.lp_lock_duration),
     dexPlatform: row.dex_platform,
+    maxBuyPerTx: row.max_buy_per_tx ? BigInt(row.max_buy_per_tx) : undefined,
+    maxBuyPerUser: row.max_buy_per_user ? BigInt(row.max_buy_per_user) : undefined,
+    cooldownBlocks: row.cooldown_blocks ? BigInt(row.cooldown_blocks) : undefined,
     createdAt: row.created_at,
     launchedAt: row.launched_at,
     graduatedAt: row.graduated_at,

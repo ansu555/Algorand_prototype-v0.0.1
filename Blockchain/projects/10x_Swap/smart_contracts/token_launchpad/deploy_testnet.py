@@ -11,7 +11,7 @@ Make sure you have:
 import os
 import base64
 from pathlib import Path
-from algosdk import mnemonic, transaction
+from algosdk import mnemonic, transaction, logic
 from algosdk.v2client import algod
 from algokit_utils import (
     Account,
@@ -80,7 +80,7 @@ def main():
             exit(0)
     
     # Load TEAL files directly
-    artifacts_dir = Path(__file__).parent.parent.parent.parent.parent.parent / "artifacts/token_launchpad"
+    artifacts_dir = Path(__file__).parent
     approval_teal_path = artifacts_dir / "TokenLaunchpad.approval.teal"
     clear_teal_path = artifacts_dir / "TokenLaunchpad.clear.teal"
     
@@ -118,8 +118,9 @@ def main():
             on_complete=transaction.OnComplete.NoOpOC,
             approval_program=approval_binary,
             clear_program=clear_binary,
-            global_schema=transaction.StateSchema(num_uints=14, num_byte_slices=1),
+            global_schema=transaction.StateSchema(num_uints=15, num_byte_slices=2),
             local_schema=transaction.StateSchema(num_uints=0, num_byte_slices=0),
+            app_args=[bytes.fromhex("4c5c61ba")]
         )
         
         # Sign and send
@@ -132,7 +133,7 @@ def main():
         # Wait for confirmation
         confirmed_txn = transaction.wait_for_confirmation(algod_client, tx_id, 4)
         app_id = confirmed_txn["application-index"]
-        app_address = transaction.logic_sig_address(approval_binary)
+        app_address = logic.get_application_address(app_id)
         
         print(f"✅ Application created!")
         print(f"   App ID: {app_id}")

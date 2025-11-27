@@ -17,6 +17,9 @@ CREATE TABLE IF NOT EXISTS launch_projects (
   -- ASA Information
   asa_id BIGINT,
   app_id BIGINT,
+  config_tx_id TEXT,       -- Configuration transaction ID
+  bootstrap_tx_id TEXT,    -- Bootstrap transaction ID
+  funding_tx_id TEXT,      -- Initial funding transaction ID
   
   -- Bonding Curve Config
   curve_type TEXT DEFAULT 'sigmoid', -- 'linear', 'exponential', 'sigmoid'
@@ -37,6 +40,11 @@ CREATE TABLE IF NOT EXISTS launch_projects (
   liquidity_percentage INTEGER DEFAULT 80, -- % of raised ALGO for liquidity
   lp_lock_duration BIGINT DEFAULT 15552000, -- Blocks (~6 months)
   dex_platform TEXT DEFAULT 'tinyman', -- 'tinyman', 'pact', 'folks'
+
+  -- Security Config
+  max_buy_per_tx BIGINT, -- Max tokens per transaction
+  max_buy_per_user BIGINT, -- Max tokens per user
+  cooldown_blocks BIGINT DEFAULT 10, -- Blocks between purchases
   
   -- Timestamps
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -56,6 +64,7 @@ CREATE TABLE IF NOT EXISTS token_purchases (
   points_earned BIGINT NOT NULL, -- Early buyer bonus points
   transaction_id TEXT NOT NULL,
   block_round BIGINT NOT NULL,
+  blockchain_confirmed INTEGER DEFAULT 0, -- 0 = pending, 1 = confirmed on-chain
   timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (project_id) REFERENCES launch_projects(id)
 );

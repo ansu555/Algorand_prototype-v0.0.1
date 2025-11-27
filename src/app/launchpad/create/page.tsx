@@ -11,11 +11,14 @@ import { Badge } from "@/components/ui/badge"
 import { SearchBar } from "@/components/shared/search-bar"
 import {
   Rocket, ArrowLeft, ArrowRight, CheckCircle2,
-  AlertTriangle, TrendingUp, Shield, Gift, Lock, Upload
+  AlertTriangle, TrendingUp, Shield, Gift, Lock, Upload, Info
 } from "lucide-react"
 import Link from "next/link"
 import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
 import { TokenPreviewCard } from "@/components/features/launchpad/create/token-preview-card"
+import { useWallet } from "@txnlab/use-wallet-react"
+import algosdk from "algosdk"
+import * as blockchain from "@/lib/launchpad/blockchain"
 
 type CurveType = 'linear' | 'exponential' | 'sigmoid'
 
@@ -50,8 +53,10 @@ interface FormData {
 export default function CreateProjectPage() {
   const router = useRouter()
   const { activeAccount } = useWalletConnection()
+  const { signTransactions } = useWallet()
   const [step, setStep] = useState(1)
   const [creating, setCreating] = useState(false)
+  const [blockchainStep, setBlockchainStep] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
@@ -80,6 +85,16 @@ export default function CreateProjectPage() {
 
   const updateField = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  // Wallet transaction signer wrapper to filter out nulls
+  const walletSigner = async (
+    txnGroup: algosdk.Transaction[],
+    indexesToSign?: number[]
+  ): Promise<Uint8Array[]> => {
+    const signed = await signTransactions(txnGroup, indexesToSign)
+    // Filter out nulls - wallet always signs all requested transactions
+    return signed.filter((s): s is Uint8Array => s !== null)
   }
 
   // Calculate expected bonding target based on curve type
@@ -287,8 +302,11 @@ export default function CreateProjectPage() {
     }
 
     setCreating(true)
+    setBlockchainStep('')
+
     try {
-      // Upload logo if provided
+      // Step 1: Upload logo if provided
+      setBlockchainStep('Uploading logo...')
       let logoUrl: string | undefined = undefined
       if (logoFile) {
         const uploaded = await uploadLogo()
@@ -296,6 +314,57 @@ export default function CreateProjectPage() {
           logoUrl = uploaded.url
         }
       }
+
+      // Step 2: Create ASA on Algorand blockchain
+      setBlockchainStep('Creating token on Algorand blockchain...')
+      const totalSupplyMicro = BigInt(formData.totalSupply) * BigInt(1_000_000) // 6 decimals
+
+      const asaId = await blockchain.createASA(
+        {
+          name: formData.tokenName,
+          symbol: formData.tokenSymbol,
+          total: totalSupplyMicro,
+          decimals: 6,
+          url: formData.websiteUrl || undefined,
+          creator: activeAccount.address,
+        },
+        walletSigner
+      )
+
+      console.log('✅ ASA Created:', asaId)
+
+      // Step 3: Initialize Project (Configure, Bootstrap, Fund)
+      setBlockchainStep('Initializing project (Configure, Bootstrap, Fund)...')
+
+      // Map curve type to number
+      const curveTypeMap: Record<string, number> = {
+        'linear': 0,
+        'exponential': 1,
+        'sigmoid': 2
+      }
+
+      const { configTxId, bootstrapTxId, fundingTxId } = await blockchain.initializeProject(
+        {
+          userAddress: activeAccount.address,
+          asaId: asaId,
+          totalSupply: totalSupplyMicro,
+          tokensForSale: BigInt(formData.tokensForSale) * BigInt(1_000_000),
+          startPrice: BigInt(Math.floor(Number(formData.basePrice) * 1_000_000)),
+          targetPrice: BigInt(Math.floor(Number(formData.maxPrice) * 1_000_000)),
+          bondingTarget: BigInt(Math.floor(Number(formData.bondingTarget) * 1_000_000)),
+          curveType: curveTypeMap[formData.curveType] || 2,
+          maxBuyPerTx: BigInt(Math.floor(Number(formData.maxPurchasePerTx) * Number(formData.totalSupply) / 100)) * BigInt(1_000_000),
+          maxBuyPerUser: BigInt(Math.floor(Number(formData.maxPurchasePerUser) * Number(formData.totalSupply) / 100)) * BigInt(1_000_000),
+          liquidityPercent: BigInt(80), // Default 80%
+          liquidityLockDays: BigInt(formData.lpLockDays),
+        },
+        walletSigner
+      )
+
+      console.log('✅ Project Initialized:', { configTxId, bootstrapTxId, fundingTxId })
+
+      // Step 6: Save to database
+      setBlockchainStep('Saving project details...')
 
       const res = await fetch('/api/launchpad/projects', {
         method: 'POST',
@@ -317,20 +386,46 @@ export default function CreateProjectPage() {
           bondingTarget: Math.floor(Number(formData.bondingTarget) * 1_000_000).toString(),
           dexChoice: formData.dexChoice,
           lpLockDays: Number(formData.lpLockDays),
+          // Blockchain references
+          asaId: asaId,
+          appId: blockchain.LAUNCHPAD_APP_ID,
+          configTxId: configTxId,
+          bootstrapTxId: bootstrapTxId,
+          fundingTxId: fundingTxId,
+          status: 'active', // Mark as active since it's on blockchain
+          maxBuyPerTx: (BigInt(Math.floor(Number(formData.maxPurchasePerTx) * Number(formData.totalSupply) / 100)) * BigInt(1_000_000)).toString(),
+          maxBuyPerUser: (BigInt(Math.floor(Number(formData.maxPurchasePerUser) * Number(formData.totalSupply) / 100)) * BigInt(1_000_000)).toString(),
+          cooldownBlocks: formData.cooldownBlocks,
         })
       })
 
       const data = await res.json()
 
       if (data.success) {
-        alert('Project created successfully!')
+        setBlockchainStep('Complete! Redirecting...')
+        alert(`✅ Token launch successful!\n\nASA ID: ${asaId}\nView on AlgoExplorer: https://testnet.algoexplorer.io/asset/${asaId}`)
         router.push(`/launchpad/${data.data.id}`)
       } else {
-        alert(data.error || 'Failed to create project')
+        throw new Error(data.error || 'Failed to save project to database')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create project:', error)
-      alert('Failed to create project. Please try again.')
+
+      // More specific error messages
+      let errorMessage = 'Failed to create project. '
+
+      if (error.message?.includes('rejected')) {
+        errorMessage += 'Transaction was rejected. Please try again.'
+      } else if (error.message?.includes('insufficient')) {
+        errorMessage += 'Insufficient ALGO balance. Please fund your wallet with TestNet ALGO.'
+      } else if (error.message?.includes('network')) {
+        errorMessage += 'Network error. Please check your connection and try again.'
+      } else {
+        errorMessage += error.message || 'Please try again.'
+      }
+
+      alert(errorMessage)
+      setBlockchainStep('')
     } finally {
       setCreating(false)
     }
@@ -682,6 +777,18 @@ export default function CreateProjectPage() {
                       <p className="text-muted-foreground">Finalize your launch settings.</p>
                     </div>
 
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
+                        <Info className="h-4 w-4" />
+                        Revenue Model
+                      </h4>
+                      <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1 list-disc list-inside">
+                        <li><strong>80%</strong> of raised funds go to Liquidity Pool (Locked)</li>
+                        <li><strong>1%</strong> Platform Fee (Success-based only)</li>
+                        <li><strong>~19%</strong> goes to You (Creator Revenue)</li>
+                      </ul>
+                    </div>
+
                     <div className="space-y-4">
                       <Label>Select DEX for Graduation</Label>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -754,13 +861,18 @@ export default function CreateProjectPage() {
                   ) : (
                     <Button
                       onClick={handleSubmit}
-                      disabled={creating || !activeAccount?.address || !validateStep(4)}
+                      disabled={creating || !activeAccount}
+                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                       size="lg"
-                      className="px-8 bg-gradient-to-r from-primary to-amber-600 hover:from-primary/90 hover:to-amber-600/90"
                     >
-                      {creating ? 'Launching...' : (
+                      {creating ? (
                         <>
-                          <Rocket className="h-4 w-4 mr-2" />
+                          <Rocket className="h-5 w-5 mr-2 animate-bounce" />
+                          {blockchainStep || 'Launching...'}
+                        </>
+                      ) : (
+                        <>
+                          <Rocket className="h-5 w-5 mr-2" />
                           Launch Token
                         </>
                       )}
