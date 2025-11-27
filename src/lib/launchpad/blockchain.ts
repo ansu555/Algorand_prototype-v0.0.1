@@ -10,7 +10,7 @@ import { ApplicationClient } from '@algorandfoundation/algokit-utils/types/app-c
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 
 // Contract configuration
-export const LAUNCHPAD_APP_ID = parseInt(process.env.NEXT_PUBLIC_LAUNCHPAD_APP_ID || '750321727')
+export const LAUNCHPAD_APP_ID = parseInt(process.env.NEXT_PUBLIC_LAUNCHPAD_APP_ID || '750324113')
 export const ALGORAND_NETWORK = process.env.NEXT_PUBLIC_ALGORAND_NETWORK || 'testnet'
 
 // Algorand node configuration

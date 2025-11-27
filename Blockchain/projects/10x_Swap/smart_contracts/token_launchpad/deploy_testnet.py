@@ -120,7 +120,6 @@ def main():
             clear_program=clear_binary,
             global_schema=transaction.StateSchema(num_uints=15, num_byte_slices=2),
             local_schema=transaction.StateSchema(num_uints=0, num_byte_slices=0),
-            app_args=[bytes.fromhex("4c5c61ba")]
         )
         
         # Sign and send
