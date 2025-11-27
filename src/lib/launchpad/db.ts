@@ -1,6 +1,3 @@
-import Database from 'better-sqlite3'
-import path from 'path'
-import fs from 'fs'
 import { randomBytes } from 'crypto'
 import type {
   LaunchProject,
@@ -23,76 +20,96 @@ import {
   POINTS_MULTIPLIER_BASE
 } from './types'
 
-const dbPath = path.join(process.cwd(), 'data', 'launchpad.sqlite')
-
-// Ensure data directory exists
-const dataDir = path.dirname(dbPath)
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true })
+// Lazy-load libsql client for Turso
+let clientPromise: Promise<any> | null = null
+async function getClient() {
+  if (!clientPromise) {
+    clientPromise = (async () => {
+      const url = process.env.TURSO_DATABASE_URL || process.env.LIBSQL_DB_URL
+      const authToken = process.env.TURSO_AUTH_TOKEN || process.env.LIBSQL_DB_AUTH_TOKEN
+      if (!url) {
+        throw new Error('TURSO_DATABASE_URL is not set. Please configure Turso database in Vercel environment variables.')
+      }
+      const mod: any = await import('@libsql/client')
+      return mod.createClient({ url, authToken })
+    })()
+  }
+  return clientPromise
 }
 
-let db: Database.Database | null = null
-
-function getDB(): Database.Database {
-  if (!db) {
-    db = new Database(dbPath)
-    db.pragma('journal_mode = WAL')
-    initializeDatabase()
-  }
-  return db
-}
-
-function initializeDatabase() {
-  const schemaPath = path.join(process.cwd(), 'src', 'lib', 'launchpad', 'schema.sql')
-  
-  if (fs.existsSync(schemaPath)) {
-    const schema = fs.readFileSync(schemaPath, 'utf-8')
-    db!.exec(schema)
-  }
+// Initialize database tables
+let initPromise: Promise<void> | null = null
+async function ensureInit() {
+  if (initPromise) return initPromise
+  initPromise = (async () => {
+    const client = await getClient()
+    const fs = await import('fs')
+    const path = await import('path')
+    
+    const schemaPath = path.join(process.cwd(), 'src', 'lib', 'launchpad', 'schema.sql')
+    
+    if (fs.existsSync(schemaPath)) {
+      const schema = fs.readFileSync(schemaPath, 'utf-8')
+      const statements = schema.split(';').filter(s => s.trim())
+      for (const statement of statements) {
+        if (statement.trim()) {
+          await client.execute(statement.trim())
+        }
+      }
+    }
+  })()
+  return initPromise
 }
 
 // Project Management
-export function createProject(project: Omit<LaunchProject, 'id' | 'createdAt' | 'updatedAt'>): string {
-  const database = getDB()
+export async function createProject(project: Omit<LaunchProject, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  await ensureInit()
+  const client = await getClient()
   const projectId = `project_${Date.now()}_${randomBytes(4).toString('hex')}`
   
-  database.prepare(`
-    INSERT INTO launch_projects (
+  await client.execute({
+    sql: `INSERT INTO launch_projects (
       id, creator_address, token_name, token_symbol, token_decimals, total_supply,
       description, logo_url, website_url, twitter_url, telegram_url,
       curve_type, base_price, max_price, bonding_target, tokens_for_sale,
       liquidity_percentage, lp_lock_duration, dex_platform, status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    projectId,
-    project.creatorAddress,
-    project.tokenName,
-    project.tokenSymbol,
-    project.tokenDecimals,
-    project.totalSupply.toString(),
-    project.description || null,
-    project.logoUrl || null,
-    project.websiteUrl || null,
-    project.twitterUrl || null,
-    project.telegramUrl || null,
-    project.curveType,
-    project.basePrice.toString(),
-    project.maxPrice.toString(),
-    project.bondingTarget.toString(),
-    project.tokensForSale.toString(),
-    project.liquidityPercentage,
-    project.lpLockDuration.toString(),
-    project.dexPlatform,
-    project.status
-  )
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      projectId,
+      project.creatorAddress,
+      project.tokenName,
+      project.tokenSymbol,
+      project.tokenDecimals,
+      project.totalSupply.toString(),
+      project.description || null,
+      project.logoUrl || null,
+      project.websiteUrl || null,
+      project.twitterUrl || null,
+      project.telegramUrl || null,
+      project.curveType,
+      project.basePrice.toString(),
+      project.maxPrice.toString(),
+      project.bondingTarget.toString(),
+      project.tokensForSale.toString(),
+      project.liquidityPercentage,
+      project.lpLockDuration.toString(),
+      project.dexPlatform,
+      project.status
+    ]
+  })
   
   return projectId
 }
 
-export function getProject(projectId: string): LaunchProject | null {
-  const database = getDB()
-  const row = database.prepare('SELECT * FROM launch_projects WHERE id = ?').get(projectId) as any
+export async function getProject(projectId: string): Promise<LaunchProject | null> {
+  await ensureInit()
+  const client = await getClient()
+  const { rows } = await client.execute({
+    sql: 'SELECT * FROM launch_projects WHERE id = ?',
+    args: [projectId]
+  })
   
+  const row: any = rows[0]
   if (!row) return null
   
   return {
@@ -130,16 +147,13 @@ export function getProject(projectId: string): LaunchProject | null {
   }
 }
 
-export function getAllProjects(status?: ProjectStatus): LaunchProject[] {
-  const database = getDB()
+export async function getAllProjects(status?: ProjectStatus): Promise<LaunchProject[]> {
+  await ensureInit()
+  const client = await getClient()
   
-  const query = status 
-    ? 'SELECT * FROM launch_projects WHERE status = ? ORDER BY created_at DESC'
-    : 'SELECT * FROM launch_projects ORDER BY created_at DESC'
-  
-  const rows = status
-    ? database.prepare(query).all(status) as any[]
-    : database.prepare(query).all() as any[]
+  const { rows } = status
+    ? await client.execute({ sql: 'SELECT * FROM launch_projects WHERE status = ? ORDER BY created_at DESC', args: [status] })
+    : await client.execute('SELECT * FROM launch_projects ORDER BY created_at DESC')
   
   return rows.map(row => ({
     id: row.id,
@@ -176,31 +190,39 @@ export function getAllProjects(status?: ProjectStatus): LaunchProject[] {
   }))
 }
 
-export function updateProjectStatus(projectId: string, status: ProjectStatus, additionalData?: any) {
-  const database = getDB()
+export async function updateProjectStatus(projectId: string, status: ProjectStatus, additionalData?: any): Promise<void> {
+  await ensureInit()
+  const client = await getClient()
   
-  database.prepare(`
-    UPDATE launch_projects 
-    SET status = ?, updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
-  `).run(status, projectId)
+  await client.execute({
+    sql: 'UPDATE launch_projects SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    args: [status, projectId]
+  })
   
   if (additionalData) {
     if (additionalData.asaId) {
-      database.prepare('UPDATE launch_projects SET asa_id = ? WHERE id = ?')
-        .run(additionalData.asaId.toString(), projectId)
+      await client.execute({
+        sql: 'UPDATE launch_projects SET asa_id = ? WHERE id = ?',
+        args: [additionalData.asaId.toString(), projectId]
+      })
     }
     if (additionalData.appId) {
-      database.prepare('UPDATE launch_projects SET app_id = ? WHERE id = ?')
-        .run(additionalData.appId.toString(), projectId)
+      await client.execute({
+        sql: 'UPDATE launch_projects SET app_id = ? WHERE id = ?',
+        args: [additionalData.appId.toString(), projectId]
+      })
     }
     if (additionalData.launchRound) {
-      database.prepare('UPDATE launch_projects SET launch_round = ?, launched_at = CURRENT_TIMESTAMP WHERE id = ?')
-        .run(additionalData.launchRound.toString(), projectId)
+      await client.execute({
+        sql: 'UPDATE launch_projects SET launch_round = ?, launched_at = CURRENT_TIMESTAMP WHERE id = ?',
+        args: [additionalData.launchRound.toString(), projectId]
+      })
     }
     if (additionalData.graduationRound) {
-      database.prepare('UPDATE launch_projects SET graduation_round = ?, graduated_at = CURRENT_TIMESTAMP WHERE id = ?')
-        .run(additionalData.graduationRound.toString(), projectId)
+      await client.execute({
+        sql: 'UPDATE launch_projects SET graduation_round = ?, graduated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        args: [additionalData.graduationRound.toString(), projectId]
+      })
     }
   }
 }
@@ -254,8 +276,8 @@ export function calculatePrice(params: BondingCurveParams): bigint {
   }
 }
 
-export function getPriceQuote(projectId: string, tokensAmount: bigint): PriceQuote | null {
-  const project = getProject(projectId)
+export async function getPriceQuote(projectId: string, tokensAmount: bigint): Promise<PriceQuote | null> {
+  const project = await getProject(projectId)
   if (!project) return null
   
   const currentPrice = calculatePrice({
@@ -295,16 +317,17 @@ export function getPriceQuote(projectId: string, tokensAmount: bigint): PriceQuo
 }
 
 // Purchase Management
-export function recordPurchase(
+export async function recordPurchase(
   projectId: string,
   buyerAddress: string,
   tokensAmount: bigint,
   algoPaid: bigint,
   transactionId: string,
   blockRound: bigint
-): string {
-  const database = getDB()
-  const project = getProject(projectId)
+): Promise<string> {
+  await ensureInit()
+  const client = await getClient()
+  const project = await getProject(projectId)
   
   if (!project) throw new Error('Project not found')
   
@@ -322,14 +345,13 @@ export function recordPurchase(
   const earlyBonus = calculateEarlyBonus(progress)
   const pointsEarned = BigInt(Math.floor(Number(tokensAmount) * earlyBonus))
   
-  database.transaction(() => {
-    // Record purchase
-    database.prepare(`
-      INSERT INTO token_purchases (
-        id, project_id, buyer_address, tokens_amount, algo_paid,
-        price_per_token, points_earned, transaction_id, block_round
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
+  // Record purchase
+  await client.execute({
+    sql: `INSERT INTO token_purchases (
+      id, project_id, buyer_address, tokens_amount, algo_paid,
+      price_per_token, points_earned, transaction_id, block_round
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
       purchaseId,
       projectId,
       buyerAddress,
@@ -339,78 +361,73 @@ export function recordPurchase(
       pointsEarned.toString(),
       transactionId,
       blockRound.toString()
-    )
+    ]
+  })
+  
+  // Update project stats
+  const newTokensSold = project.tokensSold + tokensAmount
+  const newAlgoRaised = project.algoRaised + algoPaid
+  
+  await client.execute({
+    sql: 'UPDATE launch_projects SET tokens_sold = ?, algo_raised = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    args: [newTokensSold.toString(), newAlgoRaised.toString(), projectId]
+  })
+  
+  // Update or create points record
+  const { rows: existingPointsRows } = await client.execute({
+    sql: 'SELECT * FROM launchpad_points WHERE user_address = ? AND project_id = ?',
+    args: [buyerAddress, projectId]
+  })
+  
+  if (existingPointsRows.length > 0) {
+    await client.execute({
+      sql: 'UPDATE launchpad_points SET points_balance = points_balance + ?, total_earned = total_earned + ?, updated_at = CURRENT_TIMESTAMP WHERE user_address = ? AND project_id = ?',
+      args: [pointsEarned.toString(), pointsEarned.toString(), buyerAddress, projectId]
+    })
+  } else {
+    await client.execute({
+      sql: 'INSERT INTO launchpad_points (user_address, project_id, points_balance, total_earned) VALUES (?, ?, ?, ?)',
+      args: [buyerAddress, projectId, pointsEarned.toString(), pointsEarned.toString()]
+    })
     
-    // Update project stats
-    const newTokensSold = project.tokensSold + tokensAmount
-    const newAlgoRaised = project.algoRaised + algoPaid
-    
-    database.prepare(`
-      UPDATE launch_projects 
-      SET tokens_sold = ?, algo_raised = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(newTokensSold.toString(), newAlgoRaised.toString(), projectId)
-    
-    // Update or create points record
-    const existingPoints = database.prepare(
-      'SELECT * FROM launchpad_points WHERE user_address = ? AND project_id = ?'
-    ).get(buyerAddress, projectId) as any
-    
-    if (existingPoints) {
-      database.prepare(`
-        UPDATE launchpad_points 
-        SET points_balance = points_balance + ?,
-            total_earned = total_earned + ?,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE user_address = ? AND project_id = ?
-      `).run(pointsEarned.toString(), pointsEarned.toString(), buyerAddress, projectId)
-    } else {
-      database.prepare(`
-        INSERT INTO launchpad_points (user_address, project_id, points_balance, total_earned)
-        VALUES (?, ?, ?, ?)
-      `).run(buyerAddress, projectId, pointsEarned.toString(), pointsEarned.toString())
-      
-      // Increment participant count
-      database.prepare(`
-        UPDATE launch_projects SET participant_count = participant_count + 1 WHERE id = ?
-      `).run(projectId)
-    }
-    
-    // Update anti-bot record
-    const antibotRecord = database.prepare(
-      'SELECT * FROM launchpad_antibot WHERE user_address = ? AND project_id = ?'
-    ).get(buyerAddress, projectId) as any
-    
-    if (antibotRecord) {
-      database.prepare(`
-        UPDATE launchpad_antibot 
-        SET purchase_count = purchase_count + 1,
-            last_purchase_round = ?,
-            total_tokens_bought = total_tokens_bought + ?,
-            updated_at = CURRENT_TIMESTAMP
-        WHERE user_address = ? AND project_id = ?
-      `).run(blockRound.toString(), tokensAmount.toString(), buyerAddress, projectId)
-    } else {
-      database.prepare(`
-        INSERT INTO launchpad_antibot (
-          user_address, project_id, purchase_count, last_purchase_round, total_tokens_bought
-        ) VALUES (?, ?, 1, ?, ?)
-      `).run(buyerAddress, projectId, blockRound.toString(), tokensAmount.toString())
-    }
-  })()
+    // Increment participant count
+    await client.execute({
+      sql: 'UPDATE launch_projects SET participant_count = participant_count + 1 WHERE id = ?',
+      args: [projectId]
+    })
+  }
+  
+  // Update anti-bot record
+  const { rows: antibotRows } = await client.execute({
+    sql: 'SELECT * FROM launchpad_antibot WHERE user_address = ? AND project_id = ?',
+    args: [buyerAddress, projectId]
+  })
+  
+  if (antibotRows.length > 0) {
+    await client.execute({
+      sql: 'UPDATE launchpad_antibot SET purchase_count = purchase_count + 1, last_purchase_round = ?, total_tokens_bought = total_tokens_bought + ?, updated_at = CURRENT_TIMESTAMP WHERE user_address = ? AND project_id = ?',
+      args: [blockRound.toString(), tokensAmount.toString(), buyerAddress, projectId]
+    })
+  } else {
+    await client.execute({
+      sql: 'INSERT INTO launchpad_antibot (user_address, project_id, purchase_count, last_purchase_round, total_tokens_bought) VALUES (?, ?, 1, ?, ?)',
+      args: [buyerAddress, projectId, blockRound.toString(), tokensAmount.toString()]
+    })
+  }
   
   return purchaseId
 }
 
 // Anti-Bot Checks
-export function validatePurchase(
+export async function validatePurchase(
   projectId: string,
   buyerAddress: string,
   tokensAmount: bigint,
   currentRound: bigint
-): { valid: boolean; reason?: string } {
-  const database = getDB()
-  const project = getProject(projectId)
+): Promise<{ valid: boolean; reason?: string }> {
+  await ensureInit()
+  const client = await getClient()
+  const project = await getProject(projectId)
   
   if (!project) return { valid: false, reason: 'Project not found' }
   if (project.status !== 'active') return { valid: false, reason: 'Project not active' }
@@ -427,11 +444,13 @@ export function validatePurchase(
   }
   
   // Get anti-bot record
-  const antibotRecord = database.prepare(
-    'SELECT * FROM launchpad_antibot WHERE user_address = ? AND project_id = ?'
-  ).get(buyerAddress, projectId) as any
+  const { rows: antibotRows } = await client.execute({
+    sql: 'SELECT * FROM launchpad_antibot WHERE user_address = ? AND project_id = ?',
+    args: [buyerAddress, projectId]
+  })
   
-  if (antibotRecord) {
+  if (antibotRows.length > 0) {
+    const antibotRecord: any = antibotRows[0]
     // Check cooldown period
     if (antibotRecord.last_purchase_round) {
       const lastRound = BigInt(antibotRecord.last_purchase_round)
@@ -456,12 +475,15 @@ export function validatePurchase(
   return { valid: true }
 }
 
-export function getUserPoints(userAddress: string, projectId: string): LaunchpadPoints | null {
-  const database = getDB()
-  const row = database.prepare(
-    'SELECT * FROM launchpad_points WHERE user_address = ? AND project_id = ?'
-  ).get(userAddress, projectId) as any
+export async function getUserPoints(userAddress: string, projectId: string): Promise<LaunchpadPoints | null> {
+  await ensureInit()
+  const client = await getClient()
+  const { rows } = await client.execute({
+    sql: 'SELECT * FROM launchpad_points WHERE user_address = ? AND project_id = ?',
+    args: [userAddress, projectId]
+  })
   
+  const row: any = rows[0]
   if (!row) return null
   
   return {
@@ -476,16 +498,13 @@ export function getUserPoints(userAddress: string, projectId: string): Launchpad
   }
 }
 
-export function getPurchaseHistory(projectId: string, buyerAddress?: string): TokenPurchase[] {
-  const database = getDB()
+export async function getPurchaseHistory(projectId: string, buyerAddress?: string): Promise<TokenPurchase[]> {
+  await ensureInit()
+  const client = await getClient()
   
-  const query = buyerAddress
-    ? 'SELECT * FROM token_purchases WHERE project_id = ? AND buyer_address = ? ORDER BY timestamp DESC'
-    : 'SELECT * FROM token_purchases WHERE project_id = ? ORDER BY timestamp DESC'
-  
-  const rows = buyerAddress
-    ? database.prepare(query).all(projectId, buyerAddress) as any[]
-    : database.prepare(query).all(projectId) as any[]
+  const { rows } = buyerAddress
+    ? await client.execute({ sql: 'SELECT * FROM token_purchases WHERE project_id = ? AND buyer_address = ? ORDER BY timestamp DESC', args: [projectId, buyerAddress] })
+    : await client.execute({ sql: 'SELECT * FROM token_purchases WHERE project_id = ? ORDER BY timestamp DESC', args: [projectId] })
   
   return rows.map(row => ({
     id: row.id,

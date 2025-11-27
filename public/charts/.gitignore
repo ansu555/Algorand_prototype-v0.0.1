@@ -1,0 +1,7 @@
+# Ignore generated chart files
+*.svg
+*.png
+*.jpg
+
+# Keep the directory
+!.gitkeep

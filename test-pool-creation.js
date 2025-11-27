@@ -7,7 +7,7 @@ const algosdk = require('algosdk');
 const crypto = require('crypto');
 
 // Configuration
-const POOL_APP_ID = 749649983;
+const POOL_APP_ID = 749739213;
 const ASSET_1_ID = 70283957; // ALGF
 const ASSET_2_ID = 10458941;  // USDC
 const FEE_BPS = 30;

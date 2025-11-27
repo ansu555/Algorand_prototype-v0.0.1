@@ -52,7 +52,7 @@ export default function NotFound() {
             <Link href="/algorand" className="text-sm hover:text-primary dark:hover:text-[#F3C623] transition-colors">
               Algorand
             </Link>
-            <Link href="/(dashboard)/agent" className="text-sm hover:text-primary dark:hover:text-[#F3C623] transition-colors">
+            <Link href="/portfolio" className="text-sm hover:text-primary dark:hover:text-[#F3C623] transition-colors">
               Agent Dashboard
             </Link>
           </div>

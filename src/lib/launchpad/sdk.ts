@@ -171,7 +171,7 @@ export class BondingCurveSDK {
     )
     
     // Record in database
-    const projectId = createProject({
+    const projectId = await createProject({
       creatorAddress: creatorAddress,
       tokenName: config.name,
       tokenSymbol: config.symbol,
