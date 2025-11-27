@@ -2,18 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import RuleBuilderModal from "@/components/features/rules/rule-builder-modal";
-import { toast } from "@/hooks/use-toast";
-import { ModeToggle } from "@/components/shared/mode-toggle";
+import { Logo } from "./logo";
+import { MobileMenu } from "./mobile-menu";
+import { useEffect, useRef, useState } from "react";
 import AlgorandWalletConnect from "@/components/features/algorand/algorand-wallet-connect";
 import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider";
+import { Sparkles, ChevronDown } from "lucide-react";
+import { ModeToggle } from "@/components/shared/mode-toggle";
 import { cn } from "@/lib/utils";
-import { Menu, X, ChevronDown, Sparkles } from "lucide-react";
-import { useViewport } from "@/hooks/use-viewport";
-import { describeRule } from "@/lib/shared/rules";
-import { createRule } from "@/features/agent/api/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,124 +17,97 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function Header() {
+export const Header = () => {
   const pathname = usePathname();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [rules, setRules] = useState<any[]>([]);
-  const [exploreDropdownOpen, setExploreDropdownOpen] = useState(false);
-  const [xTokenBalance, setXTokenBalance] = useState<number>(0);
-  const { isMobile } = useViewport();
+  // const audioRef = useRef<HTMLAudioElement | null>(null);
+  // const lastPlayRef = useRef<number>(0);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const { activeAccount } = useWalletConnection();
-  const mobileMenuRef = useRef<HTMLDivElement>(null);
-  const modeToggleRef = useRef<HTMLDivElement>(null);
-  // Use Algorand wallet address or fallback to placeholder
-  const address = activeAccount?.address || "0x0000000000000000000000000000000000000000";
+  const [xTokenBalance, setXTokenBalance] = useState<number>(0);
+  const [exploreDropdownOpen, setExploreDropdownOpen] = useState(false);
+  const [hasClaimableQuests, setHasClaimableQuests] = useState(false);
 
   // Fetch X token balance
   useEffect(() => {
     const fetchBalance = async () => {
       if (!activeAccount?.address) {
-        setXTokenBalance(0)
-        return
+        setXTokenBalance(0);
+        return;
       }
-      
+
       try {
-        const res = await fetch(`/api/rewards?userId=${activeAccount.address}`)
-        const data = await res.json()
+        const res = await fetch(`/api/rewards?userId=${activeAccount.address}`);
+        const data = await res.json();
         if (data.success) {
-          setXTokenBalance(data.data.xTokenBalance || 0)
+          setXTokenBalance(data.data.xTokenBalance || 0);
         }
       } catch (error) {
-        console.error('Failed to fetch X token balance:', error)
+        console.error('Failed to fetch X token balance:', error);
       }
-    }
-    
-    fetchBalance()
-    
-    // Refresh balance every 30 seconds
-    const interval = setInterval(fetchBalance, 30000)
-    return () => clearInterval(interval)
-  }, [activeAccount])
+    };
+
+    fetchBalance();
+    const interval = setInterval(fetchBalance, 30000);
+    return () => clearInterval(interval);
+  }, [activeAccount]);
 
   // Check for claimable quests
-  const [hasClaimableQuests, setHasClaimableQuests] = useState(false)
-  
   useEffect(() => {
     const checkClaimable = async () => {
       if (!activeAccount?.address) {
-        setHasClaimableQuests(false)
-        return
+        setHasClaimableQuests(false);
+        return;
       }
-      
+
       try {
-        const res = await fetch(`/api/rewards/quests?userId=${activeAccount.address}`)
-        const data = await res.json()
+        const res = await fetch(`/api/rewards/quests?userId=${activeAccount.address}`);
+        const data = await res.json();
         if (data.success) {
-          const hasCompleted = data.data.some((q: any) => q.status === 'completed')
-          setHasClaimableQuests(hasCompleted)
+          const hasCompleted = data.data.some((q: any) => q.status === 'completed');
+          setHasClaimableQuests(hasCompleted);
         }
       } catch (error) {
-        console.error('Failed to check claimable quests:', error)
+        console.error('Failed to check claimable quests:', error);
       }
-    }
-    
-    checkClaimable()
-    
-    // Check every 30 seconds
-    const interval = setInterval(checkClaimable, 30000)
-    return () => clearInterval(interval)
-  }, [activeAccount])
-
-  // Close mobile menu when route changes
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [pathname]);
-
-  // Close mobile menu when clicking outside or pressing escape
-  useEffect(() => {
-    function handleEscape(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        setMobileMenuOpen(false);
-      }
-    }
-
-    function handleClickOutside(e: MouseEvent) {
-      const target = e.target as Element;
-      
-      // Don't close if clicking inside mobile menu
-      if (mobileMenuRef.current?.contains(target)) {
-        return;
-      }
-      
-      // Don't close if clicking on mode toggle or its dropdown
-      if (modeToggleRef.current?.contains(target)) {
-        return;
-      }
-      
-      // Don't close if clicking on any dropdown menu content (Radix UI portals)
-      if (target.closest('[role="menu"]') || 
-          target.closest('[data-radix-dropdown-menu-content]') ||
-          target.closest('[data-radix-popper-content-wrapper]')) {
-        return;
-      }
-      
-      setMobileMenuOpen(false);
-    }
-
-    if (mobileMenuOpen) {
-      document.addEventListener('keydown', handleEscape);
-      document.addEventListener('mousedown', handleClickOutside);
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.body.style.overflow = '';
     };
-  }, [mobileMenuOpen]);
+
+    checkClaimable();
+    const interval = setInterval(checkClaimable, 30000);
+    return () => clearInterval(interval);
+  }, [activeAccount]);
+
+  // Scroll behavior
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      setIsScrolled(currentScrollY > 50);
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
+      setLastScrollY(currentScrollY);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
+
+  /* Audio logic commented out
+  useEffect(() => {
+    const audio = new Audio("/ui-click-menu-modern-interface-select-small-02-230475.mp3");
+    audio.preload = "auto";
+    audio.volume = 0.9;
+    audioRef.current = audio;
+    // ... unlock audio logic ...
+  }, []);
+
+  const playHoverSound = () => {
+    // ... play sound logic ...
+  };
+  */
+  const playHoverSound = () => { }; // No-op
 
   const navItems = [
     { name: "Home", href: "/" },
@@ -156,81 +125,51 @@ export function Header() {
     { name: "Transaction", href: "/transactions" },
   ];
 
-  const saveRule = async (rule: any) => {
-    // Map UI schema -> API schema
-    const type = rule.strategy === 'DCA' ? 'dca' : rule.strategy === 'REBALANCE' ? 'rebalance' : 'rotate'
-    const payload = {
-      ownerAddress: address || "0x0000000000000000000000000000000000000000",
-      type,
-      targets: Array.isArray(rule.coins) ? rule.coins : [],
-      rotateTopN: rule.rotateTopN,
-      maxSpendUSD: rule.maxSpendUsd,
-      maxSlippage: rule.maxSlippagePercent,
-      cooldownMinutes: rule.cooldownMinutes,
-      // Trigger fields are mapped on the server via mapTrigger
-      triggerType: rule.triggerType,
-      dropPercent: rule.dropPercent,
-      trendWindow: rule.trendWindow,
-      trendThreshold: rule.trendThreshold,
-      momentumLookback: rule.momentumLookback,
-      momentumThreshold: rule.momentumThreshold,
-      status: 'active',
-    }
-
-    setRules((prev) => [payload as any, ...prev])
-    try {
-      const json = await createRule(payload)
-      setRules((prev) => [{ ...(payload as any), id: json.id }, ...prev.filter((r) => (r as any) !== (payload as any))])
-    } catch (e) {
-      console.error("Failed to save rule:", e)
-    }
-  }
-
   return (
-    <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur dark:bg-[#171717]/95 shadow" suppressHydrationWarning>
-      <div className="container flex h-16 items-center justify-between">
+    <header
+      className={cn(
+        "fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-in-out",
+        isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
+      )}
+    >
+      <div
+        className={cn(
+          "flex items-center gap-3 sm:gap-4 lg:gap-6 px-3 sm:px-4 lg:px-6 py-3 rounded-2xl border transition-all duration-300 w-auto max-w-[95vw]",
+          isScrolled
+            ? "bg-background/90 backdrop-blur-xl border-border/40 shadow-2xl"
+            : "bg-background/95 backdrop-blur-lg border-border/30 shadow-lg"
+        )}
+      >
         {/* Logo */}
-       <Link href="/" className="flex items-center font-extrabold text-lg md:text-xl tracking-tight">
-        <img 
-          src="/10xswap_logo.png" 
-          alt="10xSwap Logo" 
-          className="h-8 w-8 mr-2"
-        />
-        <span className="text-primary dark:text-[#F3C623]">10x</span>
-        <span className="dark:text-white">Swap</span>
-      </Link>
+        <Link
+          href="/"
+          className="transform transition-transform duration-200 hover:scale-105 flex-shrink-0"
+        >
+          <Logo />
+        </Link>
 
-        {/* Desktop navigation - Centered */}
-  <nav className="hidden md:flex gap-6 lg:gap-8 absolute left-1/2 -translate-x-1/2 transform items-center">
-          <Link
-            href="/"
-            className={cn(
-              "text-sm font-medium transition-colors",
-              pathname === "/"
-                ? "text-primary dark:text-[#F3C623] underline"
-                : "text-gray-700 hover:text-primary dark:text-[#F3C623]/60 dark:hover:text-[#F3C623]"
-            )}
-          >
-            Home
-          </Link>
-          
+        {/* Spacer */}
+        <div className="hidden lg:block w-px h-6 bg-border/30 flex-shrink-0 mx-2" />
+
+        {/* Desktop Navigation */}
+        <nav className="hidden lg:flex items-center gap-3 xl:gap-4 flex-shrink-0">
           {/* Explore Dropdown */}
           <DropdownMenu open={exploreDropdownOpen} onOpenChange={setExploreDropdownOpen}>
-            <DropdownMenuTrigger 
+            <DropdownMenuTrigger
               className={cn(
-                "text-sm font-medium transition-colors flex items-center gap-1",
-                exploreItems.some(item => pathname === item.href)
-                  ? "text-primary dark:text-[#F3C623] underline"
-                  : "text-gray-700 hover:text-primary dark:text-[#F3C623]/60 dark:hover:text-[#F3C623]"
+                "relative text-foreground/80 hover:text-foreground transition-all duration-300 group px-3 py-1 rounded-lg hover:bg-foreground/5 transform hover:scale-110 font-mono uppercase text-sm whitespace-nowrap flex items-center gap-1",
+                exploreItems.some(item => pathname === item.href) && "text-primary dark:text-[#F3C623]"
               )}
               onMouseEnter={() => setExploreDropdownOpen(true)}
               onMouseLeave={() => setExploreDropdownOpen(false)}
+              onFocus={playHoverSound}
             >
               Explore
               <ChevronDown className="h-3 w-3" />
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-primary transition-all duration-200 group-hover:w-4" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent 
-              align="center" 
+            <DropdownMenuContent
+              align="center"
               className="w-40"
               onMouseEnter={() => setExploreDropdownOpen(true)}
               onMouseLeave={() => setExploreDropdownOpen(false)}
@@ -250,25 +189,29 @@ export function Header() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          
+
           {navItems.slice(1).map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={cn(
-                "text-sm font-medium transition-colors",
-                pathname === item.href
-                  ? "text-primary dark:text-[#F3C623] underline"
-                  : "text-gray-700 hover:text-primary dark:text-[#F3C623]/60 dark:hover:text-[#F3C623]"
+                "relative text-foreground/80 hover:text-foreground transition-all duration-300 group px-3 py-1 rounded-lg hover:bg-foreground/5 transform hover:scale-110 hover:rotate-1 hover:skew-x-1 font-mono uppercase text-sm whitespace-nowrap",
+                pathname === item.href && "text-primary dark:text-[#F3C623]"
               )}
+              onMouseEnter={playHoverSound}
+              onFocus={playHoverSound}
             >
               {item.name}
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-primary transition-all duration-200 group-hover:w-4" />
             </Link>
           ))}
         </nav>
 
-        {/* Desktop wallet connect and mode toggle */}
-        <div className="hidden md:flex items-center gap-2">
+        {/* Spacer */}
+        <div className="hidden lg:block w-px h-6 bg-border/30 flex-shrink-0" />
+
+        {/* Auth & X Token */}
+        <div className="hidden lg:flex items-center gap-3 flex-shrink-0">
           {activeAccount && (
             <div className="relative">
               <Link href="/rewards">
@@ -286,98 +229,22 @@ export function Header() {
               )}
             </div>
           )}
+
           <AlgorandWalletConnect variant="dropdown" />
           <ModeToggle />
         </div>
 
-        {/* Mobile menu button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle mobile menu"
-        >
-          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
-      </div>
-
-      {/* Mobile menu */}
-      {mobileMenuOpen && (
-        <div ref={mobileMenuRef} className="mobile-menu md:hidden border-t bg-white/95 backdrop-blur dark:bg-[#171717]/95 absolute w-full z-40">
-          <div className="container py-4 space-y-4">
-            <nav className="flex flex-col space-y-3">
-              <Link
-                href="/"
-                className={cn(
-                  "text-sm font-medium transition-colors py-2 px-2 rounded-md",
-                  pathname === "/"
-                    ? "text-primary dark:text-[#F3C623] bg-primary/10 dark:bg-[#F3C623]/10"
-                    : "text-gray-700 hover:text-primary hover:bg-primary/5 dark:text-[#F3C623]/60 dark:hover:text-[#F3C623] dark:hover:bg-[#F3C623]/5"
-                )}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Home
-              </Link>
-              
-              {/* Explore Dropdown for Mobile */}
-              <div className="space-y-1">
-                <div className={cn(
-                  "text-sm font-medium py-2 px-2",
-                  exploreItems.some(item => pathname === item.href)
-                    ? "text-primary dark:text-[#F3C623]"
-                    : "text-gray-700 dark:text-[#F3C623]/60"
-                )}>
-                  Explore
-                </div>
-                <div className="ml-4 space-y-2">
-                  {exploreItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "block text-sm transition-colors py-2 px-2 rounded-md",
-                        pathname === item.href
-                          ? "text-primary dark:text-[#F3C623] bg-primary/10 dark:bg-[#F3C623]/10 font-semibold"
-                          : "text-gray-600 hover:text-primary hover:bg-primary/5 dark:text-[#F3C623]/50 dark:hover:text-[#F3C623] dark:hover:bg-[#F3C623]/5"
-                      )}
-                      onClick={() => setMobileMenuOpen(false)}
-                    >
-                      {item.name}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-              
-              {navItems.slice(1).map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "text-sm font-medium transition-colors py-2 px-2 rounded-md",
-                    pathname === item.href
-                      ? "text-primary dark:text-[#F3C623] bg-primary/10 dark:bg-[#F3C623]/10"
-                      : "text-gray-700 hover:text-primary hover:bg-primary/5 dark:text-[#F3C623]/60 dark:hover:text-[#F3C623] dark:hover:bg-[#F3C623]/5"
-                  )}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </nav>
-            <div className="flex flex-col gap-3 pt-3 border-t">
-              <div className="w-full">
-                <AlgorandWalletConnect variant="button" className="w-full" />
-              </div>
-              <div className="flex justify-center">
-                <div ref={modeToggleRef} data-theme-toggle>
-                  <ModeToggle />
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Mobile Menu */}
+        <div className="lg:hidden flex-shrink-0 ml-auto">
+          <MobileMenu />
         </div>
-      )}
+      </div>
+      <style jsx>{`
+        @keyframes glow {
+          0% { box-shadow: 0 0 4px 1px rgba(168,85,247,0.5), 0 0 8px 2px rgba(168,85,247,0.15); }
+          100% { box-shadow: 0 0 8px 2px rgba(168,85,247,0.7), 0 0 12px 4px rgba(168,85,247,0.2); }
+        }
+      `}</style>
     </header>
   );
-}
+};
