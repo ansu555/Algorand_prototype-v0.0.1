@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     
     if (projectId) {
       // Get single project
-      const project = getProject(projectId)
+      const project = await getProject(projectId)
       
       if (!project) {
         return NextResponse.json({ success: false, error: 'Project not found' }, { status: 404 })
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Get all projects (optionally filtered by status)
-    const projects = getAllProjects(status || undefined)
+    const projects = await getAllProjects(status || undefined)
     
     return NextResponse.json({
       success: true,
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
     
-    const projectId = createProject({
+    const projectId = await createProject({
       creatorAddress,
       tokenName,
       tokenSymbol,

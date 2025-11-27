@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     
     // Handle time-until-next-claim action
     if (action === 'time-until-claim' && questId) {
-      const timeRemaining = getTimeUntilNextClaim(userId, questId)
+      const timeRemaining = await getTimeUntilNextClaim(userId, questId)
       return NextResponse.json({
         success: true,
         data: { timeRemaining },
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       })
     }
     
-    const quests = getUserQuestProgress(userId)
+    const quests = await getUserQuestProgress(userId)
     
     // DEBUG: Log quest statuses being returned
     const dailyLogin = quests.find(q => q.id === 'daily_login')

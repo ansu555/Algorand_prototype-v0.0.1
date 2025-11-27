@@ -1,16 +1,12 @@
-// MCP Analytics Client
-// Types and utilities for calling the MCP analytics server
+// MCP Analytics Client - Client-side
+// Use this from React components
 
+import type { AnalyzeRequest, AnalyzeResponse } from '@/lib/mcp/types'
+
+export type { AnalyzeRequest, AnalyzeResponse }
 export type Granularity = '1h' | '4h' | '1d'
 export type Task = 'analysis' | 'prediction' | 'strategy' | 'charts'
 export type RiskLevel = 'low' | 'medium' | 'high'
-
-export interface AnalyzeRequest {
-  coin: string
-  horizonDays?: number
-  granularity?: Granularity
-  tasks?: Task[]
-}
 
 export interface Prediction {
   date: string
@@ -29,70 +25,9 @@ export interface Chart {
   url: string
 }
 
-export interface AnalyzeResponse {
-  ok: boolean
-  summary?: string
-  insights?: string[]
-  predictions?: Prediction[]
-  strategies?: Strategy[]
-  charts?: Chart[]
-  overallAnalysis?: string
-  methodology?: {
-    dataPoints: number
-    timeframe: string
-    method: string
-    indicators: string[]
-    confidence: string
-    calculations?: string
-  }
-  error?: string
-  suggestion?: string
-}
 
 /**
- * Call MCP analytics server to analyze a coin
- * This is a server-side utility - call from API routes or server components
- */
-export async function analyzeCoin(
-  params: AnalyzeRequest
-): Promise<AnalyzeResponse> {
-  const MCP_BASE_URL = process.env.MCP_BASE_URL || 'http://localhost:8080'
-  const MCP_API_KEY = process.env.MCP_ANALYTICS_API_KEY
-
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-  }
-
-  if (MCP_API_KEY) {
-    headers['Authorization'] = `Bearer ${MCP_API_KEY}`
-  }
-
-  try {
-    const response = await fetch(`${MCP_BASE_URL}/analyze`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(params),
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-      return {
-        ok: false,
-        error: errorData.error || `HTTP ${response.status}`,
-      }
-    }
-
-    return await response.json()
-  } catch (error: any) {
-    return {
-      ok: false,
-      error: error?.message || 'Failed to connect to MCP server',
-    }
-  }
-}
-
-/**
- * Client-side wrapper - calls via Next.js API proxy
+ * Client-side wrapper - calls Next.js API routes
  */
 export async function analyzeCoinClient(
   params: AnalyzeRequest

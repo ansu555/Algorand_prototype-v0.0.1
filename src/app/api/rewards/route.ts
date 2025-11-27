@@ -10,11 +10,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'userId is required' }, { status: 400 })
     }
     
-    const rewards = getOrCreateUserRewards(userId)
+    const rewards = await getOrCreateUserRewards(userId)
     
     // Update daily streak and track login
-    const newStreak = updateDailyStreak(userId)
-    trackUserAction(userId, 'login')
+    const newStreak = await updateDailyStreak(userId)
+    await trackUserAction(userId, 'login')
     
     const response = NextResponse.json({
       success: true,

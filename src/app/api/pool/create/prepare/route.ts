@@ -73,6 +73,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // NOTE: Incoming amounts are assumed to be HUMAN units (display units).
+    // We convert them to base units using asset decimals for balance validation.
+    const amount1HumanStr = String(amount1)
+    const amount2HumanStr = String(amount2)
+
+    function toBaseUnits(value: string | number, decimals: number): bigint {
+      const s = String(value).trim()
+      if (!/^\d+(\.\d+)?$/.test(s)) {
+        throw new Error(`Invalid numeric amount: ${value}`)
+      }
+      const [whole, fracRaw = ''] = s.split('.')
+      const frac = fracRaw.slice(0, decimals) // truncate extra precision
+      const scale = BigInt(10) ** BigInt(decimals)
+      const wholeUnits = BigInt(whole) * scale
+      const fracUnits = frac.length === 0 ? BigInt(0) : BigInt(frac.padEnd(decimals, '0'))
+      return wholeUnits + fracUnits
+    }
+
+    function formatHuman(base: bigint, decimals: number): string {
+      if (decimals === 0) return base.toString()
+      const s = base.toString().padStart(decimals + 1, '0')
+      const whole = s.slice(0, -decimals)
+      let frac = s.slice(-decimals)
+      frac = frac.replace(/0+$/, '')
+      return frac ? `${whole}.${frac}` : whole
+    }
+
     if (feeBps === undefined || feeBps < 0 || feeBps > 1000) {
       return NextResponse.json(
         { error: 'Fee must be between 0 and 1000 basis points (0-10%)' },
@@ -95,12 +122,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user is opted into required assets
+    // Check if user is opted into required assets & has sufficient balances
     try {
       const accountInfo = await algodClient.accountInformation(userAddress).do()
 
-      // Check opt-in for non-ALGO assets
+      // Fetch decimals for each required asset to convert human -> base units
       const requiredAssets = [asset1Id, asset2Id].filter((id: number) => id !== 0)
+      const decimalsMap: Record<number, number> = {}
+      for (const id of requiredAssets) {
+        try {
+          const info = await algodClient.getAssetByID(id).do()
+          decimalsMap[id] = info.params.decimals || 0
+        } catch (e) {
+          console.warn('Failed to fetch asset decimals, defaulting to 0 for', id, e)
+          decimalsMap[id] = 0
+        }
+      }
+
+      // Check opt-in for non-ALGO assets
       const userAssets = new Set((accountInfo.assets || []).map((a: any) => Number(a.assetId)))
 
       for (const assetId of requiredAssets) {
@@ -112,14 +151,30 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Check if user has sufficient balance
+      // Convert requested human amounts to base units using decimals
+      const amount1Base = toBaseUnits(amount1HumanStr, decimalsMap[asset1Id])
+      const amount2Base = toBaseUnits(amount2HumanStr, decimalsMap[asset2Id])
+
+      // Check if user has sufficient balance (base units)
       for (const assetId of requiredAssets) {
         const assetHolding = (accountInfo.assets || []).find((a: any) => Number(a.assetId) === assetId)
-        const amount = assetId === asset1Id ? Number(amount1) : Number(amount2)
+        const requestedBase = assetId === asset1Id ? amount1Base : amount2Base
+        const holdingBase = assetHolding ? BigInt(assetHolding.amount) : BigInt(0)
+        const decimals = decimalsMap[assetId]
 
-        if (!assetHolding || Number(assetHolding.amount) < amount) {
+        if (holdingBase < requestedBase) {
           return NextResponse.json(
-            { error: `Insufficient balance for asset ${assetId}` },
+            {
+              error: `Insufficient balance for asset ${assetId}`,
+              details: {
+                assetId,
+                requiredBaseUnits: requestedBase.toString(),
+                holdingBaseUnits: holdingBase.toString(),
+                requiredHuman: formatHuman(requestedBase, decimals),
+                holdingHuman: formatHuman(holdingBase, decimals),
+                decimals,
+              }
+            },
             { status: 400 }
           )
         }
@@ -284,7 +339,12 @@ export async function POST(request: NextRequest) {
       poolId: poolIdBase64, // NEW: Include pool ID for future add_liquidity calls (as base64)
       lpTokenName,
       lpTokenUnit,
-      estimatedLiquidity: Math.sqrt(Number(amount1) * Number(amount2)), // Rough estimate
+      estimatedLiquidity: Math.sqrt(Number(amount1) * Number(amount2)), // Rough estimate (human units)
+      asset1Decimals: asset1Info.decimals,
+      asset2Decimals: asset2Info.decimals,
+      // Provide base unit amounts for client reference
+      amount1BaseUnits: toBaseUnits(amount1HumanStr, asset1Info.decimals).toString(),
+      amount2BaseUnits: toBaseUnits(amount2HumanStr, asset2Info.decimals).toString(),
 
       // Important: This is only STEP 1 of pool creation
       // After these transactions are confirmed, you need to:
@@ -296,10 +356,14 @@ export async function POST(request: NextRequest) {
       metadata: {
         asset1Id,
         asset2Id,
-        amount1,
-        amount2,
+        amount1Human: amount1HumanStr,
+        amount2Human: amount2HumanStr,
+        amount1BaseUnits: toBaseUnits(amount1HumanStr, asset1Info.decimals).toString(),
+        amount2BaseUnits: toBaseUnits(amount2HumanStr, asset2Info.decimals).toString(),
         feeBps,
-        poolId: poolIdBase64, // NEW: Store for later use (as base64)
+        poolId: poolIdBase64,
+        asset1Decimals: asset1Info.decimals,
+        asset2Decimals: asset2Info.decimals,
       }
     })
 

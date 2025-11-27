@@ -23,7 +23,7 @@ export default function HomePage() {
             Real-time crypto data, automated portfolio logic, and intelligent routing—all in one unified interface.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/agent-dashboard"><Button size="lg" className="">Agent Dashboard</Button></Link>
+            <Link href="/portfolio"><Button size="lg" className="">Agent Dashboard</Button></Link>
             <Link href="/cryptocurrencies"><Button size="lg" variant="outline">Explore Assets</Button></Link>
           </div>
         </div>

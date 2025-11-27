@@ -1,51 +1,20 @@
-# 10xSwap: AI-Powered Algorand DEX + WaveBreak Token Launchpad + X Token Rewards
+# 10xSwap: AI-Powered Algorand DEX 
 
 10xSwap is a comprehensive Algorand ecosystem platform featuring:
 1. **AI-Powered DEX** - Natural language trading and portfolio management
-2. **WaveBreak Launchpad** - Fair token launches using bonding curves with anti-bot protection 🚀
+2. **Token Launchpad** - Fair token launches using bonding curves with anti-bot protection 🚀
 3. **X Token Rewards System** - Quest-based rewards with levels, streaks, and badges 🎮
 4. **Multi-DEX Aggregation** - Best price routing across Tinyman and Pact
 5. **Automated Trading** - Auto-Pilot rules for DCA, rebalancing, and rotation strategies
 
-## 🎉 Hackathon Highlight: WaveBreak Launchpad
-
-**WaveBreak** is a revolutionary token launchpad using **bonding curves** for fair, bot-resistant token launches. Built for [Algorand Hack Series #2].
-
-### Key Features
-- ✅ **Smart Contract-Powered:** PyTeal bonding curve with ABI methods
-- ✅ **Anti-Bot Protection:** Rate limiting, cooldown, max purchase caps
-- ✅ **3 Pricing Curves:** Linear, Exponential, Sigmoid
-- ✅ **Early Buyer Rewards:** Points system incentivizes community building
-- ✅ **Auto-DEX Graduation:** Creates liquidity pools when target reached
-- ✅ **TestNet Verified:** All transactions viewable on AlgoExplorer
-- ✅ **Modular SDK:** One codebase powers 4+ industries (meme, DAO, gaming, creator tokens)
-
-### Quick Start (Launchpad)
-```bash
-# 1. Deploy smart contract
-pip install pyteal beaker py-algorand-sdk
-export CREATOR_MNEMONIC="your 25 words..."
-python scripts/deploy-bonding-curve.py
-
-# 2. Update config
-# Edit src/lib/launchpad/algorand.ts with your App ID
-
-# 3. Test on TestNet
-npm run dev
-# Visit http://localhost:3000/launchpad
-```
-
-**📖 Full Documentation:**
-- [Hackathon Submission Guide](docs/HACKATHON_SUBMISSION.md)
-- [Deployment Checklist](docs/DEPLOYMENT_CHECKLIST.md)
-- [What We Built](docs/WHAT_WE_BUILT.md)
-
----
+** There is lots of bugs and some features not wroking in deployment we work on it but if anyone found any problem plss assign that as a issue, it will be helpfull.
 
 ## Table of Contents
 
 - [✨ Features](#-features)
-- [🚀 WaveBreak Token Launchpad](#-wavebreak-token-launchpad)
+- [🎯 Use Cases](#-use-cases)
+- [🚀 Token Launchpad](#-wavebreak-token-launchpad)
+- [🌍 Open-Source](#-open-source)
 - [🎮 X Token Rewards System](#-x-token-rewards-system)
 - [🏗️ Project Structure](#️-project-structure)
 - [🛠️ Getting Started](#-getting-started)
@@ -57,6 +26,7 @@ npm run dev
 - [📡 API Endpoints](#-api-endpoints)
 - [🤖 AI Agent Features](#-ai-agent-features)
 - [💎 Supported Tokens](#-supported-tokens)
+- [📜 Smart Contracts](#-smart-contracts)
 - [📖 Documentation](#-documentation)
 
 ## ✨ Features
@@ -72,13 +42,28 @@ npm run dev
 - **🎨 Modern UI**: Responsive design with dark mode support
 - **📦 On-Chain Smart Contracts**: Deployed autopilot rules and multi-hop swap router
 
-### 🚀 WaveBreak Token Launchpad
+### 🚀  Token Launchpad
 - **Bonding Curve Mechanics**: Linear, Exponential, and Sigmoid price curves
 - **Anti-Bot Protection**: Cooldown periods, per-transaction limits, whale penalties
 - **Early Buyer Rewards**: 3x → 1x points multiplier based on purchase timing
 - **Automated DEX Graduation**: Auto-creates liquidity pools when funding target reached
 - **30-Day Vesting**: Fair token distribution with linear unlock schedule
 - **LP Lock**: 6-month liquidity pool locks for project credibility
+
+---
+
+## 🌍 Open-Source
+
+### 10xSwap Launchpad SDK
+This SDK is a feature-complete, developer-ready module. It manages the entire launchpad lifecycle, handling both on-chain actions and off-chain database interactions. It provides an excellent developer experience (DX) with clear documentation and a logical, extensible structure. Its transparent design builds trust, making it ready to be packaged and published.
+
+### Future Plans:
+* **AI Agent Core:** Open-source the natural language processing engine to become the standard for on-chain transactions in Web3, allowing other dApps to build on our technology.
+* **DEX Aggregator & Smart Order Router:** Release the smart order router as a standalone library to provide a core DeFi building block for the ecosystem, solving a major developer need and creating a potential new revenue stream.
+* **Gamified Quest System:** Open-source the quest framework as a plug-and-play module to help other dApps easily add gamified engagement and retention features.
+* **PyTeal Smart Contracts:** Open-source all smart contracts, starting with the launchpad, to build trust through public audits and community verification, establishing our SDK as reliable infrastructure.
+
+---
 
 ### 🎮 X Token Rewards System
 - **Quest-Based Earning**: Daily, weekly, milestone, and achievement quests
@@ -102,9 +87,38 @@ npm run dev
 
 ---
 
-## 🚀 WaveBreak Token Launchpad
+## 🎯 Use Cases
 
-**WaveBreak** is a revolutionary fair-launch platform using **bonding curves** to ensure transparent, bot-resistant token distribution on Algorand.
+### 1. For the Busy Professional: "Set & Forget" Investing
+* **The Persona:** David, a busy professional who believes in Algorand's long-term potential but has no time to watch charts or manually execute trades.
+* **The Problem:** David wants to employ strategies like "buying the dip" or "taking profits," but his job prevents him from acting at the right moment. Setting up external trading bots is too technical and feels insecure.
+* **The Solution:** David uses our **Auto-Pilot Trading tool**. The platform's AI agent monitors the market 24/7 and automatically executes his trades, using the DEX aggregator to find the best price. David can now "set and forget" his strategy, knowing the platform is working for him.
+
+### 2. For the Newcomer: A Safe On-Ramp to DeFi
+* **The Persona:** Alex, a tech-savvy individual new to cryptocurrency, is overwhelmed by DeFi and afraid of making a costly mistake.
+* **The Problem:** The crypto world feels chaotic. Alex doesn't know how to tell a legitimate project from a scam, finds Discord confusing, and feels that using a DEX by copying contract addresses is too technical and risky.
+* **The Solution:** Alex discovers 10xSwap as the perfect "all-in-one" on-ramp. The **AI-Powered Chat Agent** lets him use natural language (e.g., "buy $20 of USDC") instead of complex UIs. The platform's aggregation and curated features provide a safe, clear starting point, removing the technical barriers and fear.
+
+### 3. For the Project Founder: A Fair & Secure Token Launch
+* **The Persona:** Elena, a developer with a new GameFi project on Algorand, has a utility token ($GAME) but limited capital and wants to avoid the pitfalls of traditional launches.
+* **The Problem:** IDOs are often dominated by bots, and creating a liquidity pool requires significant upfront capital, exposing the project to immediate volatility. Elena needs to distribute her token fairly, build liquidity, and attract a real community.
+* **The Solution:** Elena uses the ** Token Launchpad**. She configures a bonding curve for fair price discovery, while anti-bot protections and vesting schedules help build a genuine community. When the funding target is met, the platform automatically creates and locks the DEX liquidity pool, securing her project's foundation.
+
+### 4. For the Sophisticated Trader: Automated Arbitrage
+* **The Persona:** Kenji, a sophisticated trader who profits from small price differences for the same asset across different DEXs.
+* **The Problem:** Arbitrage is a game of speed. Manually executing trades across multiple DEX UIs is too slow, and writing custom bots is complex and hard to maintain.
+* **The Solution:** Kenji uses the **Auto-Pilot feature** for high-frequency trading. He sets an AI Agent rule to automatically execute an arbitrage trade (e.g., buy on DEX A, sell on DEX B) when a specific price difference is detected. The platform's backend monitors the pools and instantly executes the atomic transaction to secure the profit.
+
+### 5. For the Ecosystem Partner: Driving Real Engagement
+* **The Persona:** A community manager for a partner protocol (e.g., a lending platform) on Algorand.
+* **The Problem:** The manager needs to drive user engagement and educate the community. Traditional marketing has a low conversion rate, and they need a way to incentivize tangible user actions.
+* **The Solution:** The partner protocol sponsors a quest on the **X Token Rewards System**. They create an on-chain quest (e.g., "Supply 100 ALGO to our lending pool"). Users complete the task, and after on-chain verification, they claim rewards on 10xSwap. The partner gets genuine user interaction and TVL, while users are rewarded for engaging with the ecosystem.
+
+---
+
+## 🚀  Token Launchpad
+
+**** is a revolutionary fair-launch platform using **bonding curves** to ensure transparent, bot-resistant token distribution on Algorand.
 
 ### How It Works
 
@@ -280,7 +294,7 @@ Invite friends and earn lifetime rewards:
 - **Platform Currency**: Foundation for future features
 - **Leaderboard Status**: Show off your X holdings
 
-#### 🔜 Coming Soon
+#### 🔜 Coming Soon (entirely conseptual)
 - **Trading Fee Discounts**: Up to 75% off (Diamond tier: 50,000+ X)
 - **Staking Rewards**: 15% base APY, up to 40% with lock periods
 - **VIP Benefits**:
@@ -322,7 +336,7 @@ Algorand_prototype-v0.0.1/
 │   │   │   ├── agent/        # AI agent interface
 │   │   │   ├── wallet/       # Wallet management
 │   │   │   └── swap-demo/    # Token swap demo
-│   │   ├── launchpad/        # WaveBreak token launchpad
+│   │   ├── launchpad/        #  token launchpad
 │   │   │   ├── page.tsx      # Browse launches
 │   │   │   ├── create/       # Create new launch
 │   │   │   └── [projectId]/  # Project details & buy interface
@@ -366,7 +380,7 @@ Algorand_prototype-v0.0.1/
 │   │   ├── algorand-wallet.ts # Wallet integration
 │   │   ├── tokens.ts         # Token registry
 │   │   ├── db.ts             # Database connection
-│   │   ├── launchpad/        # WaveBreak launchpad
+│   │   ├── launchpad/        #  launchpad
 │   │   │   ├── algorand.ts   # Bonding curve interactions
 │   │   │   ├── db.ts         # Database operations
 │   │   │   ├── schema.sql    # Launchpad database schema
@@ -388,7 +402,7 @@ Algorand_prototype-v0.0.1/
 │   ├── FILE_STRUCTURE.md     # 📁 Detailed structure guide
 │   ├── SYSTEM_OVERVIEW.md    # 🏗️ System design
 │   ├── TOKEN_ECONOMICS.md    # 🎮 X Token rewards guide
-│   ├── TOKEN_LAUNCHPAD.md    # 🚀 WaveBreak launchpad
+│   ├── TOKEN_LAUNCHPAD.md    # 🚀  launchpad
 │   └── BACKEND_AND_AGENT_SPEC.md # ⚙️ Backend details
 └── data/                     # Runtime data (logs, db)
 ```
@@ -406,7 +420,7 @@ Algorand_prototype-v0.0.1/
 - **[⚙️ Backend & Agent Spec](./docs/BACKEND_AND_AGENT_SPEC.md)** - API endpoints and database schema
 - **[🧠 AI Agent & MCP/NCP](./docs/AI_AGENT_AND_MCP_NCP_SPEC.md)** - AI capabilities and analytics engine
 - **[🔐 Agent Wallet System](./docs/AGENT_WALLET_SYSTEM.md)** - Per-user agent wallets and automated trading
-- **[🚀 Token Launchpad](./docs/TOKEN_LAUNCHPAD.md)** - WaveBreak launchpad guide
+- **[🚀 Token Launchpad](./docs/TOKEN_LAUNCHPAD.md)** -  launchpad guide
 - **[🎮 Token Economics](./docs/TOKEN_ECONOMICS.md)** - X Token rewards system and economics
 
 ### Key Architectural Decisions
@@ -738,6 +752,51 @@ All API routes are located in `src/app/api/`:
 | `/api/price` | Token price queries | `src/app/api/price/` |
 | `/api/rules` | Trading rules management | `src/app/api/rules/` |
 
+## 📜 Smart Contracts
+
+10xSwap uses four main smart contracts deployed on Algorand Testnet for multi-DEX aggregation and automated trading.
+
+### Testnet Deployments
+
+| Contract | App ID | Address | Explorer Links |
+|----------|--------|---------|----------------|
+| **MultihopSwapRouter** | `749360450` | `OL7STUUNPYHLP3I73MG3ESSFWU2HGIFQ522TUOADK4WHD66W2T4A6M4B3Y` | [Application](https://lora.algokit.io/testnet/application/749360450) • [Transaction](https://lora.algokit.io/testnet/transaction/W6JEYCEWVHLQTYRAQZJ433DVPXDV25L3PJ7ALTFA766CZ72PLQVA) |
+| **TinymanPoolAdapter** | `749360541` | `IRIK74M646IKDJV2F3QGMVTKHRGRH4PW7C7EOZV5YUYFNT2DYBFJVDJILM` | [Application](https://lora.algokit.io/testnet/application/749360541) • [Transaction](https://lora.algokit.io/testnet/transaction/I7BH4U4HHZZIURVDRKO4O3RUNRYPM2KMTELQVPXDSQEWX7DJ6RQA) |
+| **PactPoolAdapter** | `749341932` | `5MF2XA5DFO2JKZCSNRGO64LYADV7ZUSF4VE2ZQFPUKPRGG2ZOLBIUOITQU` | [Application](https://lora.algokit.io/testnet/application/749341932) • [Transaction](https://lora.algokit.io/testnet/transaction/4DOBHUDTL26N5ZWRPYSGZNIP5NBVJIKRSYYVJHHSQ65AG5QAD7LA) |
+| **AutoPilotRuleContract** | `749509231` | `KO5JO5GWYY5TIY3NQJ3VHNKF6DZSVWGWHBJI55LSFPA5PYQXMGSGWIEGS4` | [Application](https://lora.algokit.io/testnet/application/749509231) |
+
+### Contract Purposes
+
+- **MultihopSwapRouter**: Main routing contract for executing multi-hop swaps across different DEXs
+- **TinymanPoolAdapter**: Adapter for Tinyman V2 DEX integration (0.30% fee)
+- **PactPoolAdapter**: Adapter for Pact Finance DEX integration (0.25% fee)
+- **AutoPilotRuleContract**: Smart contract for automated trading rules (DCA, rebalancing, rotation)
+
+### Source Files
+
+All contract source code, TEAL, and ABI specifications are available in:
+- **Source Code**: `Blockchain/projects/10x_Swap/smart_contracts/`
+- **Compiled Artifacts**: `artifacts/` (TEAL files and ARC56 JSON specifications)
+
+For detailed contract documentation, deployment procedures, and integration guides, see **[Smart Contracts & Deployment](./docs/CONTRACTS_AND_DEPLOYMENT.md)**
+
+### Liquidity Pool Integration
+
+10xSwap aggregates liquidity from multiple DEX protocols to provide optimal swap rates:
+
+- **Tinyman V2 Pools**: 100+ liquidity pools with 0.30% trading fee
+- **Pact Finance Pools**: 50+ liquidity pools with 0.25% trading fee
+- **Pool Discovery**: Automatic selection of best pool based on output amount and liquidity depth
+- **Multi-hop Routing**: Intelligent routing through multiple pools for optimal pricing
+
+The platform uses dedicated **pool adapter contracts** (TinymanPoolAdapter and PactPoolAdapter) to interact with each DEX's liquidity pools through a unified interface. This architecture enables:
+- ✅ Seamless multi-DEX aggregation
+- ✅ Automatic best-price selection
+- ✅ Slippage protection across all pools
+- ✅ Optimized gas costs
+
+For complete liquidity pool documentation, see **[Liquidity Pools Guide](./docs/LIQUIDITY_POOLS.md)**
+
 ## 📖 Documentation
 
 ### 📚 Complete Documentation
@@ -748,8 +807,8 @@ This project includes comprehensive documentation to help you understand and con
 - **[📁 File Structure Guide](./docs/FILE_STRUCTURE.md)** - Detailed walkthrough of every folder, file, and their purposes. Perfect for new developers to understand the codebase organization.
 
 #### 🏗️ Architecture & Design  
-- **[🏗️ System Architecture](./docs/SYSTEM_ARCHITECTURE.md)** - High-level system design, multi-chain infrastructure, technology stack, data flow, and security considerations.
-- **[⚙️ Backend Architecture](./docs/BACKEND_ARCHITECTURE.md)** - Detailed technical implementation, agent factory patterns, transaction pipeline, AI integration, and performance optimization.
+- **[🏗️ System Overview](./docs/SYSTEM_OVERVIEW.md)** - High-level system design, architecture, components, and data flows
+- **[⚙️ Backend & Agent Spec](./docs/BACKEND_AND_AGENT_SPEC.md)** - Backend architecture, API endpoints, and database schema
 
 ### 🚀 Quick Links
 
