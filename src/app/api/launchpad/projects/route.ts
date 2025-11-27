@@ -7,15 +7,15 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
     const status = searchParams.get('status') as ProjectStatus | null
-    
+
     if (projectId) {
       // Get single project
       const project = await getProject(projectId)
-      
+
       if (!project) {
         return NextResponse.json({ success: false, error: 'Project not found' }, { status: 404 })
       }
-      
+
       return NextResponse.json({
         success: true,
         data: {
@@ -36,10 +36,10 @@ export async function GET(request: NextRequest) {
         }
       })
     }
-    
+
     // Get all projects (optionally filtered by status)
     const projects = await getAllProjects(status || undefined)
-    
+
     return NextResponse.json({
       success: true,
       data: projects.map(p => ({
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
+
     const {
       creatorAddress,
       tokenName,
@@ -76,6 +76,8 @@ export async function POST(request: NextRequest) {
       totalSupply,
       description,
       logoUrl,
+      logoData,
+      logoMimeType,
       websiteUrl,
       twitterUrl,
       telegramUrl,
@@ -88,15 +90,21 @@ export async function POST(request: NextRequest) {
       lpLockDuration = '15552000', // 6 months
       dexPlatform = 'tinyman',
     } = body
-    
+
+    // Convert base64 logo data to data URL if provided
+    let finalLogoUrl = logoUrl
+    if (logoData && logoMimeType) {
+      finalLogoUrl = `data:${logoMimeType};base64,${logoData}`
+    }
+
     // Validation
     if (!creatorAddress || !tokenName || !tokenSymbol || !totalSupply || !basePrice || !maxPrice || !bondingTarget || !tokensForSale) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Missing required fields' 
+      return NextResponse.json({
+        success: false,
+        error: 'Missing required fields'
       }, { status: 400 })
     }
-    
+
     const projectId = await createProject({
       creatorAddress,
       tokenName,
@@ -104,7 +112,7 @@ export async function POST(request: NextRequest) {
       tokenDecimals,
       totalSupply: BigInt(totalSupply),
       description,
-      logoUrl,
+      logoUrl: finalLogoUrl,
       websiteUrl,
       twitterUrl,
       telegramUrl,
@@ -121,7 +129,7 @@ export async function POST(request: NextRequest) {
       lpLockDuration: BigInt(lpLockDuration),
       dexPlatform,
     })
-    
+
     return NextResponse.json({
       success: true,
       data: { projectId },
