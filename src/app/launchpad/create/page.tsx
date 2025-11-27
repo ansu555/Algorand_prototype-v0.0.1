@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
 import { SearchBar } from "@/components/shared/search-bar"
 import {
   Rocket, ArrowLeft, ArrowRight, CheckCircle2,
@@ -81,6 +82,97 @@ export default function CreateProjectPage() {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
+  // Calculate expected bonding target based on curve type
+  const calculateExpectedBondingTarget = (): number | null => {
+    const basePrice = Number(formData.basePrice)
+    const maxPrice = Number(formData.maxPrice)
+    const tokensForSale = Number(formData.tokensForSale)
+
+    if (!basePrice || !maxPrice || !tokensForSale || basePrice >= maxPrice) {
+      return null
+    }
+
+    // Calculate total ALGO needed to sell all tokens based on curve type
+    // This is an approximation using integral calculus concepts
+    let totalAlgo = 0
+
+    switch (formData.curveType) {
+      case 'linear':
+        // For linear: Price = Base + (Max - Base) * (Sold / Supply)
+        // Integral: Total = Base * Supply + (Max - Base) * Supply / 2
+        totalAlgo = basePrice * tokensForSale + ((maxPrice - basePrice) * tokensForSale) / 2
+        break
+
+      case 'exponential':
+        // For exponential: Price = Base * (Max / Base) ^ (Sold / Supply)
+        // Approximation using average price weighted toward higher end
+        const ratio = maxPrice / basePrice
+        totalAlgo = (basePrice * tokensForSale * (ratio - 1)) / Math.log(ratio)
+        break
+
+      case 'sigmoid':
+        // For sigmoid (quadratic): Price = Base + (Max - Base) * (Sold / Supply)²
+        // Integral: Total = Base * Supply + (Max - Base) * Supply / 3
+        totalAlgo = basePrice * tokensForSale + ((maxPrice - basePrice) * tokensForSale) / 3
+        break
+    }
+
+    return totalAlgo
+  }
+
+  // Validate bonding target against expected value
+  const getBondingTargetValidation = (): {
+    isValid: boolean
+    expectedTarget: number | null
+    message: string
+    severity: 'info' | 'warning' | 'error'
+  } => {
+    const expectedTarget = calculateExpectedBondingTarget()
+    const bondingTarget = Number(formData.bondingTarget)
+
+    if (!expectedTarget || !bondingTarget) {
+      return {
+        isValid: true,
+        expectedTarget,
+        message: '',
+        severity: 'info'
+      }
+    }
+
+    const difference = Math.abs(bondingTarget - expectedTarget)
+    const percentDiff = (difference / expectedTarget) * 100
+
+    if (bondingTarget > expectedTarget * 1.5) {
+      return {
+        isValid: false,
+        expectedTarget,
+        message: `Bonding target is too high. Based on your curve, you'll only raise ~${expectedTarget.toFixed(2)} ALGO when all tokens are sold.`,
+        severity: 'error'
+      }
+    } else if (bondingTarget < expectedTarget * 0.3) {
+      return {
+        isValid: false,
+        expectedTarget,
+        message: `Bonding target is very low. You could raise up to ~${expectedTarget.toFixed(2)} ALGO with your current settings.`,
+        severity: 'warning'
+      }
+    } else if (percentDiff > 20) {
+      return {
+        isValid: true,
+        expectedTarget,
+        message: `Suggested: ~${expectedTarget.toFixed(2)} ALGO based on your pricing curve.`,
+        severity: 'info'
+      }
+    }
+
+    return {
+      isValid: true,
+      expectedTarget,
+      message: `Looks good! Expected range: ${(expectedTarget * 0.7).toFixed(2)} - ${(expectedTarget * 1.2).toFixed(2)} ALGO`,
+      severity: 'info'
+    }
+  }
+
   const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -145,12 +237,14 @@ export default function CreateProjectPage() {
           Number(formData.tokensForSale) <= Number(formData.totalSupply)
         )
       case 2:
+        const validation = getBondingTargetValidation()
         return !!(
           formData.basePrice &&
           formData.maxPrice &&
           formData.bondingTarget &&
           Number(formData.maxPrice) > Number(formData.basePrice) &&
-          Number(formData.bondingTarget) > 0
+          Number(formData.bondingTarget) > 0 &&
+          validation.isValid
         )
       case 3:
         return !!(
@@ -437,6 +531,14 @@ export default function CreateProjectPage() {
                       ))}
                     </div>
 
+                    {/* Formula hint */}
+                    <p className="text-xs text-muted-foreground/60 font-mono">
+                      {formData.curveType === 'linear' && 'Formula: Price = Base + (Max - Base) * (Sold / Supply)'}
+                      {formData.curveType === 'exponential' && 'Formula: Price = Base * (Max / Base) ^ (Sold / Supply)'}
+                      {formData.curveType === 'sigmoid' && 'Formula: Price = Base + (Max - Base) * (Sold / Supply)²'}
+                    </p>
+
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label htmlFor="basePrice">Start Price (ALGO)</Label>
@@ -463,15 +565,51 @@ export default function CreateProjectPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="bondingTarget">Bonding Target (ALGO)</Label>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="bondingTarget">Bonding Target (ALGO)</Label>
+                        {calculateExpectedBondingTarget() && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-auto py-1 px-2 text-xs"
+                            onClick={() => {
+                              const expected = calculateExpectedBondingTarget()
+                              if (expected) {
+                                updateField('bondingTarget', expected.toFixed(2))
+                              }
+                            }}
+                          >
+                            Auto-calculate
+                          </Button>
+                        )}
+                      </div>
                       <Input
                         id="bondingTarget"
                         type="number"
                         placeholder="e.g., 2000"
                         value={formData.bondingTarget}
                         onChange={(e) => updateField('bondingTarget', e.target.value)}
-                        className="bg-muted/50"
+                        className={`bg-muted/50 ${formData.bondingTarget && !getBondingTargetValidation().isValid
+                          ? 'border-red-500 focus-visible:ring-red-500'
+                          : ''
+                          }`}
                       />
+                      {formData.bondingTarget && getBondingTargetValidation().message && (
+                        <div
+                          className={`text-xs flex items-start gap-2 p-2 rounded ${getBondingTargetValidation().severity === 'error'
+                            ? 'text-red-500 bg-red-500/10'
+                            : getBondingTargetValidation().severity === 'warning'
+                              ? 'text-amber-500 bg-amber-500/10'
+                              : 'text-blue-500 bg-blue-500/10'
+                            }`}
+                        >
+                          {getBondingTargetValidation().severity === 'error' && (
+                            <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                          )}
+                          <span>{getBondingTargetValidation().message}</span>
+                        </div>
+                      )}
                       <p className="text-sm text-muted-foreground">
                         Amount of ALGO to raise before graduating to DEX.
                       </p>
