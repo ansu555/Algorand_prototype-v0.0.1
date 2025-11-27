@@ -1,0 +1,7 @@
+{
+    "network": "testnet",
+    "app_id": 750316100,
+    "deployer": "5IZJEVVOAVXOVCN35JQ5PBDBDAPEBUTKST7GDGUGEBP5QNY7S5YWDYSME4",
+    "deployed_at": "2025-11-28T02:10:00+05:30",
+    "note": "Successfully deployed despite script error. Contract is live on TestNet."
+}

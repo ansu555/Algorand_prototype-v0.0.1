@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Heart, ExternalLink, Send } from "lucide-react"
+import { Heart, ExternalLink, Send, Copy } from "lucide-react"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 
@@ -60,7 +60,17 @@ export function TokenLaunchCard({
                                     </p>
                                 </div>
                                 <span className="text-[10px] text-muted-foreground whitespace-nowrap flex-shrink-0">
-                                    {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
+                                    {(() => {
+                                        try {
+                                            // Ensure date is treated as UTC if it comes from SQLite (no timezone info)
+                                            const dateStr = createdAt.includes('Z') || createdAt.includes('+')
+                                                ? createdAt
+                                                : `${createdAt.replace(' ', 'T')}Z`
+                                            return formatDistanceToNow(new Date(dateStr), { addSuffix: true })
+                                        } catch (e) {
+                                            return 'recently'
+                                        }
+                                    })()}
                                 </span>
                             </div>
 
@@ -72,8 +82,28 @@ export function TokenLaunchCard({
                                     <span className="text-[10px] text-muted-foreground">
                                         {creator ? `${creator.slice(0, 4)}...${creator.slice(-4)}` : 'Unknown'}
                                     </span>
+                                    {creator && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault()
+                                                e.stopPropagation()
+                                                navigator.clipboard.writeText(creator)
+                                            }}
+                                            className="ml-0.5 p-0.5 hover:bg-muted/50 rounded transition-colors"
+                                            title="Copy address"
+                                        >
+                                            <Copy className="w-2.5 h-2.5 text-muted-foreground hover:text-foreground" />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
+
+                            {/* Description under address */}
+                            {description && (
+                                <p className="text-[10px] text-muted-foreground/70 line-clamp-2 mt-1.5">
+                                    {description}
+                                </p>
+                            )}
                         </div>
 
                         {/* Stats & Progress */}
@@ -94,10 +124,6 @@ export function TokenLaunchCard({
                                     style={{ width: `${progress}%` }}
                                 />
                             </div>
-
-                            <p className="text-[10px] text-muted-foreground/60 line-clamp-1 truncate">
-                                {description || `Fair launch for ${name}`}
-                            </p>
                         </div>
                     </div>
                 </CardContent>
