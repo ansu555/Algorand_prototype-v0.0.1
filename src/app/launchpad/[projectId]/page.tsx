@@ -86,6 +86,12 @@ export default function ProjectDetailPage() {
 
   const loadProject = async () => {
     try {
+      // Skip loading if this is the create page
+      if (params.projectId === 'create') {
+        setLoading(false)
+        return
+      }
+
       const res = await fetch(`/api/launchpad/projects?projectId=${params.projectId}`)
       const data = await res.json()
 
@@ -101,6 +107,11 @@ export default function ProjectDetailPage() {
 
   const loadUserPoints = async () => {
     try {
+      // Skip loading if this is the create page
+      if (params.projectId === 'create') {
+        return
+      }
+
       const res = await fetch(`/api/launchpad/user?action=points&projectId=${params.projectId}&userAddress=${activeAccount?.address}`)
       const data = await res.json()
 
