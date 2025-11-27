@@ -10,7 +10,7 @@ import { ApplicationClient } from '@algorandfoundation/algokit-utils/types/app-c
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 
 // Contract configuration
-export const LAUNCHPAD_APP_ID = parseInt(process.env.NEXT_PUBLIC_LAUNCHPAD_APP_ID || '750316100')
+export const LAUNCHPAD_APP_ID = parseInt(process.env.NEXT_PUBLIC_LAUNCHPAD_APP_ID || '750321727')
 export const ALGORAND_NETWORK = process.env.NEXT_PUBLIC_ALGORAND_NETWORK || 'testnet'
 
 // Algorand node configuration
@@ -302,10 +302,12 @@ export async function initializeProject(
             { type: 'uint64', name: 'max_buy_per_user' },
             { type: 'uint64', name: 'liquidity_percent' },
             { type: 'uint64', name: 'liquidity_lock_days' },
-            { type: 'address', name: 'platform_address' }
+            { type: 'account', name: 'platform_address' }
         ],
         returns: { type: 'void' }
     })
+
+    const platformAddr = params.platformAddress || PLATFORM_ADDRESS
 
     const configureTxn = algosdk.makeApplicationCallTxnFromObject({
         sender: params.userAddress,
@@ -313,7 +315,7 @@ export async function initializeProject(
         onComplete: algosdk.OnApplicationComplete.NoOpOC,
         appArgs: [
             configureMethod.getSelector(),
-            new Uint8Array([0]), // Index 0 in foreignAssets
+            new Uint8Array([0]), // Index 0 in foreignAssets (ASA)
             algosdk.encodeUint64(params.totalSupply),
             algosdk.encodeUint64(params.tokensForSale),
             algosdk.encodeUint64(params.startPrice),
@@ -324,9 +326,10 @@ export async function initializeProject(
             algosdk.encodeUint64(params.maxBuyPerUser),
             algosdk.encodeUint64(params.liquidityPercent),
             algosdk.encodeUint64(params.liquidityLockDays),
-            algosdk.decodeAddress(params.platformAddress || PLATFORM_ADDRESS).publicKey
+            new Uint8Array([1]) // Index 1 in accounts (Platform Address) - Index 0 is sender
         ],
         foreignAssets: [params.asaId],
+        accounts: [platformAddr],
         suggestedParams,
     })
 

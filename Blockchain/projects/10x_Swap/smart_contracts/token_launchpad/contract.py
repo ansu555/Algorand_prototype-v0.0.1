@@ -132,8 +132,7 @@ class TokenLaunchpad(ARC4Contract):
         assert tokens_sold + n <= tokens_for_sale, "Not enough tokens"
 
         # Payment is expected as group txn 0 (buyer -> app)
-        pay = gtxn[0]
-        assert pay.type_enum == Txn.PaymentType, "First grouped txn must be Payment"
+        pay = gtxn.PaymentTransaction(0)
         assert pay.receiver == Global.current_application_address, "Payment must go to app address"
         assert pay.sender == Txn.sender, "Payment sender must equal caller"
 
@@ -142,7 +141,7 @@ class TokenLaunchpad(ARC4Contract):
         user_key = buyer.bytes
         user_data_bytes, exists = op.Box.get(user_key)
 
-        bought_before = 0
+        bought_before = UInt64(0)
         if exists:
             rec = UserRecord.from_bytes(user_data_bytes)
             bought_before = rec.total_bought.native
@@ -173,7 +172,7 @@ class TokenLaunchpad(ARC4Contract):
         # Update user record in box storage
         new_user = UserRecord(
             total_bought=arc4.UInt64(bought_before + n),
-            last_buy_round=arc4.UInt64(Global.round.native)
+            last_buy_round=arc4.UInt64(Global.round)
         )
         op.Box.put(user_key, new_user.bytes)
 

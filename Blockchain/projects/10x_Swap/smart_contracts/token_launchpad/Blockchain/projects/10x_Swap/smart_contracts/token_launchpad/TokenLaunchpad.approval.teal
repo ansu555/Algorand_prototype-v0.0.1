@@ -7,95 +7,95 @@ main:
     bytecblock 0x0000000000000000 "launch_status" "creator" "algo_raised" "tokens_sold" "asa_id" "tokens_for_sale" "start_price" "target_price" "bonding_target" "max_buy_per_tx" "max_buy_per_user" "platform_address" "platform_fee_percent" "total_supply" "curve_type" "liquidity_percent" "liquidity_lock_days" 0x0000000000000001
     txn ApplicationID
     bnz main_after_if_else@2
-    // contract.py:26-27
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:26-27
     // # Global State (ARC4 wrappers)
     // self.creator = Account()
     bytec_2 // "creator"
     global ZeroAddress
     app_global_put
-    // contract.py:28
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:28
     // self.asa_id = arc4.UInt64(0)
     bytec 5 // "asa_id"
     bytec_0 // 0x0000000000000000
     app_global_put
-    // contract.py:29
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:29
     // self.total_supply = arc4.UInt64(0)
     bytec 14 // "total_supply"
     bytec_0 // 0x0000000000000000
     app_global_put
-    // contract.py:30
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:30
     // self.tokens_for_sale = arc4.UInt64(0)
     bytec 6 // "tokens_for_sale"
     bytec_0 // 0x0000000000000000
     app_global_put
-    // contract.py:31
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:31
     // self.start_price = arc4.UInt64(0)
     bytec 7 // "start_price"
     bytec_0 // 0x0000000000000000
     app_global_put
-    // contract.py:32
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:32
     // self.target_price = arc4.UInt64(0)
     bytec 8 // "target_price"
     bytec_0 // 0x0000000000000000
     app_global_put
-    // contract.py:33
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:33
     // self.bonding_target = arc4.UInt64(0)
     bytec 9 // "bonding_target"
     bytec_0 // 0x0000000000000000
     app_global_put
-    // contract.py:34
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:34
     // self.curve_type = arc4.UInt64(0)  # 0=Linear, 1=Exponential, 2=Sigmoid
     bytec 15 // "curve_type"
     bytec_0 // 0x0000000000000000
     app_global_put
-    // contract.py:35
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:35
     // self.tokens_sold = arc4.UInt64(0)
     bytec 4 // "tokens_sold"
     bytec_0 // 0x0000000000000000
     app_global_put
-    // contract.py:36
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:36
     // self.algo_raised = arc4.UInt64(0)
     bytec_3 // "algo_raised"
     bytec_0 // 0x0000000000000000
     app_global_put
-    // contract.py:37
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:37
     // self.max_buy_per_tx = arc4.UInt64(0)
     bytec 10 // "max_buy_per_tx"
     bytec_0 // 0x0000000000000000
     app_global_put
-    // contract.py:38
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:38
     // self.max_buy_per_user = arc4.UInt64(0)
     bytec 11 // "max_buy_per_user"
     bytec_0 // 0x0000000000000000
     app_global_put
-    // contract.py:39
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:39
     // self.liquidity_percent = arc4.UInt64(0)
     bytec 16 // "liquidity_percent"
     bytec_0 // 0x0000000000000000
     app_global_put
-    // contract.py:40
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:40
     // self.liquidity_lock_days = arc4.UInt64(0)
     bytec 17 // "liquidity_lock_days"
     bytec_0 // 0x0000000000000000
     app_global_put
-    // contract.py:41
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:41
     // self.launch_status = arc4.UInt64(0)  # 0=Prelaunch, 1=Live, 2=Completed, 3=Finalized
     bytec_1 // "launch_status"
     bytec_0 // 0x0000000000000000
     app_global_put
-    // contract.py:42
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:42
     // self.platform_address = Account()
     bytec 12 // "platform_address"
     global ZeroAddress
     app_global_put
-    // contract.py:43
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:43
     // self.platform_fee_percent = arc4.UInt64(0)
     bytec 13 // "platform_fee_percent"
     bytec_0 // 0x0000000000000000
     app_global_put
 
 main_after_if_else@2:
-    // contract.py:20
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:20
     // class TokenLaunchpad(ARC4Contract):
     txn NumAppArgs
     bz main_create@13
@@ -110,7 +110,7 @@ main_after_if_else@2:
     err
 
 main_create@13:
-    // contract.py:45-46
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:45-46
     // # -----------------------
     // @arc4.baremethod(allow_actions=["NoOp"], create="require")
     txn OnCompletion
@@ -119,23 +119,23 @@ main_create@13:
     !
     &&
     assert // OnCompletion must be NoOp && can only call when creating
-    // contract.py:49
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:49
     // self.creator = Txn.sender
     bytec_2 // "creator"
     txn Sender
     app_global_put
-    // contract.py:50
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:50
     // self.launch_status = arc4.UInt64(0)
     bytec_1 // "launch_status"
     bytec_0 // 0x0000000000000000
     app_global_put
-    // contract.py:51-52
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:51-52
     // # default platform fee 1% (stored as integer percentage)
     // self.platform_fee_percent = arc4.UInt64(1)
     bytec 13 // "platform_fee_percent"
     bytec 18 // 0x0000000000000001
     app_global_put
-    // contract.py:45-46
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:45-46
     // # -----------------------
     // @arc4.baremethod(allow_actions=["NoOp"], create="require")
     intc_2 // 1
@@ -144,7 +144,7 @@ main_create@13:
 
 // contract.TokenLaunchpad.configure[routing]() -> void:
 configure:
-    // contract.py:54-55
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:54-55
     // # -----------------------
     // @arc4.abimethod
     txna ApplicationArgs 1
@@ -219,7 +219,7 @@ configure:
     pushint 32 // 32
     ==
     assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
-    // contract.py:72
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:72
     // assert Txn.sender == self.creator, "Only creator"
     txn Sender
     intc_0 // 0
@@ -228,7 +228,7 @@ configure:
     assert // check self.creator exists
     ==
     assert // Only creator
-    // contract.py:73
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:73
     // assert self.launch_status.native == 0, "Already configured"
     intc_0 // 0
     bytec_1 // "launch_status"
@@ -237,20 +237,20 @@ configure:
     btoi
     !
     assert // Already configured
-    // contract.py:75-76
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:75-76
     // # Basic sanity checks (use .native for comparisons)
     // assert total_supply.native > 0, "total_supply must be > 0"
     dig 10
     btoi
     dup
     assert // total_supply must be > 0
-    // contract.py:77
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:77
     // assert tokens_for_sale.native > 0, "tokens_for_sale must be > 0"
     dig 10
     btoi
     dup
     assert // tokens_for_sale must be > 0
-    // contract.py:78
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:78
     // assert start_price.native < target_price.native, "start_price must be < target_price"
     dig 10
     btoi
@@ -258,78 +258,78 @@ configure:
     btoi
     <
     assert // start_price must be < target_price
-    // contract.py:79
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:79
     // assert tokens_for_sale.native <= total_supply.native, "tokens_for_sale <= total_supply"
     >=
     assert // tokens_for_sale <= total_supply
-    // contract.py:81-82
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:81-82
     // # Store params (wrap as arc4.UInt64)
     // self.asa_id = arc4.UInt64(asa.id)
     bytec 5 // "asa_id"
     uncover 12
     app_global_put
-    // contract.py:83
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:83
     // self.total_supply = arc4.UInt64(total_supply.native)
     bytec 14 // "total_supply"
     uncover 11
     app_global_put
-    // contract.py:84
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:84
     // self.tokens_for_sale = arc4.UInt64(tokens_for_sale.native)
     bytec 6 // "tokens_for_sale"
     uncover 10
     app_global_put
-    // contract.py:85
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:85
     // self.start_price = arc4.UInt64(start_price.native)
     bytec 7 // "start_price"
     uncover 9
     app_global_put
-    // contract.py:86
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:86
     // self.target_price = arc4.UInt64(target_price.native)
     bytec 8 // "target_price"
     uncover 8
     app_global_put
-    // contract.py:87
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:87
     // self.bonding_target = arc4.UInt64(bonding_target.native)
     bytec 9 // "bonding_target"
     uncover 7
     app_global_put
-    // contract.py:88
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:88
     // self.curve_type = arc4.UInt64(curve_type.native)
     bytec 15 // "curve_type"
     uncover 6
     app_global_put
-    // contract.py:89
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:89
     // self.max_buy_per_tx = arc4.UInt64(max_buy_per_tx.native)
     bytec 10 // "max_buy_per_tx"
     uncover 5
     app_global_put
-    // contract.py:90
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:90
     // self.max_buy_per_user = arc4.UInt64(max_buy_per_user.native)
     bytec 11 // "max_buy_per_user"
     uncover 4
     app_global_put
-    // contract.py:91
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:91
     // self.liquidity_percent = arc4.UInt64(liquidity_percent.native)
     bytec 16 // "liquidity_percent"
     uncover 3
     app_global_put
-    // contract.py:92
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:92
     // self.liquidity_lock_days = arc4.UInt64(liquidity_lock_days.native)
     bytec 17 // "liquidity_lock_days"
     uncover 2
     app_global_put
-    // contract.py:93
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:93
     // self.platform_address = platform_address
     bytec 12 // "platform_address"
     swap
     app_global_put
-    // contract.py:94-95
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:94-95
     // # Set to Live
     // self.launch_status = arc4.UInt64(1)
     bytec_1 // "launch_status"
     bytec 18 // 0x0000000000000001
     app_global_put
-    // contract.py:54-55
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:54-55
     // # -----------------------
     // @arc4.abimethod
     intc_2 // 1
@@ -338,7 +338,7 @@ configure:
 
 // contract.TokenLaunchpad.bootstrap[routing]() -> void:
 bootstrap:
-    // contract.py:97-98
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:97-98
     // # -----------------------
     // @arc4.abimethod
     txna ApplicationArgs 1
@@ -348,7 +348,7 @@ bootstrap:
     ==
     assert // invalid number of bytes for arc4.uint64
     btoi
-    // contract.py:101
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:101
     // assert Txn.sender == self.creator, "Only creator"
     txn Sender
     intc_0 // 0
@@ -357,7 +357,7 @@ bootstrap:
     assert // check self.creator exists
     ==
     assert // Only creator
-    // contract.py:102-107
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:102-107
     // # ASA opt-in (0 amount)
     // itxn.AssetTransfer(
     //     xfer_asset=asa.id,
@@ -365,23 +365,23 @@ bootstrap:
     //     asset_amount=0,
     // ).submit()
     itxn_begin
-    // contract.py:105
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:105
     // asset_receiver=Global.current_application_address,
     global CurrentApplicationAddress
-    // contract.py:106
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:106
     // asset_amount=0,
     intc_0 // 0
     itxn_field AssetAmount
     itxn_field AssetReceiver
     itxn_field XferAsset
-    // contract.py:102-103
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:102-103
     // # ASA opt-in (0 amount)
     // itxn.AssetTransfer(
     pushint 4 // axfer
     itxn_field TypeEnum
     intc_0 // 0
     itxn_field Fee
-    // contract.py:102-107
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:102-107
     // # ASA opt-in (0 amount)
     // itxn.AssetTransfer(
     //     xfer_asset=asa.id,
@@ -389,7 +389,7 @@ bootstrap:
     //     asset_amount=0,
     // ).submit()
     itxn_submit
-    // contract.py:97-98
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:97-98
     // # -----------------------
     // @arc4.abimethod
     intc_2 // 1
@@ -400,7 +400,7 @@ bootstrap:
 buy:
     pushbytes ""
     dup
-    // contract.py:109-110
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:109-110
     // # -----------------------
     // @arc4.abimethod
     txna ApplicationArgs 1
@@ -409,7 +409,7 @@ buy:
     intc_1 // 8
     ==
     assert // invalid number of bytes for arc4.uint64
-    // contract.py:119-120
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:119-120
     // # Basic state checks
     // assert self.launch_status.native == 1, "Sale not live"
     intc_0 // 0
@@ -420,14 +420,14 @@ buy:
     intc_2 // 1
     ==
     assert // Sale not live
-    // contract.py:122
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:122
     // n = quantity.native
     btoi
     dupn 2
-    // contract.py:123
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:123
     // assert n > 0, "Quantity must be positive"
     assert // Quantity must be positive
-    // contract.py:125-126
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:125-126
     // # Read native ints from state
     // tokens_for_sale = self.tokens_for_sale.native
     intc_0 // 0
@@ -437,7 +437,7 @@ buy:
     btoi
     dup
     cover 2
-    // contract.py:127
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:127
     // tokens_sold = self.tokens_sold.native
     intc_0 // 0
     bytec 4 // "tokens_sold"
@@ -446,7 +446,7 @@ buy:
     btoi
     dup
     cover 3
-    // contract.py:128
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:128
     // start_price = self.start_price.native
     intc_0 // 0
     bytec 7 // "start_price"
@@ -454,7 +454,7 @@ buy:
     assert // check self.start_price exists
     btoi
     cover 3
-    // contract.py:129
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:129
     // target_price = self.target_price.native
     intc_0 // 0
     bytec 8 // "target_price"
@@ -462,11 +462,11 @@ buy:
     assert // check self.target_price exists
     btoi
     cover 3
-    // contract.py:131
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:131
     // assert tokens_for_sale > 0, "tokens_for_sale not set"
     dig 1
     assert // tokens_for_sale not set
-    // contract.py:132
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:132
     // assert tokens_sold + n <= tokens_for_sale, "Not enough tokens"
     uncover 2
     +
@@ -474,7 +474,7 @@ buy:
     uncover 2
     <=
     assert // Not enough tokens
-    // contract.py:134-135
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:134-135
     // # Payment is expected as group txn 0 (buyer -> app)
     // pay = gtxn.PaymentTransaction(0)
     intc_0 // 0
@@ -483,38 +483,38 @@ buy:
     ==
     assert // transaction type is pay
     intc_0 // 0
-    // contract.py:136
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:136
     // assert pay.receiver == Global.current_application_address, "Payment must go to app address"
     gtxns Receiver
     global CurrentApplicationAddress
     ==
     assert // Payment must go to app address
-    // contract.py:134-135
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:134-135
     // # Payment is expected as group txn 0 (buyer -> app)
     // pay = gtxn.PaymentTransaction(0)
     intc_0 // 0
-    // contract.py:137
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:137
     // assert pay.sender == Txn.sender, "Payment sender must equal caller"
     gtxns Sender
     txn Sender
     ==
     assert // Payment sender must equal caller
-    // contract.py:139-140
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:139-140
     // # Per-user limits using op.Box keyed by sender bytes
     // buyer = Txn.sender
     txn Sender
     dup
-    // contract.py:142
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:142
     // user_data_bytes, exists = op.Box.get(user_key)
     box_get
-    // contract.py:144
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:144
     // bought_before = UInt64(0)
     intc_0 // 0
     swap
-    // contract.py:145
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:145
     // if exists:
     bz buy_after_if_else@3
-    // contract.py:147
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:147
     // bought_before = rec.total_bought.native
     dig 1
     intc_0 // 0
@@ -522,7 +522,7 @@ buy:
     bury 1
 
 buy_after_if_else@3:
-    // contract.py:149-150
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:149-150
     // # Enforce caps (use native values)
     // assert bought_before + n <= self.max_buy_per_user.native, "Exceeds max per user"
     dup
@@ -538,7 +538,7 @@ buy_after_if_else@3:
     dig 1
     >=
     assert // Exceeds max per user
-    // contract.py:151
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:151
     // assert n <= self.max_buy_per_tx.native, "Exceeds max per tx"
     intc_0 // 0
     bytec 10 // "max_buy_per_tx"
@@ -548,14 +548,14 @@ buy_after_if_else@3:
     dig 2
     >=
     assert // Exceeds max per tx
-    // contract.py:156
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:156
     // delta_p = p1 - p0
     dig 6
     dig 8
     dup
     cover 3
     -
-    // contract.py:158-159
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:158-159
     // # cost = p0*n + delta_p * n * (2*s + n) / (2 * tokens_for_sale)
     // numerator = delta_p * n * ((tokens_sold * 2) + n)
     dig 3
@@ -566,15 +566,15 @@ buy_after_if_else@3:
     dig 4
     +
     *
-    // contract.py:160
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:160
     // denominator = tokens_for_sale * 2
     dig 11
     intc_3 // 2
     *
-    // contract.py:161
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:161
     // curve_add = numerator // denominator
     /
-    // contract.py:162
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:162
     // cost = p0 * n + curve_add  # cost in microAlgos
     uncover 2
     dig 3
@@ -582,23 +582,23 @@ buy_after_if_else@3:
     +
     dup
     bury 14
-    // contract.py:134-135
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:134-135
     // # Payment is expected as group txn 0 (buyer -> app)
     // pay = gtxn.PaymentTransaction(0)
     intc_0 // 0
-    // contract.py:164-165
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:164-165
     // # Verify payment amount (paid is native int microAlgos)
     // paid = pay.amount
     gtxns Amount
     dup
     bury 14
-    // contract.py:166
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:166
     // assert paid >= cost, "Insufficient payment provided"
     dup
     dig 2
     >=
     assert // Insufficient payment provided
-    // contract.py:168-169
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:168-169
     // # Update global state (wrap back to arc4.UInt64)
     // self.tokens_sold = arc4.UInt64(tokens_sold + n)
     dig 7
@@ -606,7 +606,7 @@ buy_after_if_else@3:
     bytec 4 // "tokens_sold"
     swap
     app_global_put
-    // contract.py:170
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:170
     // self.algo_raised = arc4.UInt64(self.algo_raised.native + cost)
     intc_0 // 0
     bytec_3 // "algo_raised"
@@ -619,28 +619,28 @@ buy_after_if_else@3:
     bytec_3 // "algo_raised"
     swap
     app_global_put
-    // contract.py:174
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:174
     // total_bought=arc4.UInt64(bought_before + n),
     uncover 2
     itob
-    // contract.py:175
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:175
     // last_buy_round=arc4.UInt64(Global.round)
     global Round
     itob
-    // contract.py:172-176
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:172-176
     // # Update user record in box storage
     // new_user = UserRecord(
     //     total_bought=arc4.UInt64(bought_before + n),
     //     last_buy_round=arc4.UInt64(Global.round)
     // )
     concat
-    // contract.py:177
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:177
     // op.Box.put(user_key, new_user.bytes)
     dig 6
     dup
     uncover 2
     box_put
-    // contract.py:179-184
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:179-184
     // # Transfer ASA tokens (contract must hold sufficient tokens)
     // itxn.AssetTransfer(
     //     xfer_asset=self.asa_id.native,
@@ -648,7 +648,7 @@ buy_after_if_else@3:
     //     asset_amount=n,
     // ).submit()
     itxn_begin
-    // contract.py:181
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:181
     // xfer_asset=self.asa_id.native,
     intc_0 // 0
     bytec 5 // "asa_id"
@@ -659,14 +659,14 @@ buy_after_if_else@3:
     itxn_field AssetAmount
     itxn_field XferAsset
     itxn_field AssetReceiver
-    // contract.py:179-180
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:179-180
     // # Transfer ASA tokens (contract must hold sufficient tokens)
     // itxn.AssetTransfer(
     pushint 4 // axfer
     itxn_field TypeEnum
     intc_0 // 0
     itxn_field Fee
-    // contract.py:179-184
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:179-184
     // # Transfer ASA tokens (contract must hold sufficient tokens)
     // itxn.AssetTransfer(
     //     xfer_asset=self.asa_id.native,
@@ -674,17 +674,17 @@ buy_after_if_else@3:
     //     asset_amount=n,
     // ).submit()
     itxn_submit
-    // contract.py:186-187
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:186-187
     // # Refund any overpayment
     // if paid > cost:
     <
     bz buy_after_if_else@7
-    // contract.py:188
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:188
     // change = paid - cost
     dig 9
     dig 11
     -
-    // contract.py:189-192
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:189-192
     // itxn.Payment(
     //     receiver=buyer,
     //     amount=change
@@ -693,13 +693,13 @@ buy_after_if_else@3:
     itxn_field Amount
     dig 2
     itxn_field Receiver
-    // contract.py:189
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:189
     // itxn.Payment(
     intc_2 // pay
     itxn_field TypeEnum
     intc_0 // 0
     itxn_field Fee
-    // contract.py:189-192
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:189-192
     // itxn.Payment(
     //     receiver=buyer,
     //     amount=change
@@ -707,7 +707,7 @@ buy_after_if_else@3:
     itxn_submit
 
 buy_after_if_else@7:
-    // contract.py:194-195
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:194-195
     // # Check completion (native comparisons)
     // if self.tokens_sold.native >= tokens_for_sale or self.algo_raised.native >= self.bonding_target.native:
     intc_0 // 0
@@ -732,14 +732,14 @@ buy_after_if_else@7:
     bz buy_after_if_else@10
 
 buy_if_body@9:
-    // contract.py:196
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:196
     // self.launch_status = arc4.UInt64(2)
     bytec_1 // "launch_status"
     pushbytes 0x0000000000000002
     app_global_put
 
 buy_after_if_else@10:
-    // contract.py:109-110
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:109-110
     // # -----------------------
     // @arc4.abimethod
     intc_2 // 1
@@ -748,7 +748,7 @@ buy_after_if_else@10:
 
 // contract.TokenLaunchpad.finalize[routing]() -> void:
 finalize:
-    // contract.py:202
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:202
     // assert Txn.sender == self.creator, "Only creator"
     txn Sender
     intc_0 // 0
@@ -757,7 +757,7 @@ finalize:
     assert // check self.creator exists
     ==
     assert // Only creator
-    // contract.py:203
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:203
     // assert self.launch_status.native == 2, "Sale not completed"
     intc_0 // 0
     bytec_1 // "launch_status"
@@ -767,21 +767,21 @@ finalize:
     intc_3 // 2
     ==
     assert // Sale not completed
-    // contract.py:205
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:205
     // total_raised = self.algo_raised.native
     intc_0 // 0
     bytec_3 // "algo_raised"
     app_global_get_ex
     assert // check self.algo_raised exists
     btoi
-    // contract.py:206
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:206
     // fee_pct = self.platform_fee_percent.native
     intc_0 // 0
     bytec 13 // "platform_fee_percent"
     app_global_get_ex
     assert // check self.platform_fee_percent exists
     btoi
-    // contract.py:207
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:207
     // platform_fee = (total_raised * fee_pct) // 100
     dig 1
     *
@@ -789,22 +789,22 @@ finalize:
     /
     dup
     uncover 2
-    // contract.py:209
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:209
     // creator_amount = total_raised - platform_fee
     dig 1
     -
     swap
-    // contract.py:211-212
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:211-212
     // # 1. Pay Platform Fee
     // if platform_fee > 0:
     bz finalize_after_if_else@4
-    // contract.py:213-216
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:213-216
     // itxn.Payment(
     //     receiver=self.platform_address,
     //     amount=platform_fee
     // ).submit()
     itxn_begin
-    // contract.py:214
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:214
     // receiver=self.platform_address,
     intc_0 // 0
     bytec 12 // "platform_address"
@@ -813,13 +813,13 @@ finalize:
     dig 2
     itxn_field Amount
     itxn_field Receiver
-    // contract.py:213
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:213
     // itxn.Payment(
     intc_2 // pay
     itxn_field TypeEnum
     intc_0 // 0
     itxn_field Fee
-    // contract.py:213-216
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:213-216
     // itxn.Payment(
     //     receiver=self.platform_address,
     //     amount=platform_fee
@@ -827,18 +827,18 @@ finalize:
     itxn_submit
 
 finalize_after_if_else@4:
-    // contract.py:218-219
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:218-219
     // # 2. Pay Creator (Revenue + Liquidity Capital)
     // if creator_amount > 0:
     dup
     bz finalize_after_if_else@7
-    // contract.py:220-223
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:220-223
     // itxn.Payment(
     //     receiver=self.creator,
     //     amount=creator_amount
     // ).submit()
     itxn_begin
-    // contract.py:221
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:221
     // receiver=self.creator,
     intc_0 // 0
     bytec_2 // "creator"
@@ -847,13 +847,13 @@ finalize_after_if_else@4:
     dig 1
     itxn_field Amount
     itxn_field Receiver
-    // contract.py:220
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:220
     // itxn.Payment(
     intc_2 // pay
     itxn_field TypeEnum
     intc_0 // 0
     itxn_field Fee
-    // contract.py:220-223
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:220-223
     // itxn.Payment(
     //     receiver=self.creator,
     //     amount=creator_amount
@@ -861,12 +861,12 @@ finalize_after_if_else@4:
     itxn_submit
 
 finalize_after_if_else@7:
-    // contract.py:225
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:225
     // self.launch_status = arc4.UInt64(3)
     bytec_1 // "launch_status"
     pushbytes 0x0000000000000003
     app_global_put
-    // contract.py:198-199
+    // Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py:198-199
     // # -----------------------
     // @arc4.abimethod
     intc_2 // 1
