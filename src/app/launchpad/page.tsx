@@ -7,6 +7,7 @@ import { Rocket } from "lucide-react"
 import Link from "next/link"
 import { TokenLaunchCard } from "@/components/features/launchpad/token-launch-card"
 import { LaunchpadFilters } from "@/components/features/launchpad/launchpad-filters"
+import { LaunchpadBanner } from "@/components/features/launchpad/launchpad-banner"
 
 interface Project {
   id: string
@@ -81,7 +82,7 @@ export default function LaunchpadPage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Top Navigation Bar (Search + Actions) */}
-      <div className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-16 z-40">
+      <div className="pt-6">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 font-bold text-xl">
             Launchpad
@@ -104,6 +105,8 @@ export default function LaunchpadPage() {
 
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
+        <LaunchpadBanner />
+
         {/* Filters and Grid */}
         <div className="space-y-6">
           <LaunchpadFilters
@@ -124,7 +127,7 @@ export default function LaunchpadPage() {
               <p className="text-muted-foreground">No projects found matching your criteria.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredProjects.map((project) => {
                 const progress = calculateProgress(project.tokensSold, project.tokensForSale)
                 // Estimate market cap based on bonding target (simplified)

@@ -34,10 +34,10 @@ export function TokenLaunchCard({
 }: TokenLaunchCardProps) {
     return (
         <Link href={`/launchpad/${id}`}>
-            <Card className="bg-[#111111] border-border/40 hover:border-border/80 transition-all duration-300 group overflow-hidden h-full">
+            <Card className="bg-card dark:bg-[#111111] border-border/40 hover:border-border/80 transition-all duration-300 group overflow-hidden h-full">
                 <CardContent className="p-3 flex gap-4 h-full">
                     {/* Left: Large Image */}
-                    <div className="w-[120px] h-[120px] flex-shrink-0 relative rounded-md overflow-hidden bg-muted/20 border border-border/20">
+                    <div className="w-[160px] h-[160px] flex-shrink-0 relative rounded-md overflow-hidden bg-muted/20 border border-border/20">
                         {logoUrl ? (
                             <img src={logoUrl} alt={name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                         ) : (

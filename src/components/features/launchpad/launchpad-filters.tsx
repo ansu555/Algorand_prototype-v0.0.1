@@ -32,7 +32,7 @@ export function LaunchpadFilters({
             {/* Left: Filter Dropdown */}
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="w-full md:w-auto min-w-[140px] justify-between bg-[#111111] border-border/40 hover:bg-accent hover:text-accent-foreground">
+                    <Button variant="outline" className="w-full md:w-auto min-w-[140px] justify-between bg-background dark:bg-[#111111] border-border/40 hover:bg-accent hover:text-accent-foreground">
                         {currentFilter === 'all' ? 'All Tokens' :
                             currentFilter === 'active' ? 'Active' :
                                 currentFilter === 'graduated' ? 'Graduated' : 'All Tokens'}
@@ -49,24 +49,24 @@ export function LaunchpadFilters({
             {/* Right: Actions */}
             <div className="flex items-center gap-2 w-full md:w-auto">
                 {/* Favorites Toggle (Mock) */}
-                <Button variant="outline" size="icon" className="bg-[#111111] border-border/40">
+                <Button variant="outline" size="icon" className="bg-background dark:bg-[#111111] border-border/40">
                     <Heart className="h-4 w-4" />
                 </Button>
 
                 {/* History (Mock) */}
-                <Button variant="outline" size="icon" className="bg-[#111111] border-border/40">
+                <Button variant="outline" size="icon" className="bg-background dark:bg-[#111111] border-border/40">
                     <History className="h-4 w-4" />
                 </Button>
 
                 {/* Filter (Mock) */}
-                <Button variant="outline" size="icon" className="bg-[#111111] border-border/40">
+                <Button variant="outline" size="icon" className="bg-background dark:bg-[#111111] border-border/40">
                     <Filter className="h-4 w-4" />
                 </Button>
 
                 {/* Sort Dropdown */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="min-w-[110px] justify-between bg-[#111111] border-border/40">
+                        <Button variant="outline" className="min-w-[110px] justify-between bg-background dark:bg-[#111111] border-border/40">
                             <ArrowUpDown className="h-4 w-4 mr-2" />
                             {currentSort === 'newest' ? 'Newest' :
                                 currentSort === 'oldest' ? 'Oldest' :

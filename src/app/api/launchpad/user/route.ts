@@ -7,18 +7,18 @@ export async function GET(request: NextRequest) {
     const userAddress = searchParams.get('userAddress')
     const projectId = searchParams.get('projectId')
     const action = searchParams.get('action')
-    
+
     if (!userAddress || !projectId) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Missing userAddress or projectId' 
+      return NextResponse.json({
+        success: false,
+        error: 'Missing userAddress or projectId'
       }, { status: 400 })
     }
-    
+
     if (action === 'points') {
       // Get user points
-      const points = getUserPoints(userAddress, projectId)
-      
+      const points = await getUserPoints(userAddress, projectId)
+
       return NextResponse.json({
         success: true,
         data: points ? {
@@ -33,11 +33,11 @@ export async function GET(request: NextRequest) {
         } : null
       })
     }
-    
+
     if (action === 'purchases') {
       // Get purchase history
-      const purchases = getPurchaseHistory(projectId, userAddress)
-      
+      const purchases = await getPurchaseHistory(projectId, userAddress)
+
       return NextResponse.json({
         success: true,
         data: purchases.map(p => ({
@@ -54,12 +54,12 @@ export async function GET(request: NextRequest) {
         }))
       })
     }
-    
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Invalid action' 
+
+    return NextResponse.json({
+      success: false,
+      error: 'Invalid action'
     }, { status: 400 })
-    
+
   } catch (error: any) {
     console.error('User data error:', error)
     return NextResponse.json({ success: false, error: error.message }, { status: 500 })
