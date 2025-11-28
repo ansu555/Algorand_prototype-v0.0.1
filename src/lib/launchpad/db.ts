@@ -22,7 +22,7 @@ import {
 
 // Lazy-load libsql client for Turso
 let clientPromise: Promise<any> | null = null
-async function getClient() {
+export async function getClient() {
   if (!clientPromise) {
     clientPromise = (async () => {
       const url = process.env.TURSO_DATABASE_URL || process.env.LIBSQL_DB_URL
