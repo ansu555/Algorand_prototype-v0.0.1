@@ -33,7 +33,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ExistingProviders>
             <TxnLabWalletProvider>
               <Header />
-              {children}
+              <main className="pt-24 min-h-screen">
+                {children}
+              </main>
               {/* Floating chat bubble on bottom-right */}
               <ChatBubble variant="floating" align="right" />
             </TxnLabWalletProvider>

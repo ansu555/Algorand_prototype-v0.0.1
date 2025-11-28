@@ -8,7 +8,14 @@ import type { PoolInfo } from "@/lib/dex/types"
 import { useAssetSearch, useTradeableAssets } from "@/hooks/use-tradeable-assets"
 import { useRouter } from "next/navigation"
 
-export function SearchBar() {
+interface SearchBarProps {
+  placeholder?: string
+  value?: string
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
+  className?: string
+}
+
+export function SearchBar({ placeholder, value, onChange, className }: SearchBarProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchFocused, setSearchFocused] = useState(false)
   const [searchTab, setSearchTab] = useState<"all" | "tokens" | "pools">("all")
@@ -27,7 +34,7 @@ export function SearchBar() {
 
   // Shared pool fetching logic (extracted for reuse)
   const fetchPoolsRef = useRef<() => Promise<void>>()
-  
+
   useEffect(() => {
     const CACHE_KEY = `pools_cache_${network}`
     const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes, keep in sync with server TTL
@@ -77,7 +84,7 @@ export function SearchBar() {
               pools: json.pools,
             }))
           }
-        } catch {}
+        } catch { }
       } catch (e: any) {
         setPoolsError(e.message || 'Failed to fetch pools')
       } finally {
@@ -235,12 +242,18 @@ export function SearchBar() {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 pointer-events-none" />
         <Input
           type="text"
-          placeholder="Search tokens and pools"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={placeholder || "Search tokens and pools"}
+          value={value !== undefined ? value : searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value)
+            onChange?.(e)
+          }}
           onFocus={() => setSearchFocused(true)}
           onKeyDown={handleKeyDown}
-          className="flex w-full rounded-md border-input px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-10 h-12 text-base bg-white dark:bg-[#171717] border-2 focus-visible:ring-red-600 dark:focus-visible:ring-[#F3C623]"
+          className={cn(
+            "flex w-full rounded-md border-input px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-10 h-12 text-base bg-white dark:bg-[#171717] border-2 focus-visible:ring-red-600 dark:focus-visible:ring-[#F3C623]",
+            className
+          )}
         />
         {/* <div className="absolute right-4 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-gray-200/50 dark:bg-gray-700/50 border border-gray-300/50 dark:border-gray-600/50">
           <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">/</span>
@@ -385,10 +398,10 @@ export function SearchBar() {
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium text-foreground">{a1.symbol}/{a2.symbol}</span>
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-800">{p.dexName}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-800">{(p.fee/100).toFixed(2)}%</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-800">{(p.fee / 100).toFixed(2)}%</span>
                           </div>
                           {p.poolAddress && (
-                            <span className="text-xs text-muted-foreground font-mono">{p.poolAddress.slice(0,6)}...{p.poolAddress.slice(-4)}</span>
+                            <span className="text-xs text-muted-foreground font-mono">{p.poolAddress.slice(0, 6)}...{p.poolAddress.slice(-4)}</span>
                           )}
                         </div>
                       </button>

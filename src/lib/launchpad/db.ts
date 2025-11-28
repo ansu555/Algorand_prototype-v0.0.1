@@ -45,15 +45,49 @@ async function ensureInit() {
     const client = await getClient()
     const fs = await import('fs')
     const path = await import('path')
-    
+
+    // Run base schema
     const schemaPath = path.join(process.cwd(), 'src', 'lib', 'launchpad', 'schema.sql')
-    
+
     if (fs.existsSync(schemaPath)) {
       const schema = fs.readFileSync(schemaPath, 'utf-8')
       const statements = schema.split(';').filter(s => s.trim())
       for (const statement of statements) {
         if (statement.trim()) {
-          await client.execute(statement.trim())
+          try {
+            await client.execute(statement.trim())
+          } catch (error: any) {
+            // Ignore errors for existing tables
+            if (!error.message?.includes('already exists')) {
+              console.error('Schema error:', error.message)
+            }
+          }
+        }
+      }
+    }
+
+    // Run migrations
+    const migrationsPath = path.join(process.cwd(), 'src', 'lib', 'launchpad', 'migrations')
+    if (fs.existsSync(migrationsPath)) {
+      const migrationFiles = fs.readdirSync(migrationsPath)
+        .filter(f => f.endsWith('.sql'))
+        .sort()
+
+      for (const file of migrationFiles) {
+        const migrationSql = fs.readFileSync(path.join(migrationsPath, file), 'utf-8')
+        const statements = migrationSql.split(';').filter(s => s.trim() && !s.trim().startsWith('--'))
+
+        for (const statement of statements) {
+          if (statement.trim()) {
+            try {
+              await client.execute(statement.trim())
+            } catch (error: any) {
+              // Ignore duplicate column errors
+              if (!error.message?.includes('duplicate column name')) {
+                console.error(`Migration ${file} error:`, error.message)
+              }
+            }
+          }
         }
       }
     }
@@ -66,14 +100,16 @@ export async function createProject(project: Omit<LaunchProject, 'id' | 'created
   await ensureInit()
   const client = await getClient()
   const projectId = `project_${Date.now()}_${randomBytes(4).toString('hex')}`
-  
+
   await client.execute({
     sql: `INSERT INTO launch_projects (
       id, creator_address, token_name, token_symbol, token_decimals, total_supply,
       description, logo_url, website_url, twitter_url, telegram_url,
       curve_type, base_price, max_price, bonding_target, tokens_for_sale,
-      liquidity_percentage, lp_lock_duration, dex_platform, status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      liquidity_percentage, lp_lock_duration, dex_platform, status,
+      asa_id, app_id, config_tx_id, bootstrap_tx_id, funding_tx_id,
+      max_buy_per_tx, max_buy_per_user, cooldown_blocks
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [
       projectId,
       project.creatorAddress,
@@ -94,10 +130,18 @@ export async function createProject(project: Omit<LaunchProject, 'id' | 'created
       project.liquidityPercentage,
       project.lpLockDuration.toString(),
       project.dexPlatform,
-      project.status
+      project.status,
+      project.asaId?.toString() || null,
+      project.appId?.toString() || null,
+      project.configTxId || null,
+      project.bootstrapTxId || null,
+      project.fundingTxId || null,
+      project.maxBuyPerTx?.toString() || null,
+      project.maxBuyPerUser?.toString() || null,
+      project.cooldownBlocks?.toString() || null
     ]
   })
-  
+
   return projectId
 }
 
@@ -108,10 +152,10 @@ export async function getProject(projectId: string): Promise<LaunchProject | nul
     sql: 'SELECT * FROM launch_projects WHERE id = ?',
     args: [projectId]
   })
-  
+
   const row: any = rows[0]
   if (!row) return null
-  
+
   return {
     id: row.id,
     creatorAddress: row.creator_address,
@@ -126,6 +170,9 @@ export async function getProject(projectId: string): Promise<LaunchProject | nul
     telegramUrl: row.telegram_url,
     asaId: row.asa_id ? BigInt(row.asa_id) : undefined,
     appId: row.app_id ? BigInt(row.app_id) : undefined,
+    configTxId: row.config_tx_id,
+    bootstrapTxId: row.bootstrap_tx_id,
+    fundingTxId: row.funding_tx_id,
     curveType: row.curve_type as CurveType,
     basePrice: BigInt(row.base_price),
     maxPrice: BigInt(row.max_price),
@@ -140,6 +187,9 @@ export async function getProject(projectId: string): Promise<LaunchProject | nul
     liquidityPercentage: row.liquidity_percentage,
     lpLockDuration: BigInt(row.lp_lock_duration),
     dexPlatform: row.dex_platform,
+    maxBuyPerTx: row.max_buy_per_tx ? BigInt(row.max_buy_per_tx) : undefined,
+    maxBuyPerUser: row.max_buy_per_user ? BigInt(row.max_buy_per_user) : undefined,
+    cooldownBlocks: row.cooldown_blocks ? BigInt(row.cooldown_blocks) : undefined,
     createdAt: row.created_at,
     launchedAt: row.launched_at,
     graduatedAt: row.graduated_at,
@@ -150,12 +200,12 @@ export async function getProject(projectId: string): Promise<LaunchProject | nul
 export async function getAllProjects(status?: ProjectStatus): Promise<LaunchProject[]> {
   await ensureInit()
   const client = await getClient()
-  
+
   const { rows } = status
     ? await client.execute({ sql: 'SELECT * FROM launch_projects WHERE status = ? ORDER BY created_at DESC', args: [status] })
     : await client.execute('SELECT * FROM launch_projects ORDER BY created_at DESC')
-  
-  return rows.map(row => ({
+
+  return rows.map((row: { id: any; creator_address: any; token_name: any; token_symbol: any; token_decimals: any; total_supply: string | number | bigint | boolean; description: any; logo_url: any; website_url: any; twitter_url: any; telegram_url: any; asa_id: string | number | bigint | boolean; app_id: string | number | bigint | boolean; config_tx_id: any; bootstrap_tx_id: any; funding_tx_id: any; curve_type: string; base_price: string | number | bigint | boolean; max_price: string | number | bigint | boolean; bonding_target: string | number | bigint | boolean; tokens_for_sale: string | number | bigint | boolean; status: string; tokens_sold: string | number | bigint | boolean; algo_raised: string | number | bigint | boolean; participant_count: any; launch_round: string | number | bigint | boolean; graduation_round: string | number | bigint | boolean; liquidity_percentage: any; lp_lock_duration: string | number | bigint | boolean; dex_platform: any; max_buy_per_tx: string | number | bigint | boolean; max_buy_per_user: string | number | bigint | boolean; cooldown_blocks: string | number | bigint | boolean; created_at: any; launched_at: any; graduated_at: any; updated_at: any }) => ({
     id: row.id,
     creatorAddress: row.creator_address,
     tokenName: row.token_name,
@@ -169,6 +219,9 @@ export async function getAllProjects(status?: ProjectStatus): Promise<LaunchProj
     telegramUrl: row.telegram_url,
     asaId: row.asa_id ? BigInt(row.asa_id) : undefined,
     appId: row.app_id ? BigInt(row.app_id) : undefined,
+    configTxId: row.config_tx_id,
+    bootstrapTxId: row.bootstrap_tx_id,
+    fundingTxId: row.funding_tx_id,
     curveType: row.curve_type as CurveType,
     basePrice: BigInt(row.base_price),
     maxPrice: BigInt(row.max_price),
@@ -183,6 +236,9 @@ export async function getAllProjects(status?: ProjectStatus): Promise<LaunchProj
     liquidityPercentage: row.liquidity_percentage,
     lpLockDuration: BigInt(row.lp_lock_duration),
     dexPlatform: row.dex_platform,
+    maxBuyPerTx: row.max_buy_per_tx ? BigInt(row.max_buy_per_tx) : undefined,
+    maxBuyPerUser: row.max_buy_per_user ? BigInt(row.max_buy_per_user) : undefined,
+    cooldownBlocks: row.cooldown_blocks ? BigInt(row.cooldown_blocks) : undefined,
     createdAt: row.created_at,
     launchedAt: row.launched_at,
     graduatedAt: row.graduated_at,
@@ -193,12 +249,12 @@ export async function getAllProjects(status?: ProjectStatus): Promise<LaunchProj
 export async function updateProjectStatus(projectId: string, status: ProjectStatus, additionalData?: any): Promise<void> {
   await ensureInit()
   const client = await getClient()
-  
+
   await client.execute({
     sql: 'UPDATE launch_projects SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
     args: [status, projectId]
   })
-  
+
   if (additionalData) {
     if (additionalData.asaId) {
       await client.execute({
@@ -230,36 +286,36 @@ export async function updateProjectStatus(projectId: string, status: ProjectStat
 // Bonding Curve Calculations
 export function calculateSigmoidPrice(params: BondingCurveParams): bigint {
   const { basePrice, maxPrice, totalSupply, tokensSold } = params
-  
+
   // Progress as percentage * 100 (0-10000)
   const progress = (tokensSold * 10000n) / totalSupply
-  
+
   // Simplified sigmoid: price = base + (max - base) * (progress / 10000)^2
   const priceIncrease = (progress * progress) / 10000n
   const priceDelta = ((maxPrice - basePrice) * priceIncrease) / 10000n
-  
+
   return basePrice + priceDelta
 }
 
 export function calculateLinearPrice(params: BondingCurveParams): bigint {
   const { basePrice, maxPrice, totalSupply, tokensSold } = params
-  
+
   const progress = (tokensSold * 10000n) / totalSupply
   const priceDelta = ((maxPrice - basePrice) * progress) / 10000n
-  
+
   return basePrice + priceDelta
 }
 
 export function calculateExponentialPrice(params: BondingCurveParams): bigint {
   const { basePrice, maxPrice, totalSupply, tokensSold } = params
-  
+
   const progress = (tokensSold * 10000n) / totalSupply
-  
+
   // Exponential: price = base * (max/base)^(progress/10000)
   // Simplified for TEAL compatibility
   const ratio = (maxPrice * 10000n) / basePrice
   const expFactor = (ratio * progress) / 10000n
-  
+
   return (basePrice * expFactor) / 10000n
 }
 
@@ -279,7 +335,7 @@ export function calculatePrice(params: BondingCurveParams): bigint {
 export async function getPriceQuote(projectId: string, tokensAmount: bigint): Promise<PriceQuote | null> {
   const project = await getProject(projectId)
   if (!project) return null
-  
+
   const currentPrice = calculatePrice({
     curveType: project.curveType,
     basePrice: project.basePrice,
@@ -287,10 +343,10 @@ export async function getPriceQuote(projectId: string, tokensAmount: bigint): Pr
     totalSupply: project.tokensForSale,
     tokensSold: project.tokensSold
   })
-  
+
   // Calculate total cost (simplified - should integrate for accurate pricing)
   const totalCost = (tokensAmount * currentPrice) / BigInt(10 ** project.tokenDecimals)
-  
+
   // Calculate price impact
   const priceAfter = calculatePrice({
     curveType: project.curveType,
@@ -299,14 +355,14 @@ export async function getPriceQuote(projectId: string, tokensAmount: bigint): Pr
     totalSupply: project.tokensForSale,
     tokensSold: project.tokensSold + tokensAmount
   })
-  
+
   const priceImpact = Number((priceAfter - currentPrice) * 10000n / currentPrice) / 100
-  
+
   // Calculate points with early bonus
   const progress = calculateProgress(project.tokensSold, project.tokensForSale)
   const earlyBonus = calculateEarlyBonus(progress)
   const pointsToEarn = BigInt(Math.floor(Number(tokensAmount) * earlyBonus))
-  
+
   return {
     tokensAmount,
     totalCost,
@@ -328,11 +384,11 @@ export async function recordPurchase(
   await ensureInit()
   const client = await getClient()
   const project = await getProject(projectId)
-  
+
   if (!project) throw new Error('Project not found')
-  
+
   const purchaseId = `purchase_${Date.now()}_${randomBytes(4).toString('hex')}`
-  
+
   const currentPrice = calculatePrice({
     curveType: project.curveType,
     basePrice: project.basePrice,
@@ -340,11 +396,11 @@ export async function recordPurchase(
     totalSupply: project.tokensForSale,
     tokensSold: project.tokensSold
   })
-  
+
   const progress = calculateProgress(project.tokensSold, project.tokensForSale)
   const earlyBonus = calculateEarlyBonus(progress)
   const pointsEarned = BigInt(Math.floor(Number(tokensAmount) * earlyBonus))
-  
+
   // Record purchase
   await client.execute({
     sql: `INSERT INTO token_purchases (
@@ -363,22 +419,22 @@ export async function recordPurchase(
       blockRound.toString()
     ]
   })
-  
+
   // Update project stats
   const newTokensSold = project.tokensSold + tokensAmount
   const newAlgoRaised = project.algoRaised + algoPaid
-  
+
   await client.execute({
     sql: 'UPDATE launch_projects SET tokens_sold = ?, algo_raised = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
     args: [newTokensSold.toString(), newAlgoRaised.toString(), projectId]
   })
-  
+
   // Update or create points record
   const { rows: existingPointsRows } = await client.execute({
     sql: 'SELECT * FROM launchpad_points WHERE user_address = ? AND project_id = ?',
     args: [buyerAddress, projectId]
   })
-  
+
   if (existingPointsRows.length > 0) {
     await client.execute({
       sql: 'UPDATE launchpad_points SET points_balance = points_balance + ?, total_earned = total_earned + ?, updated_at = CURRENT_TIMESTAMP WHERE user_address = ? AND project_id = ?',
@@ -389,20 +445,20 @@ export async function recordPurchase(
       sql: 'INSERT INTO launchpad_points (user_address, project_id, points_balance, total_earned) VALUES (?, ?, ?, ?)',
       args: [buyerAddress, projectId, pointsEarned.toString(), pointsEarned.toString()]
     })
-    
+
     // Increment participant count
     await client.execute({
       sql: 'UPDATE launch_projects SET participant_count = participant_count + 1 WHERE id = ?',
       args: [projectId]
     })
   }
-  
+
   // Update anti-bot record
   const { rows: antibotRows } = await client.execute({
     sql: 'SELECT * FROM launchpad_antibot WHERE user_address = ? AND project_id = ?',
     args: [buyerAddress, projectId]
   })
-  
+
   if (antibotRows.length > 0) {
     await client.execute({
       sql: 'UPDATE launchpad_antibot SET purchase_count = purchase_count + 1, last_purchase_round = ?, total_tokens_bought = total_tokens_bought + ?, updated_at = CURRENT_TIMESTAMP WHERE user_address = ? AND project_id = ?',
@@ -414,7 +470,7 @@ export async function recordPurchase(
       args: [buyerAddress, projectId, blockRound.toString(), tokensAmount.toString()]
     })
   }
-  
+
   return purchaseId
 }
 
@@ -428,27 +484,27 @@ export async function validatePurchase(
   await ensureInit()
   const client = await getClient()
   const project = await getProject(projectId)
-  
+
   if (!project) return { valid: false, reason: 'Project not found' }
   if (project.status !== 'active') return { valid: false, reason: 'Project not active' }
-  
+
   // Check if enough tokens available
   if (project.tokensSold + tokensAmount > project.tokensForSale) {
     return { valid: false, reason: 'Insufficient tokens available' }
   }
-  
+
   // Check per-transaction limit (1% of total supply)
   const maxPerTx = (project.tokensForSale * BigInt(MAX_PURCHASE_PER_TX_PERCENT)) / 100n
   if (tokensAmount > maxPerTx) {
     return { valid: false, reason: `Maximum ${MAX_PURCHASE_PER_TX_PERCENT}% per transaction` }
   }
-  
+
   // Get anti-bot record
   const { rows: antibotRows } = await client.execute({
     sql: 'SELECT * FROM launchpad_antibot WHERE user_address = ? AND project_id = ?',
     args: [buyerAddress, projectId]
   })
-  
+
   if (antibotRows.length > 0) {
     const antibotRecord: any = antibotRows[0]
     // Check cooldown period
@@ -458,20 +514,20 @@ export async function validatePurchase(
         return { valid: false, reason: 'Cooldown period active' }
       }
     }
-    
+
     // Check per-user limit (5% of total supply)
     const maxPerUser = (project.tokensForSale * BigInt(MAX_PURCHASE_PER_USER_PERCENT)) / 100n
     const totalAfterPurchase = BigInt(antibotRecord.total_tokens_bought) + tokensAmount
     if (totalAfterPurchase > maxPerUser) {
       return { valid: false, reason: `Maximum ${MAX_PURCHASE_PER_USER_PERCENT}% per address` }
     }
-    
+
     // Check if flagged as bot
     if (antibotRecord.flagged_as_bot) {
       return { valid: false, reason: 'Address flagged for suspicious activity' }
     }
   }
-  
+
   return { valid: true }
 }
 
@@ -482,10 +538,10 @@ export async function getUserPoints(userAddress: string, projectId: string): Pro
     sql: 'SELECT * FROM launchpad_points WHERE user_address = ? AND project_id = ?',
     args: [userAddress, projectId]
   })
-  
+
   const row: any = rows[0]
   if (!row) return null
-  
+
   return {
     userAddress: row.user_address,
     projectId: row.project_id,
@@ -501,12 +557,12 @@ export async function getUserPoints(userAddress: string, projectId: string): Pro
 export async function getPurchaseHistory(projectId: string, buyerAddress?: string): Promise<TokenPurchase[]> {
   await ensureInit()
   const client = await getClient()
-  
+
   const { rows } = buyerAddress
     ? await client.execute({ sql: 'SELECT * FROM token_purchases WHERE project_id = ? AND buyer_address = ? ORDER BY timestamp DESC', args: [projectId, buyerAddress] })
     : await client.execute({ sql: 'SELECT * FROM token_purchases WHERE project_id = ? ORDER BY timestamp DESC', args: [projectId] })
-  
-  return rows.map(row => ({
+
+  return rows.map((row: { id: any; project_id: any; buyer_address: any; tokens_amount: string | number | bigint | boolean; algo_paid: string | number | bigint | boolean; price_per_token: string | number | bigint | boolean; points_earned: string | number | bigint | boolean; transaction_id: any; block_round: string | number | bigint | boolean; timestamp: any }) => ({
     id: row.id,
     projectId: row.project_id,
     buyerAddress: row.buyer_address,
