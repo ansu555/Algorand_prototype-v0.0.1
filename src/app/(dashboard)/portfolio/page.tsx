@@ -13,12 +13,25 @@ import { useToast } from "@/components/ui/use-toast"
 import { formatTrigger, type Rule, describeRule } from "@/lib/shared/rules"
 import { forceRunPoller, useAgentData } from "@/features/agent/hooks/useAgentData"
 import { deleteRule as apiDeleteRule, createRule } from "@/features/agent/api/client"
-import { ChevronDown, ChevronUp, Play, Trash2, Eye, RefreshCw, Zap, Activity, Clock, Target, TrendingUp, AlertCircle, CheckCircle2, XCircle, Pause, DollarSign, TrendingDown, BarChart3, Lock, Wallet, Plus } from "lucide-react"
+import { ChevronDown, ChevronUp, Play, Trash2, Eye, RefreshCw, Zap, Activity, Clock, Target, TrendingUp, AlertCircle, CheckCircle2, XCircle, Pause, DollarSign, TrendingDown, BarChart3, Lock, Wallet, Plus, Loader2 } from "lucide-react"
 import { useWalletConnection, useWalletActions } from '@/components/providers/txnlab-wallet-provider'
 import algosdk from 'algosdk'
 import RuleBuilderModal from "@/components/features/rules/rule-builder-modal"
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
+interface LaunchpadPosition {
+  projectId: string
+  tokenName: string
+  tokenSymbol: string
+  tokenDecimals: number
+  logoUrl?: string
+  tokensHeld: string
+  algoSpent: string
+  averagePrice: string
+  purchaseCount: number
+  lastPurchaseAt: string | null
+}
 
 export default function PortfolioPage() {
   const { activeAccount } = useWalletConnection()
@@ -56,6 +69,8 @@ export default function PortfolioPage() {
     successRate: number
     lastTradeAt: string | null
   } | null>(null)
+  const [launchpadPositions, setLaunchpadPositions] = useState<LaunchpadPosition[]>([])
+  const [launchpadLoading, setLaunchpadLoading] = useState(false)
   const [rechargeAmount, setRechargeAmount] = useState<string>("")
   const [rechargeDialogOpen, setRechargeDialogOpen] = useState(false)
   const [rechargingWallet, setRechargingWallet] = useState(false)
@@ -179,6 +194,41 @@ export default function PortfolioPage() {
     fetchAgentStats()
   }, [address])
 
+  useEffect(() => {
+    if (!address) {
+      setLaunchpadPositions([])
+      setLaunchpadLoading(false)
+      return
+    }
+
+    let cancelled = false
+    setLaunchpadLoading(true)
+
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/launchpad/user?action=portfolio&userAddress=${address}`)
+        const data = await res.json()
+
+        if (!cancelled && data.success) {
+          setLaunchpadPositions(data.data || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch launchpad portfolio:', error)
+        if (!cancelled) {
+          setLaunchpadPositions([])
+        }
+      } finally {
+        if (!cancelled) {
+          setLaunchpadLoading(false)
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [address])
+
   // Helper to refresh agent wallet stats
   async function refreshAgentStats() {
     if (!address) return
@@ -191,6 +241,50 @@ export default function PortfolioPage() {
     } catch (error) {
       console.error('Failed to refresh agent wallet stats:', error)
     }
+  }
+
+  const formatAmount = (value: string | bigint, decimals: number, maxFraction = Math.min(decimals, 6)) => {
+    const big = typeof value === 'bigint' ? value : BigInt(value || '0')
+    if (big === 0n) return '0'
+
+    const negative = big < 0n
+    const abs = negative ? -big : big
+    const base = BigInt(10) ** BigInt(decimals)
+    const whole = abs / base
+    const fraction = abs % base
+
+    let fractionStr = fraction.toString().padStart(decimals, '0')
+    if (maxFraction < decimals) {
+      fractionStr = fractionStr.slice(0, maxFraction)
+    }
+    fractionStr = fractionStr.replace(/0+$/, '')
+
+    const wholeStr = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    const sign = negative ? '-' : ''
+
+    return fractionStr ? `${sign}${wholeStr}.${fractionStr}` : `${sign}${wholeStr}`
+  }
+
+  const formatTokensHeld = (position: LaunchpadPosition) => {
+    return formatAmount(position.tokensHeld, position.tokenDecimals, Math.min(position.tokenDecimals, 6))
+  }
+
+  const formatAlgoSpent = (position: LaunchpadPosition) => {
+    return formatAmount(position.algoSpent, 6, 6)
+  }
+
+  const formatAveragePrice = (position: LaunchpadPosition) => {
+    const tokens = BigInt(position.tokensHeld || '0')
+    if (tokens === 0n) return '0'
+    const algo = BigInt(position.algoSpent || '0')
+    const scale = BigInt(10) ** BigInt(position.tokenDecimals)
+    const microPrice = (algo * scale) / tokens
+    return formatAmount(microPrice, 6, 6)
+  }
+
+  const formatTimestamp = (timestamp: string | null) => {
+    if (!timestamp) return '—'
+    return new Date(timestamp).toLocaleString()
   }
 
   function nextCheck(rule: Rule) {
@@ -347,12 +441,12 @@ export default function PortfolioPage() {
   const avgProfitPerTrade = profitData.length > 0 ? totalProfit / profitData.length : 0
 
   return (
-    <div className="min-h-screen bg-background/50 pb-20">
+    <div className="min-h-screen pb-20">
       <div className="container mx-auto px-4 py-6 space-y-6">
         {/* Top Navigation / Header */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4 w-full md:w-auto">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-xl   flex items-center justify-center">
               <Wallet className="h-6 w-6 text-primary" />
             </div>
             <div>
@@ -746,6 +840,12 @@ export default function PortfolioPage() {
                   Assets ({agentWalletData?.accountInfo?.assets?.length || 0})
                 </TabsTrigger>
                 <TabsTrigger 
+                  value="launchpad" 
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2"
+                >
+                  Launchpad ({launchpadPositions.length})
+                </TabsTrigger>
+                <TabsTrigger 
                   value="activity" 
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2"
                 >
@@ -831,6 +931,63 @@ export default function PortfolioPage() {
                           )}
                         </TableBody>
                       </Table>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="launchpad">
+                  <Card>
+                    <CardContent className="p-0">
+                      {launchpadLoading ? (
+                        <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          <span>Loading launchpad positions…</span>
+                        </div>
+                      ) : launchpadPositions.length > 0 ? (
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Token</TableHead>
+                              <TableHead className="text-right">Tokens Held</TableHead>
+                              <TableHead className="text-right">ALGO Spent</TableHead>
+                              <TableHead className="text-right">Avg Price (ALGO)</TableHead>
+                              <TableHead className="text-right">Buys</TableHead>
+                              <TableHead className="text-right">Last Purchase</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {launchpadPositions.map((position) => (
+                              <TableRow key={position.projectId}>
+                                <TableCell>
+                                  <div className="space-y-1">
+                                    <div className="font-medium">{position.tokenName}</div>
+                                    <div className="text-xs text-muted-foreground">{position.tokenSymbol}</div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right font-mono text-sm">
+                                  {formatTokensHeld(position)} {position.tokenSymbol}
+                                </TableCell>
+                                <TableCell className="text-right font-mono text-sm">
+                                  {formatAlgoSpent(position)} ALGO
+                                </TableCell>
+                                <TableCell className="text-right font-mono text-sm">
+                                  {formatAveragePrice(position)}
+                                </TableCell>
+                                <TableCell className="text-right text-sm">
+                                  {position.purchaseCount}
+                                </TableCell>
+                                <TableCell className="text-right text-xs text-muted-foreground">
+                                  {formatTimestamp(position.lastPurchaseAt)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      ) : (
+                        <div className="text-center py-12 text-muted-foreground">
+                          No launchpad positions yet
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </TabsContent>

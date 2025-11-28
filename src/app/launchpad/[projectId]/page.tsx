@@ -9,11 +9,12 @@ import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { SearchBar } from "@/components/shared/search-bar"
 import {
   Rocket, TrendingUp, Users, Shield, Clock, Target,
   Flame, AlertTriangle, CheckCircle2, ArrowLeft, ExternalLink,
-  Zap, Gift, Lock, Copy, Globe, Twitter, Send
+  Zap, Gift, Lock, Copy, Globe, Twitter, Send, Loader2
 } from "lucide-react"
 import Link from "next/link"
 import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
@@ -27,6 +28,7 @@ interface Project {
   creatorAddress: string
   tokenName: string
   tokenSymbol: string
+  tokenDecimals: number
   description?: string
   totalSupply: string
   logoUrl?: string
@@ -67,6 +69,23 @@ interface UserPoints {
   claimedPoints: string
 }
 
+interface ProjectTransactionEntry {
+  id: string
+  buyerAddress: string
+  tokensAmount: string
+  algoPaid: string
+  transactionId: string
+  timestamp: string
+}
+
+interface ProjectHolderEntry {
+  buyerAddress: string
+  totalTokens: string
+  totalAlgo: string
+  purchaseCount: number
+  lastPurchaseAt: string | null
+}
+
 export default function ProjectDetailPage() {
   const params = useParams()
   const { activeAccount } = useWalletConnection()
@@ -90,6 +109,10 @@ export default function ProjectDetailPage() {
   const [priceQuote, setPriceQuote] = useState<PriceQuote | null>(null)
   const [userPoints, setUserPoints] = useState<UserPoints | null>(null)
   const [activeTab, setActiveTab] = useState("buy")
+  const [activityLoading, setActivityLoading] = useState(false)
+  const [projectTransactions, setProjectTransactions] = useState<ProjectTransactionEntry[]>([])
+  const [projectHolders, setProjectHolders] = useState<ProjectHolderEntry[]>([])
+  const [activityStats, setActivityStats] = useState<{ totalTransactions: number; uniqueHolders: number; totalAlgo: string; totalTokens: string } | null>(null)
 
   useEffect(() => {
     loadProject()
@@ -105,6 +128,46 @@ export default function ProjectDetailPage() {
       setPriceQuote(null)
     }
   }, [buyAmount])
+
+  useEffect(() => {
+    if (!project) {
+      setProjectTransactions([])
+      setProjectHolders([])
+      setActivityStats(null)
+      return
+    }
+
+    let cancelled = false
+    setActivityLoading(true)
+
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/launchpad/projects/${project.id}/activity`)
+        const data = await res.json()
+
+        if (!cancelled && data.success) {
+          setProjectTransactions(data.data.transactions || [])
+          setProjectHolders(data.data.holders || [])
+          setActivityStats(data.data.stats || null)
+        }
+      } catch (error) {
+        console.error('Failed to load project activity:', error)
+        if (!cancelled) {
+          setProjectTransactions([])
+          setProjectHolders([])
+          setActivityStats(null)
+        }
+      } finally {
+        if (!cancelled) {
+          setActivityLoading(false)
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [project])
 
   const loadProject = async () => {
     try {
@@ -149,14 +212,17 @@ export default function ProjectDetailPage() {
     if (!project || !buyAmount) return
 
     try {
+      // Convert ALGO amount to microALGO (1 ALGO = 1,000,000 microALGO)
+      const algoInMicro = BigInt(Math.floor(Number(buyAmount) * 1_000_000))
+      
       const res = await fetch('/api/launchpad/purchase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'quote',
+          action: 'quoteForAlgo',  // Use ALGO-based quote
           projectId: project.id,
           buyerAddress: activeAccount?.address || 'PLACEHOLDER',
-          tokensAmount: (BigInt(Number(buyAmount) * 1_000_000)).toString(),
+          algoAmount: algoInMicro.toString(),
         })
       })
 
@@ -183,6 +249,9 @@ export default function ProjectDetailPage() {
 
     setPurchasing(true)
     try {
+      // Get the token amount from the quote (calculated from ALGO input)
+      const tokensToBuy = BigInt(priceQuote.tokenAmount)
+      
       // Step 1: Validate purchase
       const validateRes = await fetch('/api/launchpad/purchase', {
         method: 'POST',
@@ -191,7 +260,7 @@ export default function ProjectDetailPage() {
           action: 'validate',
           projectId: project.id,
           buyerAddress: activeAccount.address,
-          tokensAmount: (BigInt(Number(buyAmount) * 1_000_000)).toString(),
+          tokensAmount: tokensToBuy.toString(),
           currentRound: await blockchain.getCurrentRound()
         })
       })
@@ -219,9 +288,6 @@ export default function ProjectDetailPage() {
 
       const appId = BigInt(project.appId)
       const asaId = BigInt(project.asaId)
-
-      // Use token amount from price quote
-      const tokensToBuy = BigInt(priceQuote.tokenAmount)
 
       // Use the CALCULATED cost from quote with 10% buffer for price slippage
       const quotedCost = BigInt(priceQuote.algoAmount) // Already in microALGO
@@ -255,7 +321,7 @@ export default function ProjectDetailPage() {
           action: 'record',
           projectId: project.id,
           buyerAddress: activeAccount.address,
-          tokensAmount: (BigInt(Number(buyAmount) * 1_000_000)).toString(),
+          tokensAmount: tokensToBuy.toString(),
           algoPaid: priceQuote.algoAmount,
           transactionId: txId,
           blockRound: await blockchain.getCurrentRound(),
@@ -305,7 +371,19 @@ export default function ProjectDetailPage() {
   }
 
   const formatTokens = (amount: string) => {
-    return Number(amount).toLocaleString()
+    // Format token amount with proper decimals (assuming 6 decimals like ALGO)
+    const tokenDecimals = project?.tokenDecimals || 6
+    const formatted = Number(amount) / Math.pow(10, tokenDecimals)
+    return formatted.toLocaleString(undefined, { 
+      minimumFractionDigits: 0,
+      maximumFractionDigits: tokenDecimals 
+    })
+  }
+
+  const truncateAddress = (address: string) => {
+    if (!address) return ''
+    if (address.length <= 12) return address
+    return `${address.slice(0, 6)}...${address.slice(-4)}`
   }
 
   const copyToClipboard = (text: string) => {
@@ -491,17 +569,139 @@ export default function ProjectDetailPage() {
             </TabsContent>
 
             <TabsContent value="transactions" className="p-6 bg-card border border-border border-t-0 rounded-b-lg mt-0">
-              <div className="text-center py-12 text-muted-foreground">
-                <Clock className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                <p>No transactions yet</p>
-              </div>
+              {activityLoading && projectTransactions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-3">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <p>Loading transactions…</p>
+                </div>
+              ) : projectTransactions.length > 0 ? (
+                <div className="space-y-4">
+                  {activityStats && (
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                      <Card className="bg-muted/30 border-border/60">
+                        <CardContent className="py-3">
+                          <p className="text-xs text-muted-foreground">Total Purchases</p>
+                          <p className="text-lg font-semibold">{activityStats.totalTransactions}</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-muted/30 border-border/60">
+                        <CardContent className="py-3">
+                          <p className="text-xs text-muted-foreground">Unique Buyers</p>
+                          <p className="text-lg font-semibold">{activityStats.uniqueHolders}</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-muted/30 border-border/60">
+                        <CardContent className="py-3">
+                          <p className="text-xs text-muted-foreground">Volume (ALGO)</p>
+                          <p className="text-lg font-semibold">{formatAlgo(activityStats.totalAlgo)}</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-muted/30 border-border/60">
+                        <CardContent className="py-3">
+                          <p className="text-xs text-muted-foreground">Tokens Sold</p>
+                          <p className="text-lg font-semibold">{formatTokens(activityStats.totalTokens)}</p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+
+                  <div className="border border-border/60 rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[160px]">Timestamp</TableHead>
+                          <TableHead>Buyer</TableHead>
+                          <TableHead className="text-right">Tokens</TableHead>
+                          <TableHead className="text-right">Paid (ALGO)</TableHead>
+                          <TableHead className="text-right">Tx</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {projectTransactions.map((tx) => (
+                          <TableRow key={tx.id}>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {new Date(tx.timestamp).toLocaleString()}
+                            </TableCell>
+                            <TableCell className="font-mono text-xs">
+                              {truncateAddress(tx.buyerAddress)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatTokens(tx.tokensAmount)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatAlgo(tx.algoPaid)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <a
+                                href={`https://testnet.algoexplorer.io/tx/${tx.transactionId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary text-xs hover:underline"
+                              >
+                                View
+                              </a>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Clock className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                  <p>No transactions yet</p>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="holders" className="p-6 bg-card border border-border border-t-0 rounded-b-lg mt-0">
-              <div className="text-center py-12 text-muted-foreground">
-                <Users className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                <p>Holder list is empty</p>
-              </div>
+              {activityLoading && projectHolders.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-3">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <p>Loading holders…</p>
+                </div>
+              ) : projectHolders.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="border border-border/60 rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Address</TableHead>
+                          <TableHead className="text-right">Tokens Held</TableHead>
+                          <TableHead className="text-right">ALGO Spent</TableHead>
+                          <TableHead className="text-right">Buys</TableHead>
+                          <TableHead className="text-right">Last Activity</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {projectHolders.map((holder) => (
+                          <TableRow key={holder.buyerAddress}>
+                            <TableCell className="font-mono text-xs">
+                              {truncateAddress(holder.buyerAddress)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatTokens(holder.totalTokens)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatAlgo(holder.totalAlgo)}
+                            </TableCell>
+                            <TableCell className="text-right text-sm">{holder.purchaseCount}</TableCell>
+                            <TableCell className="text-right text-xs text-muted-foreground">
+                              {holder.lastPurchaseAt ? new Date(holder.lastPurchaseAt).toLocaleString() : '—'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                  <p>Holder list is empty</p>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>

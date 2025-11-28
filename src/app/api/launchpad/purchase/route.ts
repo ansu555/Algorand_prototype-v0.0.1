@@ -1,22 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPriceQuote, validatePurchase, recordPurchase, getProject } from '@/lib/launchpad/db'
+import { getPriceQuote, getQuoteForAlgo, validatePurchase, recordPurchase, getProject } from '@/lib/launchpad/db'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { projectId, buyerAddress, tokensAmount, action } = body
+    const { projectId, buyerAddress, tokensAmount, algoAmount, action } = body
 
-    if (!projectId || !buyerAddress || !tokensAmount) {
+    if (!projectId || !buyerAddress) {
       return NextResponse.json({
         success: false,
-        error: 'Missing required fields'
+        error: 'Missing required fields: projectId and buyerAddress'
+      }, { status: 400 })
+    }
+
+    // Handle ALGO-based quote (user enters ALGO amount)
+    if (action === 'quoteForAlgo') {
+      if (!algoAmount) {
+        return NextResponse.json({
+          success: false,
+          error: 'Missing algoAmount for quoteForAlgo action'
+        }, { status: 400 })
+      }
+
+      const algoAmountBigInt = BigInt(algoAmount)
+      const quote = await getQuoteForAlgo(projectId, algoAmountBigInt)
+
+      if (!quote) {
+        return NextResponse.json({ success: false, error: 'Project not found' }, { status: 404 })
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          tokensAmount: quote.tokensAmount.toString(),
+          totalCost: quote.totalCost.toString(),
+          averagePrice: quote.averagePrice.toString(),
+          priceImpact: quote.priceImpact,
+          pointsToEarn: quote.pointsToEarn.toString(),
+        }
+      })
+    }
+
+    // For other actions, tokensAmount is required
+    if (!tokensAmount) {
+      return NextResponse.json({
+        success: false,
+        error: 'Missing tokensAmount'
       }, { status: 400 })
     }
 
     const tokensAmountBigInt = BigInt(tokensAmount)
 
     if (action === 'quote') {
-      // Get price quote
+      // Get price quote (legacy - by token amount)
       const quote = await getPriceQuote(projectId, tokensAmountBigInt)
 
       if (!quote) {
