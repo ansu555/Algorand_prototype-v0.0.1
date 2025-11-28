@@ -65,6 +65,7 @@ export const Header = () => {
     { name: "Launchpad", href: "/launchpad" },
     { name: "Bridge", href: "/bridge" },
     { name: "Portfolio", href: "/portfolio" },
+    { name: "Developers", href: "/developers" },
   ];
 
   const exploreItems = [
