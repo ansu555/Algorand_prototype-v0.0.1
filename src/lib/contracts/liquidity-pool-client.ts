@@ -112,7 +112,7 @@ export class LiquidityPoolClient {
     const poolIdBytes = this.computePoolId(params.asset1Id, params.asset2Id);
     const boxReference: algosdk.BoxReference = {
       appIndex: this.poolAppId,
-      name: Buffer.from(poolIdBytes), // Pool ID is raw 32-byte SHA256 hash as Buffer
+      name: poolIdBytes, // Pool ID is raw 32-byte SHA256 hash as Uint8Array
     };
 
     // Application call to create_pool with proper ARC-4 encoding
@@ -153,11 +153,11 @@ export class LiquidityPoolClient {
     const suggestedParams = await this.algodClient.getTransactionParams().do();
 
     // Create ARC-4 method for proper encoding
-    // NEW: pool_id is now the first parameter
+    // NEW: pool_id is now arc4.DynamicBytes (byte[]) not string
     const createLPTokenMethod = new algosdk.ABIMethod({
       name: 'create_lp_token',
       args: [
-        { type: 'string', name: 'pool_id' },
+        { type: 'byte[]', name: 'pool_id' },
         { type: 'uint64', name: 'total' },
         { type: 'uint32', name: 'decimals' },
         { type: 'string', name: 'name' },
@@ -200,10 +200,9 @@ export class LiquidityPoolClient {
 
     // CRITICAL: Box reference must use raw bytes WITHOUT ARC-4 encoding
     // The pool_id argument is ARC-4 encoded (with length prefix), but the box name is raw
-    // Convert Uint8Array to Buffer to ensure proper encoding
     const boxReference: algosdk.BoxReference = {
       appIndex: this.poolAppId,
-      name: Buffer.from(poolIdBytes), // Raw 32-byte pool ID as Buffer
+      name: poolIdBytes, // Raw 32-byte pool ID as Uint8Array
     };
 
     const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
@@ -277,11 +276,11 @@ export class LiquidityPoolClient {
     // Transaction 3: Application call to add_liquidity
     // Create ARC-4 method for proper encoding
     // Note: axfer transactions are in the group, but must be in the signature for selector
-    // NEW: pool_id is now the first parameter
+    // NEW: pool_id is now arc4.DynamicBytes (byte[]) not string
     const addLiquidityMethod = new algosdk.ABIMethod({
       name: 'add_liquidity',
       args: [
-        { type: 'string', name: 'pool_id' },
+        { type: 'byte[]', name: 'pool_id' },
         { type: 'axfer', name: 'asset_1_payment' },
         { type: 'axfer', name: 'asset_2_payment' },
         { type: 'uint64', name: 'min_lp_tokens' },
@@ -292,9 +291,13 @@ export class LiquidityPoolClient {
     // Only non-transaction arguments are encoded in appArgs
     const appArgs: Uint8Array[] = [addLiquidityMethod.getSelector()];
 
-    // Encode string for pool_id (NEW)
-    const poolIdType = algosdk.ABIType.from('string');
-    appArgs.push(poolIdType.encode(params.poolId));
+    // Encode pool_id as ARC-4 string (2-byte length prefix + raw bytes)
+    // Manual encoding because pool_id is raw binary data, not a UTF-8 string
+    const poolIdEncoded = new Uint8Array(2 + params.poolId.length);
+    poolIdEncoded[0] = (params.poolId.length >> 8) & 0xFF; // High byte of length
+    poolIdEncoded[1] = params.poolId.length & 0xFF;        // Low byte of length
+    poolIdEncoded.set(params.poolId, 2);                   // Copy the bytes after length
+    appArgs.push(poolIdEncoded);
 
     const minLpTokensType = algosdk.ABIType.from('uint64');
     appArgs.push(minLpTokensType.encode(params.minLpTokens));
@@ -307,7 +310,7 @@ export class LiquidityPoolClient {
     // CRITICAL: Declare box reference for box storage access
     const boxReference: algosdk.BoxReference = {
       appIndex: this.poolAppId,
-      name: Buffer.from(params.poolId), // Pool ID is raw 32-byte hash as Buffer
+      name: params.poolId, // Pool ID is raw 32-byte hash as Uint8Array
     };
 
     const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
@@ -350,11 +353,11 @@ export class LiquidityPoolClient {
     // Transaction 2: Application call to remove_liquidity
     // Create ARC-4 method for proper encoding
     // Note: axfer transaction is in the group, but must be in the signature for selector
-    // NEW: pool_id is now the first parameter
+    // NEW: pool_id is now arc4.DynamicBytes (byte[]) not string
     const removeLiquidityMethod = new algosdk.ABIMethod({
       name: 'remove_liquidity',
       args: [
-        { type: 'string', name: 'pool_id' },
+        { type: 'byte[]', name: 'pool_id' },
         { type: 'axfer', name: 'lp_token_payment' },
         { type: 'uint64', name: 'min_asset_1' },
         { type: 'uint64', name: 'min_asset_2' },
@@ -365,9 +368,13 @@ export class LiquidityPoolClient {
     // Only non-transaction arguments are encoded in appArgs
     const appArgs: Uint8Array[] = [removeLiquidityMethod.getSelector()];
 
-    // Encode string for pool_id (NEW)
-    const poolIdType = algosdk.ABIType.from('string');
-    appArgs.push(poolIdType.encode(params.poolId));
+    // Encode pool_id as ARC-4 string (2-byte length prefix + raw bytes)
+    // Manual encoding because pool_id is raw binary data, not a UTF-8 string
+    const poolIdEncoded = new Uint8Array(2 + params.poolId.length);
+    poolIdEncoded[0] = (params.poolId.length >> 8) & 0xFF; // High byte of length
+    poolIdEncoded[1] = params.poolId.length & 0xFF;        // Low byte of length
+    poolIdEncoded.set(params.poolId, 2);                   // Copy the bytes after length
+    appArgs.push(poolIdEncoded);
 
     const minAsset1Type = algosdk.ABIType.from('uint64');
     appArgs.push(minAsset1Type.encode(params.minAsset1));
@@ -382,7 +389,7 @@ export class LiquidityPoolClient {
     // CRITICAL: Declare box reference for box storage access
     const boxReference: algosdk.BoxReference = {
       appIndex: this.poolAppId,
-      name: Buffer.from(params.poolId), // Pool ID is raw 32-byte hash as Buffer
+      name: params.poolId, // Pool ID is raw 32-byte hash as Uint8Array
     };
 
     const appCallTxn = algosdk.makeApplicationCallTxnFromObject({
@@ -437,11 +444,11 @@ export class LiquidityPoolClient {
     // Transaction 2: Application call to swap
     // Create ARC-4 method for proper encoding
     // Note: axfer transaction is in the group, but must be in the signature for selector
-    // NEW: pool_id is now the first parameter
+    // NEW: pool_id is now arc4.DynamicBytes (byte[]) not string
     const swapMethod = new algosdk.ABIMethod({
       name: 'swap',
       args: [
-        { type: 'string', name: 'pool_id' },
+        { type: 'byte[]', name: 'pool_id' },
         { type: 'axfer', name: 'asset_in_payment' },
         { type: 'uint64', name: 'asset_out_id' },
         { type: 'uint64', name: 'min_amount_out' },
@@ -452,9 +459,13 @@ export class LiquidityPoolClient {
     // Only non-transaction arguments are encoded in appArgs
     const appArgs: Uint8Array[] = [swapMethod.getSelector()];
 
-    // Encode string for pool_id (NEW)
-    const poolIdType = algosdk.ABIType.from('string');
-    appArgs.push(poolIdType.encode(params.poolId));
+    // Encode pool_id as ARC-4 string (2-byte length prefix + raw bytes)
+    // Manual encoding because pool_id is raw binary data, not a UTF-8 string
+    const poolIdEncoded = new Uint8Array(2 + params.poolId.length);
+    poolIdEncoded[0] = (params.poolId.length >> 8) & 0xFF; // High byte of length
+    poolIdEncoded[1] = params.poolId.length & 0xFF;        // Low byte of length
+    poolIdEncoded.set(params.poolId, 2);                   // Copy the bytes after length
+    appArgs.push(poolIdEncoded);
 
     const assetOutIdType = algosdk.ABIType.from('uint64');
     appArgs.push(assetOutIdType.encode(params.assetOutId));
@@ -469,7 +480,7 @@ export class LiquidityPoolClient {
     // CRITICAL: Declare box reference for box storage access
     const boxReference: algosdk.BoxReference = {
       appIndex: this.poolAppId,
-      name: Buffer.from(params.poolId), // Pool ID is raw 32-byte hash as Buffer
+      name: params.poolId, // Pool ID is raw 32-byte hash as Uint8Array
     };
 
     const appCallTxn = algosdk.makeApplicationCallTxnFromObject({

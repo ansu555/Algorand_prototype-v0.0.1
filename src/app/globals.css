@@ -44,7 +44,7 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
+    --primary: 45 93% 47%;
     --primary-foreground: 222.2 47.4% 11.2%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -56,10 +56,10 @@
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --ring: 45 93% 47%;
 
     /* Chart colors - slightly brighter in dark mode */
-    --chart-1: 217.2 91.2% 59.8%;
+    --chart-1: 45 93% 47%;
     --chart-2: 262.1 83.3% 68%;
     --chart-3: 316.6 73.3% 62.5%;
     --chart-4: 4.8 90.6% 68.4%;
@@ -70,6 +70,7 @@
   * {
     @apply border-gray-200 dark:border-gray-800;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -78,17 +79,18 @@
   h1 {
     @apply text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight;
   }
-  
+
   h2 {
     @apply text-xl sm:text-2xl lg:text-3xl font-bold leading-tight;
   }
-  
+
   h3 {
     @apply text-lg sm:text-xl lg:text-2xl font-semibold leading-tight;
   }
 
   /* Improved mobile touch targets */
-  button, [role="button"] {
+  button,
+  [role="button"] {
     @apply min-h-[44px] min-w-[44px];
   }
 
@@ -113,7 +115,9 @@
 
   /* Hide scrollbar for IE, Edge and Firefox */
   .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
   }
 }

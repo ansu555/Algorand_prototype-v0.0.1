@@ -56,18 +56,56 @@ export default function PoolDetailPage() {
   const fetchPoolDetails = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/pools/all')
-      const data = await response.json()
+      // Fetch from both sources: multi-DEX aggregator and 10xSwap contract
+      const [allPoolsResponse, tenxSwapResponse] = await Promise.all([
+        fetch('/api/pools/all'),
+        fetch('/api/pool/list').catch(() => null),
+      ])
 
+      const data = await allPoolsResponse.json()
+      let foundPool = null
+
+      // First check multi-DEX aggregator pools
       if (data.success && data.pools) {
-        const foundPool = data.pools.find((p: any) => p.poolId === poolId)
-        if (foundPool) {
-          setPool(foundPool)
-        } else {
-          setError('Pool not found')
+        foundPool = data.pools.find((p: any) => p.poolId === poolId)
+      }
+
+      // If not found, check 10xSwap pools
+      if (!foundPool && tenxSwapResponse?.ok) {
+        const tenxSwapData = await tenxSwapResponse.json()
+        if (tenxSwapData.success && tenxSwapData.pools) {
+          const tenxPool = tenxSwapData.pools.find((p: any) => p.poolId === poolId)
+          if (tenxPool) {
+            // Convert 10xSwap pool format to match expected format
+            foundPool = {
+              poolId: tenxPool.poolId,
+              dexName: '10xswap',
+              asset1: {
+                id: tenxPool.asset1_id,
+                symbol: tenxPool.asset1_name || `Asset ${tenxPool.asset1_id}`,
+                name: tenxPool.asset1_name || `Asset ${tenxPool.asset1_id}`,
+                decimals: tenxPool.asset1_decimals || 6,
+              },
+              asset2: {
+                id: tenxPool.asset2_id,
+                symbol: tenxPool.asset2_name || `Asset ${tenxPool.asset2_id}`,
+                name: tenxPool.asset2_name || `Asset ${tenxPool.asset2_id}`,
+                decimals: tenxPool.asset2_decimals || 6,
+              },
+              reserve1: tenxPool.reserve1,
+              reserve2: tenxPool.reserve2,
+              fee: tenxPool.fee_bps,
+              totalLiquidity: tenxPool.total_liquidity,
+              poolAddress: tenxPool.poolAddress,
+            }
+          }
         }
+      }
+
+      if (foundPool) {
+        setPool(foundPool)
       } else {
-        setError('Failed to fetch pool data')
+        setError('Pool not found')
       }
     } catch (err) {
       setError('Error loading pool details')

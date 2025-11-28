@@ -170,11 +170,11 @@ export default function TradePage() {
     <div className="flex min-h-screen flex-col">
       <BackgroundPaths />
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className={cn("mx-auto space-y-6 transition-all", showChart ? "max-w-6xl" : "max-w-4xl") }>
+        <div className={cn("mx-auto space-y-6 transition-all", showChart ? "max-w-6xl" : "max-w-4xl")}>
           {/* Search Bar */}
           <SearchBar />
 
-          <div className={cn("flex flex-col gap-6 lg:gap-8 transition-all", showChart ? "lg:flex-row lg:items-start" : "lg:items-center") }>
+          <div className={cn("flex flex-col gap-6 lg:gap-8 transition-all", showChart ? "lg:flex-row lg:items-start" : "lg:items-center")}>
             {showChart && (
               <div className="lg:flex-1 lg:order-1 flex flex-col gap-4">
                 {/* Use min-height so the chart card can expand naturally without overlapping the history card below. */}
@@ -194,9 +194,9 @@ export default function TradePage() {
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                       <CardTitle className="text-lg">Your Swap History</CardTitle>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setSwapRefreshTrigger(prev => prev + 1)}
                         disabled={swapsLoading}
                         className="text-xs"
@@ -282,7 +282,7 @@ export default function TradePage() {
                                           {s.status}
                                         </span>
                                         {d.txId && (
-                                          <a 
+                                          <a
                                             href={`https://lora.algokit.io/testnet/transaction/${d.txId}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
@@ -311,9 +311,10 @@ export default function TradePage() {
               showChart && "lg:order-2 lg:ml-auto"
             )}>
               <div>
-                <SwapCard 
-                  onPairChange={handlePairChange} 
+                <SwapCard
+                  onPairChange={handlePairChange}
                   onSwapSuccess={() => setSwapRefreshTrigger(prev => prev + 1)}
+                  buySellDisabled={true}
                 />
                 <div className="mt-4 flex flex-row justify-start gap-2">
                   <Button variant="outline" size="sm" onClick={handleToggleChart} className="rounded-full border border-border/70 bg-background/80 backdrop-blur relative z-0 text-xs px-3 py-1 h-8">
@@ -327,126 +328,126 @@ export default function TradePage() {
                 {/* Token Information Boxes */}
                 {selectedPair.from && selectedPair.to && (
                   <div className="mt-4 grid grid-cols-2 gap-3">
-                  {/* Box 1 - Selling Token Info */}
-                  <Card>
-                    <CardContent className="p-3">
-                      <div className="flex items-start gap-2 mb-2">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
-                          {selectedPair.from.unitName?.substring(0, 2) || 'T1'}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-foreground font-bold text-base mb-0.5 truncate">
-                            {tokenMetrics ? (
-                              `${tokenMetrics.fromPriceInTo.toFixed(6)} ${selectedPair.to.unitName || selectedPair.to.name}`
-                            ) : (
-                              '—'
-                            )}
+                    {/* Box 1 - Selling Token Info */}
+                    <Card>
+                      <CardContent className="p-3">
+                        <div className="flex items-start gap-2 mb-2">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                            {selectedPair.from.unitName?.substring(0, 2) || 'T1'}
                           </div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            {selectedPair.from.unitName || selectedPair.from.name}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-foreground font-bold text-base mb-0.5 truncate">
+                              {tokenMetrics ? (
+                                `${tokenMetrics.fromPriceInTo.toFixed(6)} ${selectedPair.to.unitName || selectedPair.to.name}`
+                              ) : (
+                                '—'
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {selectedPair.from.unitName || selectedPair.from.name}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-muted-foreground text-xs font-semibold">
+                              {tokenMetrics ? `${tokenMetrics.fromReserve.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}
+                            </div>
+                            <div className="text-xs text-muted-foreground/70">Reserve</div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-muted-foreground text-xs font-semibold">
-                            {tokenMetrics ? `${tokenMetrics.fromReserve.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}
-                          </div>
-                          <div className="text-xs text-muted-foreground/70">Reserve</div>
-                        </div>
-                      </div>
-                      
-                      {/* Mini Chart - simple reserve distribution visual */}
-                      <div className="h-12 mb-3 flex items-end gap-0.5">
-                        {tokenMetrics ? (
-                          Array.from({ length: 40 }).map((_, i) => {
-                            // Create a simple visual based on reserve ratio
-                            const ratio = tokenMetrics.fromReserve / (tokenMetrics.fromReserve + tokenMetrics.toReserve)
-                            const baseHeight = ratio * 100
-                            const variance = (Math.sin(i * 0.3) * 15) + (Math.cos(i * 0.5) * 10)
-                            const height = Math.max(20, Math.min(80, baseHeight + variance))
-                            return (
-                              <div
-                                key={i}
-                                className="flex-1 bg-purple-500/60 rounded-sm"
-                                style={{ height: `${height}%` }}
-                              />
-                            )
-                          })
-                        ) : (
-                          Array.from({ length: 40 }).map((_, i) => (
-                            <div key={i} className="flex-1 bg-muted/40 rounded-sm" style={{ height: '30%' }} />
-                          ))
-                        )}
-                      </div>
 
-                      <button className="text-muted-foreground hover:text-primary dark:hover:text-[#F3C623] text-xs flex items-center gap-1 transition-colors">
-                        Open Page
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </button>
-                    </CardContent>
-                  </Card>
+                        {/* Mini Chart - simple reserve distribution visual */}
+                        <div className="h-12 mb-3 flex items-end gap-0.5">
+                          {tokenMetrics ? (
+                            Array.from({ length: 40 }).map((_, i) => {
+                              // Create a simple visual based on reserve ratio
+                              const ratio = tokenMetrics.fromReserve / (tokenMetrics.fromReserve + tokenMetrics.toReserve)
+                              const baseHeight = ratio * 100
+                              const variance = (Math.sin(i * 0.3) * 15) + (Math.cos(i * 0.5) * 10)
+                              const height = Math.max(20, Math.min(80, baseHeight + variance))
+                              return (
+                                <div
+                                  key={i}
+                                  className="flex-1 bg-purple-500/60 rounded-sm"
+                                  style={{ height: `${height}%` }}
+                                />
+                              )
+                            })
+                          ) : (
+                            Array.from({ length: 40 }).map((_, i) => (
+                              <div key={i} className="flex-1 bg-muted/40 rounded-sm" style={{ height: '30%' }} />
+                            ))
+                          )}
+                        </div>
 
-                  {/* Box 2 - Buying Token Info */}
-                  <Card>
-                    <CardContent className="p-3">
-                      <div className="flex items-start gap-2 mb-2">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
-                          {selectedPair.to.unitName?.substring(0, 2) || 'T2'}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-foreground font-bold text-base mb-0.5 truncate">
-                            {tokenMetrics ? (
-                              `${tokenMetrics.toPriceInFrom.toFixed(6)} ${selectedPair.from.unitName || selectedPair.from.name}`
-                            ) : (
-                              '—'
-                            )}
-                          </div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            {selectedPair.to.unitName || selectedPair.to.name}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-muted-foreground text-xs font-semibold">
-                            {tokenMetrics ? `${tokenMetrics.toReserve.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}
-                          </div>
-                          <div className="text-xs text-muted-foreground/70">Reserve</div>
-                        </div>
-                      </div>
-                      
-                      {/* Mini Chart - simple reserve distribution visual */}
-                      <div className="h-12 mb-3 flex items-end gap-0.5">
-                        {tokenMetrics ? (
-                          Array.from({ length: 40 }).map((_, i) => {
-                            const ratio = tokenMetrics.toReserve / (tokenMetrics.fromReserve + tokenMetrics.toReserve)
-                            const baseHeight = ratio * 100
-                            const variance = (Math.sin(i * 0.4) * 12) + (Math.cos(i * 0.6) * 8)
-                            const height = Math.max(20, Math.min(80, baseHeight + variance))
-                            return (
-                              <div
-                                key={i}
-                                className="flex-1 bg-cyan-500/60 rounded-sm"
-                                style={{ height: `${height}%` }}
-                              />
-                            )
-                          })
-                        ) : (
-                          Array.from({ length: 40 }).map((_, i) => (
-                            <div key={i} className="flex-1 bg-muted/40 rounded-sm" style={{ height: '30%' }} />
-                          ))
-                        )}
-                      </div>
+                        <button className="text-muted-foreground hover:text-primary dark:hover:text-[#F3C623] text-xs flex items-center gap-1 transition-colors">
+                          Open Page
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </button>
+                      </CardContent>
+                    </Card>
 
-                      <button className="text-muted-foreground hover:text-primary dark:hover:text-[#F3C623] text-xs flex items-center gap-1 transition-colors">
-                        Open Page
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </button>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
+                    {/* Box 2 - Buying Token Info */}
+                    <Card>
+                      <CardContent className="p-3">
+                        <div className="flex items-start gap-2 mb-2">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                            {selectedPair.to.unitName?.substring(0, 2) || 'T2'}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-foreground font-bold text-base mb-0.5 truncate">
+                              {tokenMetrics ? (
+                                `${tokenMetrics.toPriceInFrom.toFixed(6)} ${selectedPair.from.unitName || selectedPair.from.name}`
+                              ) : (
+                                '—'
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {selectedPair.to.unitName || selectedPair.to.name}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-muted-foreground text-xs font-semibold">
+                              {tokenMetrics ? `${tokenMetrics.toReserve.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '—'}
+                            </div>
+                            <div className="text-xs text-muted-foreground/70">Reserve</div>
+                          </div>
+                        </div>
+
+                        {/* Mini Chart - simple reserve distribution visual */}
+                        <div className="h-12 mb-3 flex items-end gap-0.5">
+                          {tokenMetrics ? (
+                            Array.from({ length: 40 }).map((_, i) => {
+                              const ratio = tokenMetrics.toReserve / (tokenMetrics.fromReserve + tokenMetrics.toReserve)
+                              const baseHeight = ratio * 100
+                              const variance = (Math.sin(i * 0.4) * 12) + (Math.cos(i * 0.6) * 8)
+                              const height = Math.max(20, Math.min(80, baseHeight + variance))
+                              return (
+                                <div
+                                  key={i}
+                                  className="flex-1 bg-cyan-500/60 rounded-sm"
+                                  style={{ height: `${height}%` }}
+                                />
+                              )
+                            })
+                          ) : (
+                            Array.from({ length: 40 }).map((_, i) => (
+                              <div key={i} className="flex-1 bg-muted/40 rounded-sm" style={{ height: '30%' }} />
+                            ))
+                          )}
+                        </div>
+
+                        <button className="text-muted-foreground hover:text-primary dark:hover:text-[#F3C623] text-xs flex items-center gap-1 transition-colors">
+                          Open Page
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </button>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
               </div>
 
               {/* Swap History Section (right) - only when chart hidden */}
@@ -454,9 +455,9 @@ export default function TradePage() {
                 <Card className="mt-4">
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="text-lg">Your Swap History</CardTitle>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => setSwapRefreshTrigger(prev => prev + 1)}
                       disabled={swapsLoading}
                       className="text-xs"
@@ -542,7 +543,7 @@ export default function TradePage() {
                                         {s.status}
                                       </span>
                                       {d.txId && (
-                                        <a 
+                                        <a
                                           href={`https://lora.algokit.io/testnet/transaction/${d.txId}`}
                                           target="_blank"
                                           rel="noopener noreferrer"

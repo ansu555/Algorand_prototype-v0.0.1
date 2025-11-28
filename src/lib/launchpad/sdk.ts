@@ -85,6 +85,9 @@ export {
   // Purchase tracking
   recordPurchase,
   getPurchaseHistory,
+  getProjectHolders,
+  getGlobalPurchases,
+  getUserPortfolio,
   
   // Points system
   getUserPoints,
@@ -171,7 +174,7 @@ export class BondingCurveSDK {
     )
     
     // Record in database
-    const projectId = createProject({
+    const projectId = await createProject({
       creatorAddress: creatorAddress,
       tokenName: config.name,
       tokenSymbol: config.symbol,

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import BackgroundPaths from "@/components/shared/animated-background"
@@ -9,10 +9,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
-import { CheckCircle2, Circle, Loader2 } from "lucide-react"
+import { CheckCircle2, Circle, Loader2, RefreshCw, Check } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useWalletConnection, useWalletActions } from "@/components/providers/txnlab-wallet-provider"
 import { useTradeableAssets } from "@/hooks/use-tradeable-assets"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 const FEE_TIERS = [
   { value: 5, label: "0.05%", bps: 5 },
@@ -45,6 +46,86 @@ export default function CreatePoolPage() {
   const { activeAccount } = useWalletConnection()
   const { signTransactions } = useWalletActions()
   const { assets, loading: assetsLoading } = useTradeableAssets()
+  const [optingIds, setOptingIds] = useState<Record<number, boolean>>({})
+  const [optedInIds, setOptedInIds] = useState<Record<number, boolean>>({})
+  const [loadingOptedIn, setLoadingOptedIn] = useState(false)
+
+  // Fetch agent wallet's opted-in assets when user connects
+  const fetchOptedInAssets = useCallback(async () => {
+    if (!activeAccount?.address) return
+    
+    setLoadingOptedIn(true)
+    try {
+      const res = await fetch(`/api/agent/wallet?userAddress=${encodeURIComponent(activeAccount.address)}`)
+      const data = await res.json()
+      
+      if (data.success && data.accountInfo?.assets) {
+        // Build a map of opted-in asset IDs
+        const optedIn: Record<number, boolean> = {}
+        for (const asset of data.accountInfo.assets) {
+          optedIn[asset['asset-id']] = true
+        }
+        setOptedInIds(optedIn)
+      }
+    } catch (error) {
+      console.error('Failed to fetch opted-in assets:', error)
+    } finally {
+      setLoadingOptedIn(false)
+    }
+  }, [activeAccount?.address])
+
+  // Fetch opted-in assets when wallet connects or changes
+  useEffect(() => {
+    fetchOptedInAssets()
+  }, [fetchOptedInAssets])
+
+  const optInAsset = async (assetId: number, assetName: string) => {
+    if (!activeAccount) {
+      toast({ title: 'Wallet not connected', description: 'Connect your wallet to opt-in', variant: 'destructive' })
+      return
+    }
+    
+    // Don't opt-in if already opted in
+    if (optedInIds[assetId]) {
+      toast({ title: '✓ Already Opted In', description: `Agent wallet is already opted into ${assetName}` })
+      return
+    }
+    
+    setOptingIds(prev => ({ ...prev, [assetId]: true }))
+    
+    try {
+      const res = await fetch('/api/agent/wallet/opt-in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userAddress: activeAccount.address, assetId })
+      })
+      const data = await res.json()
+      console.log('Opt-in response:', data)
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Opt-in failed')
+      }
+      
+      // Update opted in state - this should trigger re-render
+      setOptedInIds(prev => ({ ...prev, [assetId]: true }))
+      
+      // Clear loading state first
+      setOptingIds(prev => ({ ...prev, [assetId]: false }))
+      
+      // Show success toast
+      const toastMsg = data.status === 'already_opted_in' 
+        ? { title: '✓ Already Opted In', description: `Agent wallet was already opted into ${assetName}` }
+        : { title: '✅ Opt-in Successful!', description: `Agent wallet can now hold ${assetName}` }
+      
+      toast(toastMsg)
+      
+    } catch (e: any) {
+      console.error('Opt-in error:', e)
+      toast({ title: 'Opt-in failed', description: e?.message || String(e), variant: 'destructive' })
+    } finally {
+      setOptingIds(prev => ({ ...prev, [assetId]: false }))
+    }
+  }
 
   const [token0Id, setToken0Id] = useState<number>(0) // ALGO
   const [token1Id, setToken1Id] = useState<number>(31566704) // USDC on testnet
@@ -108,15 +189,13 @@ export default function CreatePoolPage() {
     setIsCreating(true)
 
     try {
-      // Convert amounts to base units
-      const amount1BaseUnits = Math.floor(Number(amount0) * Math.pow(10, token0Info.decimals))
-      const amount2BaseUnits = Math.floor(Number(amount1) * Math.pow(10, token1Info?.decimals || 6))
-
+      // NOTE: Backend now expects HUMAN units (display units) and will convert to base units
+      // using fetched asset decimals. Do NOT convert here.
       console.log('Creating pool with params:', {
         asset1Id: token0Id,
         asset2Id: token1Id,
-        amount1: amount1BaseUnits,
-        amount2: amount2BaseUnits,
+        amount1: amount0,
+        amount2: amount1,
         feeBps,
         userAddress: activeAccount.address
       })
@@ -128,8 +207,8 @@ export default function CreatePoolPage() {
         body: JSON.stringify({
           asset1Id: token0Id,
           asset2Id: token1Id,
-          amount1: amount1BaseUnits.toString(),
-          amount2: amount2BaseUnits.toString(),
+          amount1: amount0,  // Send human units as string
+          amount2: amount1,  // Send human units as string
           feeBps,
           userAddress: activeAccount.address,
         })
@@ -154,8 +233,10 @@ export default function CreatePoolPage() {
 
       const signedTxnsBytes = await signTransactions(txnsBytes)
 
-      // Step 4: Convert back to base64
-      const signedTxnsBase64 = signedTxnsBytes.map((u8: Uint8Array) => uint8ArrayToBase64(u8))
+      // Step 4: Convert back to base64 (filter out null values)
+      const signedTxnsBase64 = signedTxnsBytes
+        .filter((u8): u8 is Uint8Array => u8 !== null)
+        .map((u8) => uint8ArrayToBase64(u8))
 
       // Step 5: Submit to blockchain
       toast({
@@ -173,8 +254,8 @@ export default function CreatePoolPage() {
             poolId: prepareData.poolId, // NEW: Include pool ID from multi-pool factory
             asset1Id: token0Id,
             asset2Id: token1Id,
-            amount1: amount1BaseUnits.toString(),
-            amount2: amount2BaseUnits.toString(),
+            amount1: amount0,  // Human units
+            amount2: amount1,  // Human units
             feeBps,
             poolAddress: prepareData.poolAddress,
             lpTokenName: prepareData.lpTokenName,
@@ -281,35 +362,99 @@ export default function CreatePoolPage() {
                   <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Token A</Label>
-                      <Select value={String(token0Id)} onValueChange={(v) => setToken0Id(Number(v))} disabled={assetsLoading}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="0">ALGO (0)</SelectItem>
-                          {assets.filter(a => a.id !== 0).map((asset) => (
-                            <SelectItem key={asset.id} value={String(asset.id)}>
-                              {asset.symbol || asset.unitName || `Asset ${asset.id}`} ({asset.id})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center gap-2">
+                        <Select value={String(token0Id)} onValueChange={(v) => setToken0Id(Number(v))} disabled={assetsLoading}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">ALGO (0)</SelectItem>
+                            {assets.filter(a => a.id !== 0).map((asset) => (
+                              <SelectItem key={asset.id} value={String(asset.id)}>
+                                {asset.unitName || asset.name || `Asset ${asset.id}`} ({asset.id})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => optInAsset(token0Id, token0Info.unitName || token0Info.name || 'Token')}
+                                disabled={token0Id === 0 || !activeAccount || Boolean(optingIds[token0Id]) || loadingOptedIn}
+                                className={optedInIds[token0Id] ? "text-green-600 dark:text-green-400" : ""}
+                              >
+                                {optingIds[token0Id] || loadingOptedIn ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : optedInIds[token0Id] ? (
+                                  <Check className="h-4 w-4" />
+                                ) : (
+                                  <CheckCircle2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {token0Id === 0 
+                                ? "ALGO doesn't need opt-in" 
+                                : loadingOptedIn
+                                  ? "Checking opt-in status..."
+                                  : optedInIds[token0Id] 
+                                    ? "Agent wallet opted in ✓" 
+                                    : "Opt-in agent wallet to this token"}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label>Token B</Label>
-                      <Select value={String(token1Id)} onValueChange={(v) => setToken1Id(Number(v))} disabled={assetsLoading}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="0">ALGO (0)</SelectItem>
-                          {assets.filter(a => a.id !== 0).map((asset) => (
-                            <SelectItem key={asset.id} value={String(asset.id)}>
-                              {asset.symbol || asset.unitName || `Asset ${asset.id}`} ({asset.id})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center gap-2">
+                        <Select value={String(token1Id)} onValueChange={(v) => setToken1Id(Number(v))} disabled={assetsLoading}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">ALGO (0)</SelectItem>
+                            {assets.filter(a => a.id !== 0).map((asset) => (
+                              <SelectItem key={asset.id} value={String(asset.id)}>
+                                {asset.unitName || asset.name || `Asset ${asset.id}`} ({asset.id})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => optInAsset(token1Id, token1Info?.unitName || token1Info?.name || 'Token')}
+                                disabled={token1Id === 0 || !activeAccount || Boolean(optingIds[token1Id]) || loadingOptedIn}
+                                className={optedInIds[token1Id] ? "text-green-600 dark:text-green-400" : ""}
+                              >
+                                {optingIds[token1Id] || loadingOptedIn ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : optedInIds[token1Id] ? (
+                                  <Check className="h-4 w-4" />
+                                ) : (
+                                  <CheckCircle2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {token1Id === 0 
+                                ? "ALGO doesn't need opt-in" 
+                                : loadingOptedIn
+                                  ? "Checking opt-in status..."
+                                  : optedInIds[token1Id] 
+                                    ? "Agent wallet opted in ✓" 
+                                    : "Opt-in agent wallet to this token"}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                     </div>
                     <div className="space-y-2 sm:col-span-2">
                       <Label>Fee tier</Label>
@@ -363,7 +508,7 @@ export default function CreatePoolPage() {
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="amount0">Amount {token0Info.symbol || token0Info.unitName || 'Token A'}</Label>
+                        <Label htmlFor="amount0">Amount {token0Info.unitName || token0Info.name || 'Token A'}</Label>
                         <Input
                           id="amount0"
                           type="number"
@@ -374,7 +519,7 @@ export default function CreatePoolPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="amount1">Amount {token1Info?.symbol || token1Info?.unitName || 'Token B'}</Label>
+                        <Label htmlFor="amount1">Amount {token1Info?.unitName || token1Info?.name || 'Token B'}</Label>
                         <Input
                           id="amount1"
                           type="number"

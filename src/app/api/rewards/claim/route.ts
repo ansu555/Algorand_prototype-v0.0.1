@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { claimQuestReward, getDB, getUserQuestProgress, getUserRewards } from '@/lib/rewards/db'
+import { claimQuestReward, getUserQuestProgress, getUserRewards } from '@/lib/rewards/db'
 import { PREDEFINED_QUESTS } from '@/lib/rewards/types'
 
 export async function POST(request: NextRequest) {
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
     
     const quest = PREDEFINED_QUESTS.find(q => q.id === questId)
-    const claimed = claimQuestReward(userId, questId)
+    const claimed = await claimQuestReward(userId, questId)
     
     if (!claimed) {
       const errorMessage = quest?.type === 'daily' 
@@ -21,18 +21,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: errorMessage }, { status: 400 })
     }
     
-    // DEBUG: Check database state immediately after claim
-    const db = getDB()
-    const questStatus = db.prepare(`
-      SELECT status, claimed_at, completed_at 
-      FROM quest_progress 
-      WHERE user_id = ? AND quest_id = ?
-    `).get(userId, questId) as any
-    console.log(`[CLAIM DEBUG] After claim - Quest: ${questId}, Status: ${questStatus?.status}, Claimed At: ${questStatus?.claimed_at}`)
-    
     // Add cache busting headers
-    const quests = getUserQuestProgress(userId)
-    const rewardsData = getUserRewards(userId)
+    const quests = await getUserQuestProgress(userId)
+    const rewardsData = await getUserRewards(userId)
 
     const response = NextResponse.json({
       success: true,

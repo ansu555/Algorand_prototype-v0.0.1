@@ -9,8 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
-import { Loader2, TrendingUp, Activity, BarChart3 } from "lucide-react"
+import { Loader2, TrendingUp, Activity, BarChart3, Copy, Check, CheckCircle2, RefreshCw } from "lucide-react"
 import { useMemo, useState, useEffect } from "react"
+import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
+import { toast } from "sonner"
 import type { PoolInfo } from "@/lib/dex/types"
 
 type Pool = {
@@ -45,6 +47,35 @@ export default function PoolPage() {
   const [allPools, setAllPools] = useState<Pool[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { activeAccount } = useWalletConnection()
+  const [optingIds, setOptingIds] = useState<Record<string, boolean>>({})
+
+  const optInAsset = async (assetId: number, assetName: string) => {
+    if (!activeAccount?.address) {
+      toast.error('Connect your wallet to opt-in')
+      return
+    }
+    if (assetId === 0) {
+      toast.info('ALGO does not require opt-in')
+      return
+    }
+    const key = String(assetId)
+    setOptingIds((s) => ({ ...s, [key]: true }))
+    try {
+      const res = await fetch('/api/agent/wallet/opt-in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userAddress: activeAccount.address, assetId })
+      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error || 'Opt-in failed')
+      toast.success(data.message || `Opted in to ${assetName}`)
+    } catch (e: any) {
+      toast.error('Opt-in failed', { description: e?.message || String(e) })
+    } finally {
+      setOptingIds((s) => ({ ...s, [key]: false }))
+    }
+  }
 
   // Fetch pools when network changes
   useEffect(() => {
@@ -52,15 +83,16 @@ export default function PoolPage() {
       try {
         setLoading(true)
         setError(null)
-        
-        // Fetch both pool data and market data in parallel
-        const [poolsResponse, marketResponse] = await Promise.all([
+
+        // Fetch from multiple sources in parallel
+        const [poolsResponse, marketResponse, tenxSwapResponse] = await Promise.all([
           fetch(`/api/pools/all?network=${network}`),
           fetch(`/api/pools/market-data?network=${network}`).catch(() => null),
+          fetch(`/api/pool/list`).catch(() => null), // Fetch 10xSwap pools from on-chain
         ])
-        
+
         const poolsData = await poolsResponse.json()
-        
+
         if (!poolsData.success) {
           throw new Error(poolsData.error || 'Failed to fetch pools')
         }
@@ -79,7 +111,7 @@ export default function PoolPage() {
           // Convert string BigInt values back to BigInt
           const reserve1 = BigInt(poolInfo.reserve1)
           const reserve2 = BigInt(poolInfo.reserve2)
-          
+
           // Calculate current price from reserves
           let currentPrice: number | undefined
           if (reserve1 && reserve2) {
@@ -100,7 +132,7 @@ export default function PoolPage() {
 
           // Merge with market data if available
           const poolMarketData = marketData[poolInfo.poolId]
-          
+
           return {
             id: poolInfo.poolId,
             token0: poolInfo.asset1.symbol,
@@ -127,8 +159,59 @@ export default function PoolPage() {
           }
         })
 
+        // Add 10xSwap pools from on-chain contract
+        if (tenxSwapResponse?.ok) {
+          const tenxSwapData = await tenxSwapResponse.json()
+          if (tenxSwapData.success && tenxSwapData.pools) {
+            console.log(`🔟 Found ${tenxSwapData.pools.length} 10xSwap pool(s) on-chain`)
+
+            const tenxSwapPools: Pool[] = tenxSwapData.pools.map((pool: any) => {
+              // Convert string BigInt values back to BigInt
+              const reserve1 = BigInt(pool.reserve1)
+              const reserve2 = BigInt(pool.reserve2)
+
+              // Use actual decimals from the API
+              const decimals1 = pool.asset1_decimals || 6
+              const decimals2 = pool.asset2_decimals || 6
+
+              // Calculate current price from reserves
+              let currentPrice: number | undefined
+              if (reserve1 > 0n && reserve2 > 0n) {
+                const reserve0Num = Number(reserve1) / Math.pow(10, decimals1)
+                const reserve1Num = Number(reserve2) / Math.pow(10, decimals2)
+                currentPrice = reserve1Num / reserve0Num
+              }
+
+              return {
+                id: pool.poolId,
+                token0: pool.asset1_name || `Asset ${pool.asset1_id}`,
+                token1: pool.asset2_name || `Asset ${pool.asset2_id}`,
+                token0Decimals: decimals1,
+                token1Decimals: decimals2,
+                protocol: 'v2',
+                feeTier: pool.fee_bps,
+                dex: '10xswap',
+                reserve0: reserve1,
+                reserve1: reserve2,
+                poolAddress: pool.poolAddress,
+                currentPrice,
+                tvlUSD: undefined, // Not available for 10xSwap pools yet
+                volume1dUSD: undefined,
+                volume30dUSD: undefined,
+                volume24hUSD: undefined,
+                poolAPR: undefined,
+                rewardAPR: undefined,
+                fees24hUSD: undefined,
+              }
+            })
+
+            // Prepend 10xSwap pools to the beginning (show them first)
+            pools.unshift(...tenxSwapPools)
+          }
+        }
+
         setAllPools(pools)
-        console.log(`✅ Loaded ${pools.length} pools from API`)
+        console.log(`✅ Loaded ${pools.length} pools total`)
       } catch (err: any) {
         console.error('Error fetching pools:', err)
         setError(err.message || 'Failed to load pools')
@@ -409,6 +492,14 @@ export default function PoolPage() {
 
 function PoolTable({ pools, emptyLabel = "No pools found." }: { pools: Pool[]; emptyLabel?: string }) {
   const router = useRouter()
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null)
+
+  const copyToClipboard = (e: React.MouseEvent, address: string) => {
+    e.stopPropagation() // Prevent row click
+    navigator.clipboard.writeText(address)
+    setCopiedAddress(address)
+    setTimeout(() => setCopiedAddress(null), 2000)
+  }
   
   if (!pools.length) {
     return (
@@ -484,11 +575,51 @@ function PoolTable({ pools, emptyLabel = "No pools found." }: { pools: Pool[]; e
                   </div>
                 </div>
                 <div className="flex flex-col items-start min-w-0">
-                  <span className="font-semibold whitespace-nowrap">{p.token0}/{p.token1}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold whitespace-nowrap">{p.token0}/{p.token1}</span>
+                    {/* Opt-in buttons for both tokens */}
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          // Get asset IDs from pool data - you'll need to add these to Pool type
+                          // For now, we'll need to extract from pool metadata or pass through
+                          toast.info('Token opt-in coming soon - use search bar for now')
+                        }}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                        title={`Opt-in to ${p.token0}`}
+                      >
+                        <CheckCircle2 className="w-3 h-3 text-muted-foreground hover:text-blue-500" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toast.info('Token opt-in coming soon - use search bar for now')
+                        }}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                        title={`Opt-in to ${p.token1}`}
+                      >
+                        <CheckCircle2 className="w-3 h-3 text-muted-foreground hover:text-purple-500" />
+                      </button>
+                    </div>
+                  </div>
                   {p.poolAddress && (
-                    <span className="text-xs text-muted-foreground font-mono">
-                      {p.poolAddress.slice(0, 6)}...{p.poolAddress.slice(-4)}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {p.poolAddress.slice(0, 6)}...{p.poolAddress.slice(-4)}
+                      </span>
+                      <button
+                        onClick={(e) => copyToClipboard(e, p.poolAddress!)}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                        title="Copy pool address"
+                      >
+                        {copiedAddress === p.poolAddress ? (
+                          <Check className="w-3 h-3 text-green-500" />
+                        ) : (
+                          <Copy className="w-3 h-3 text-muted-foreground" />
+                        )}
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

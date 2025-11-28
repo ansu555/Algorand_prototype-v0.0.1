@@ -1,14 +1,24 @@
 "use client"
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react"
-import { Search, Loader2, X } from "lucide-react"
+import { Search, Loader2, X, CheckCircle2, RefreshCw } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { cn } from "@/lib/utils"
 import type { PoolInfo } from "@/lib/dex/types"
 import { useAssetSearch, useTradeableAssets } from "@/hooks/use-tradeable-assets"
 import { useRouter } from "next/navigation"
+import { useWalletConnection } from '@/components/providers/txnlab-wallet-provider'
 
-export function SearchBar() {
+interface SearchBarProps {
+  placeholder?: string
+  value?: string
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
+  className?: string
+}
+
+export function SearchBar({ placeholder, value, onChange, className }: SearchBarProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchFocused, setSearchFocused] = useState(false)
   const [searchTab, setSearchTab] = useState<"all" | "tokens" | "pools">("all")
@@ -19,6 +29,31 @@ export function SearchBar() {
   // Tokens
   const { assets: tradeableAssets, loading: assetsLoading, error: assetsError } = useTradeableAssets()
   const { results: searchedAssets, loading: searchLoading } = useAssetSearch(searchQuery)
+  const { isConnected, activeAccount } = useWalletConnection()
+  const [optingIds, setOptingIds] = useState<Record<number, boolean>>({})
+
+  const optInAsset = async (assetId: number) => {
+    if (!activeAccount?.address) {
+      toast.error('Connect your wallet first')
+      return
+    }
+    setOptingIds((s) => ({ ...s, [assetId]: true }))
+    try {
+      const res = await fetch('/api/agent/wallet/opt-in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userAddress: activeAccount.address, assetId })
+      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error || 'Opt-in failed')
+      toast.success(data.message || 'Opted in successfully')
+      // Optionally refresh pools or cache
+    } catch (e: any) {
+      toast.error('Opt-in failed', { description: e?.message })
+    } finally {
+      setOptingIds((s) => ({ ...s, [assetId]: false }))
+    }
+  }
 
   // Pools
   const [pools, setPools] = useState<PoolInfo[]>([])
@@ -27,7 +62,7 @@ export function SearchBar() {
 
   // Shared pool fetching logic (extracted for reuse)
   const fetchPoolsRef = useRef<() => Promise<void>>()
-  
+
   useEffect(() => {
     const CACHE_KEY = `pools_cache_${network}`
     const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes, keep in sync with server TTL
@@ -77,7 +112,7 @@ export function SearchBar() {
               pools: json.pools,
             }))
           }
-        } catch {}
+        } catch { }
       } catch (e: any) {
         setPoolsError(e.message || 'Failed to fetch pools')
       } finally {
@@ -235,12 +270,18 @@ export function SearchBar() {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500 pointer-events-none" />
         <Input
           type="text"
-          placeholder="Search tokens and pools"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={placeholder || "Search tokens and pools"}
+          value={value !== undefined ? value : searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value)
+            onChange?.(e)
+          }}
           onFocus={() => setSearchFocused(true)}
           onKeyDown={handleKeyDown}
-          className="flex w-full rounded-md border-input px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-10 h-12 text-base bg-white dark:bg-[#171717] border-2 focus-visible:ring-red-600 dark:focus-visible:ring-[#F3C623]"
+          className={cn(
+            "flex w-full rounded-md border-input px-3 py-2 ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-10 h-12 text-base bg-white dark:bg-[#171717] border-2 focus-visible:ring-red-600 dark:focus-visible:ring-[#F3C623]",
+            className
+          )}
         />
         {/* <div className="absolute right-4 top-1/2 -translate-y-1/2 px-2 py-1 rounded bg-gray-200/50 dark:bg-gray-700/50 border border-gray-300/50 dark:border-gray-600/50">
           <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">/</span>
@@ -327,28 +368,52 @@ export function SearchBar() {
                     const a = entry.item
                     const isActive = activeIndex === flatResults.findIndex((fr) => fr === entry)
                     return (
-                      <button
+                      <div
                         key={`tok-${a.id}`}
                         onMouseEnter={() => setActiveIndex(flatResults.findIndex((fr) => fr === entry))}
-                        onClick={() => handleSelect(entry)}
                         className={cn(
                           "w-full flex items-center gap-3 p-2 rounded-lg transition-colors",
                           isActive ? "bg-gray-100 dark:bg-gray-900/60" : "hover:bg-gray-50 dark:hover:bg-gray-900/50"
                         )}
                       >
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 overflow-hidden flex items-center justify-center text-white font-bold text-xs">
-                          {a.unitName?.slice(0, 2) || 'AS'}
-                        </div>
-                        <div className="flex-1 text-left">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-foreground">{a.unitName || a.name}</span>
-                            {a.verified && (
-                              <span className="px-1.5 py-0.5 text-[10px] bg-gray-200 dark:bg-gray-800 rounded">verified</span>
-                            )}
+                        <div
+                          role="button"
+                          onClick={() => handleSelect(entry)}
+                          className="flex-1 flex items-center gap-3"
+                        >
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 overflow-hidden flex items-center justify-center text-white font-bold text-xs">
+                            {a.unitName?.slice(0, 2) || 'AS'}
                           </div>
-                          <span className="text-xs text-muted-foreground">{a.name} • {a.id}</span>
+                          <div className="flex-1 text-left">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-foreground">{a.unitName || a.name}</span>
+                              {a.verified && (
+                                <span className="px-1.5 py-0.5 text-[10px] bg-gray-200 dark:bg-gray-800 rounded">verified</span>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground">{a.name} • {a.id}</span>
+                          </div>
                         </div>
-                      </button>
+
+                        {/* Opt-in button */}
+                        <div className="flex-shrink-0">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              optInAsset(Number(a.id))
+                            }}
+                            disabled={!isConnected || Boolean(optingIds[a.id])}
+                          >
+                            {optingIds[a.id] ? (
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
                     )
                   })}
                 </div>
@@ -385,10 +450,10 @@ export function SearchBar() {
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium text-foreground">{a1.symbol}/{a2.symbol}</span>
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-800">{p.dexName}</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-800">{(p.fee/100).toFixed(2)}%</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-800">{(p.fee / 100).toFixed(2)}%</span>
                           </div>
                           {p.poolAddress && (
-                            <span className="text-xs text-muted-foreground font-mono">{p.poolAddress.slice(0,6)}...{p.poolAddress.slice(-4)}</span>
+                            <span className="text-xs text-muted-foreground font-mono">{p.poolAddress.slice(0, 6)}...{p.poolAddress.slice(-4)}</span>
                           )}
                         </div>
                       </button>

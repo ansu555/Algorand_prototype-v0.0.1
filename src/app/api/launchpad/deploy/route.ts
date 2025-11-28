@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
     const clawback = account.addr
 
     const txn = algosdk.makeAssetCreateTxnWithSuggestedParamsFromObject({
-      from: account.addr,
+      sender: account.addr,
       total: totalSupply,
       decimals,
       defaultFrozen,
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       clawback,
       unitName,
       assetName,
-      url: assetURL,
+      assetURL,
       suggestedParams
     })
 
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
 
     // Submit transaction
     const txResponse = await algodClient.sendRawTransaction(signedTxn).do()
-    const txId = txResponse.txId
+    const txId = txResponse.txid
 
     // Wait for confirmation
     const confirmedTxn = await algosdk.waitForConfirmation(algodClient, txId, 4)

@@ -16,12 +16,14 @@
 
 ## Overview
 
-10xSwap uses four main smart contracts deployed on Algorand blockchain:
+10xSwap uses six main smart contracts deployed on Algorand blockchain:
 
 1. **MultihopSwapRouter** - Main routing contract for swaps
 2. **TinymanPoolAdapter** - Adapter for Tinyman V2 DEX
 3. **PactPoolAdapter** - Adapter for Pact Finance DEX
 4. **AutoPilotRuleContract** - Automated trading rules
+5. **LiquidityPoolContract** - Custom liquidity pool creation
+6. **TokenLaunchpad** - WaveBreak token launchpad with bonding curves
 
 All contracts are written in **Python using AlgoPy** and compiled to **TEAL** (Transaction Execution Approval Language).
 
@@ -169,13 +171,13 @@ The PactPoolAdapter enables interaction with Pact Finance constant product liqui
 #### 4. AutoPilotRuleContract
 **Smart contract for automated trading rules and conditions**
 
-- **App ID:** `749361072`
-- **Address:** `QHYMQJWOQ7MNWYXHQEDLXLWHPDMLP5A65BLYECZ47RCGZ2YZSYERYRI244`
+- **App ID:** `749509231`
+- **Address:** `KO5JO5GWYY5TIY3NQJ3VHNKF6DZSVWGWHBJI55LSFPA5PYQXMGSGWIEGS4`
 - **Network:** Testnet
-- **Transaction ID:** `M4TKRHK6LL66VO7TZOXOQME3ZJPKYSA2G7C56CNOSWA2WI7EC4VA`
-- **Funding Transaction:** `HR57KURGXSPWCR7VMKRMZRJNQQG5WHBUVG2OJCEESVNJXLI6QTBQ`
+- **Transaction ID:** `MBMPEDXMZ5CY6MGZYZL7AAU6V5OKS464F44F5BYNMTOMTBHUJFOA`
+- **Funding Transaction:** `XBPW5H26KMFKFDYVQXK44ANQNMKB36DX6PQAIINJYPYVGXRJZAIA`
 - **Deployer:** `OA57DAFKUMATT3WK3DPJP7XZEFIXHRN7DAWR72YTOKYECVI3AOP2VYJQIE`
-- **Explorer:** [View on AlgoScan](https://testnet.algoscan.app/app/749361072)
+- **Explorer:** [View on Lora](https://lora.algokit.io/testnet/application/749509231)
 
 **Methods:**
 - `create_rule()` - Create new trading rule
@@ -186,6 +188,73 @@ The PactPoolAdapter enables interaction with Pact Finance constant product liqui
 - Contract: `Blockchain/projects/10x_Swap/smart_contracts/autopilot_rule/contract.py`
 - TEAL: `artifacts/autopilot_rule/AutoPilotRuleContract.approval.teal`
 - ABI: `artifacts/autopilot_rule/AutoPilotRuleContract.arc56.json`
+
+---
+
+#### 5. LiquidityPoolContract
+**Custom liquidity pool contract for creating decentralized AMM pools**
+
+- **Status:** ⚠️ Deploy separately per pool (not shared instance)
+- **Network:** Testnet / Mainnet
+
+**Purpose:**
+The LiquidityPoolContract enables creation of custom constant product AMM liquidity pools. Each pool deployment is independent.
+
+**Methods:**
+- `create_pool(asset_1, asset_2, fee_bps)` - Initialize a new liquidity pool
+- `create_lp_token(total, decimals, name, unit_name)` - Create LP token for pool
+- `add_liquidity(asset_1_payment, asset_2_payment, min_lp_tokens)` - Add liquidity to pool
+- `remove_liquidity(lp_token_payment, min_asset_1, min_asset_2)` - Remove liquidity
+- `swap(asset_in_payment, asset_out_id, min_amount_out)` - Execute swap
+- `get_pool_info()` - Get current pool state (read-only)
+- `get_swap_quote(asset_in_id, asset_out_id, amount_in)` - Get quote without executing
+
+**Key Features:**
+- **Constant Product AMM:** Uses x * y = k formula
+- **Configurable Fees:** 5-1000 bps (0.05% - 10%)
+- **LP Token Management:** Automatic minting/burning
+- **Slippage Protection:** All user-facing methods require minimum output
+
+**Source Files:**
+- Contract: `Blockchain/projects/10x_Swap/smart_contracts/liquidity_pool/contract.py`
+- TEAL: `artifacts/liquidity_pool/LiquidityPoolContract.approval.teal`
+- ABI: `artifacts/liquidity_pool/LiquidityPoolContract.arc56.json`
+
+---
+
+#### 6. TokenLaunchpad
+**WaveBreak token launchpad with bonding curve mechanics**
+
+- **App ID:** `750324113`
+- **Network:** Testnet
+- **Transaction ID:** `IX6LGJQPX4AZUAWVQ33BRAZ5N6EXPZ4O3IICEIEU2YQZ2HOEJWJQ`
+- **Confirmed Round:** `57944423`
+- **Deployer:** `5IZJEVVOAVXOVCN35JQ5PBDBDAPEBUTKST7GDGUGEBP5QNY7S5YWDYSME4`
+- **Explorer:** [View on Lora](https://lora.algokit.io/testnet/application/750324113)
+
+**Purpose:**
+The TokenLaunchpad contract enables fair token launches using bonding curves with anti-bot protection. Projects can configure pricing curves (linear, exponential, sigmoid) and automatic graduation to DEX liquidity pools.
+
+**Methods:**
+- `create_launch()` - Create new token launch with bonding curve configuration
+- `buy_tokens()` - Purchase tokens during bonding curve phase
+- `claim_tokens()` - Claim vested tokens after graduation
+- `graduate()` - Trigger graduation when funding target is met
+- `get_launch_info()` - Get current launch status (read-only)
+- `get_price_quote()` - Get price quote for purchase amount
+
+**Key Features:**
+- **Bonding Curves:** Linear, Exponential, and Sigmoid price curves
+- **Anti-Bot Protection:** Cooldown periods, per-transaction limits, whale penalties
+- **Early Buyer Rewards:** 3x → 1x points multiplier based on purchase timing
+- **30-Day Vesting:** Linear unlock schedule for fair distribution
+- **Auto-DEX Graduation:** Automatic liquidity pool creation when target reached
+- **LP Lock:** 6-month liquidity pool locks for project credibility
+
+**Source Files:**
+- Contract: `Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py`
+- TEAL: `artifacts/token_launchpad/TokenLaunchpad.approval.teal`
+- ABI: `artifacts/token_launchpad/TokenLaunchpad.arc56.json`
 
 ---
 
@@ -896,9 +965,8 @@ Before mainnet deployment:
 - [ARC-56 Contract Spec](https://github.com/algorandfoundation/ARCs/blob/main/ARCs/arc-0056.md)
 
 ### Explorers
-- [Testnet AlgoScan](https://testnet.algoscan.app/)
-- [Mainnet AlgoScan](https://algoscan.app/)
-- [Testnet AlgoExplorer](https://testnet.algoexplorer.io/)
+- [Lora AlgoKit (Primary)](https://lora.algokit.io/testnet) - Recommended for smart contract debugging and ABI exploration
+- [Allo Explorer](https://testnet.explorer.perawallet.app/) - Alternative explorer by Pera Wallet
 
 ### Tools
 - [Testnet Faucet](https://bank.testnet.algorand.network/)
@@ -906,7 +974,7 @@ Before mainnet deployment:
 
 ---
 
-**Last Updated:** November 12, 2025  
-**Version:** 1.0.0  
+**Last Updated:** November 28, 2025  
+**Version:** 2.0.0  
 **Network:** Testnet  
-**Status:** ✅ All Contracts Deployed & Configured
+**Status:** ✅ All Contracts Deployed & Configured (6 contracts)
