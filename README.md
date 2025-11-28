@@ -7,7 +7,7 @@
 4. **Multi-DEX Aggregation** - Best price routing across Tinyman and Pact
 5. **Automated Trading** - Auto-Pilot rules for DCA, rebalancing, and rotation strategies
 
-** There is lots of bugs and some features not wroking in deployment we work on it but if anyone found any problem plss assign that as a issue, it will be helpfull.
+
 
 ## Table of Contents
 
