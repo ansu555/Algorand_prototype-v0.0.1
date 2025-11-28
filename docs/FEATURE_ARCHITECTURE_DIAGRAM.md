@@ -11,9 +11,9 @@
 1. [High-Level System Overview](#high-level-system-overview)
 2. [Feature Interconnection Diagram](#feature-interconnection-diagram)
 3. [Detailed Feature Communication Flows](#detailed-feature-communication-flows)
-4. [Data Flow Diagrams](#data-flow-diagrams)
-5. [Smart Contract Integration](#smart-contract-integration)
-6. [Feature Dependencies](#feature-dependencies)
+4. [Smart Contract Integration](#smart-contract-integration)
+5. [Feature Dependencies](#feature-dependencies)
+6. [Data Flow Summary](#data-flow-summary)
 
 ---
 
