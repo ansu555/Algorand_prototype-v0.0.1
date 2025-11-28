@@ -7,11 +7,12 @@
  * Usage: npx tsx scripts/reset-agent-wallets.ts
  */
 
-// Load environment variables from .env.local file
+// Load environment variables from .env and .env.local files
 import { config } from 'dotenv'
 import { resolve } from 'path'
 
-// Load .env.local from project root
+// Load .env first, then .env.local (latter can override)
+config({ path: resolve(__dirname, '../.env') })
 config({ path: resolve(__dirname, '../.env.local') })
 
 import { deleteAllAgentWallets } from '../src/lib/db'

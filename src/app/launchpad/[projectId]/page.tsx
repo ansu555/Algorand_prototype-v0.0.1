@@ -8,23 +8,29 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { SearchBar } from "@/components/shared/search-bar"
 import {
   Rocket, TrendingUp, Users, Shield, Clock, Target,
   Flame, AlertTriangle, CheckCircle2, ArrowLeft, ExternalLink,
-  Zap, Gift, Lock
+  Zap, Gift, Lock, Copy, Globe, Twitter, Send, Loader2
 } from "lucide-react"
 import Link from "next/link"
 import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
 import { useWallet } from "@txnlab/use-wallet-react"
 import * as blockchain from "@/lib/launchpad/blockchain"
 import algosdk from "algosdk"
+import { TokenPriceChart } from "@/components/features/launchpad/token-price-chart"
 
 interface Project {
   id: string
+  creatorAddress: string
   tokenName: string
   tokenSymbol: string
+  tokenDecimals: number
   description?: string
+  totalSupply: string
   logoUrl?: string
   websiteUrl?: string
   twitterUrl?: string
@@ -63,6 +69,23 @@ interface UserPoints {
   claimedPoints: string
 }
 
+interface ProjectTransactionEntry {
+  id: string
+  buyerAddress: string
+  tokensAmount: string
+  algoPaid: string
+  transactionId: string
+  timestamp: string
+}
+
+interface ProjectHolderEntry {
+  buyerAddress: string
+  totalTokens: string
+  totalAlgo: string
+  purchaseCount: number
+  lastPurchaseAt: string | null
+}
+
 export default function ProjectDetailPage() {
   const params = useParams()
   const { activeAccount } = useWalletConnection()
@@ -85,6 +108,11 @@ export default function ProjectDetailPage() {
   const [buyAmount, setBuyAmount] = useState("")
   const [priceQuote, setPriceQuote] = useState<PriceQuote | null>(null)
   const [userPoints, setUserPoints] = useState<UserPoints | null>(null)
+  const [activeTab, setActiveTab] = useState("buy")
+  const [activityLoading, setActivityLoading] = useState(false)
+  const [projectTransactions, setProjectTransactions] = useState<ProjectTransactionEntry[]>([])
+  const [projectHolders, setProjectHolders] = useState<ProjectHolderEntry[]>([])
+  const [activityStats, setActivityStats] = useState<{ totalTransactions: number; uniqueHolders: number; totalAlgo: string; totalTokens: string } | null>(null)
 
   useEffect(() => {
     loadProject()
@@ -100,6 +128,46 @@ export default function ProjectDetailPage() {
       setPriceQuote(null)
     }
   }, [buyAmount])
+
+  useEffect(() => {
+    if (!project) {
+      setProjectTransactions([])
+      setProjectHolders([])
+      setActivityStats(null)
+      return
+    }
+
+    let cancelled = false
+    setActivityLoading(true)
+
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/launchpad/projects/${project.id}/activity`)
+        const data = await res.json()
+
+        if (!cancelled && data.success) {
+          setProjectTransactions(data.data.transactions || [])
+          setProjectHolders(data.data.holders || [])
+          setActivityStats(data.data.stats || null)
+        }
+      } catch (error) {
+        console.error('Failed to load project activity:', error)
+        if (!cancelled) {
+          setProjectTransactions([])
+          setProjectHolders([])
+          setActivityStats(null)
+        }
+      } finally {
+        if (!cancelled) {
+          setActivityLoading(false)
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [project])
 
   const loadProject = async () => {
     try {
@@ -141,23 +209,35 @@ export default function ProjectDetailPage() {
   }
 
   const getPriceQuote = async () => {
-    if (!project) return
+    if (!project || !buyAmount) return
 
     try {
+      // Convert ALGO amount to microALGO (1 ALGO = 1,000,000 microALGO)
+      const algoInMicro = BigInt(Math.floor(Number(buyAmount) * 1_000_000))
+      
       const res = await fetch('/api/launchpad/purchase', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'quote',
+          action: 'quoteForAlgo',  // Use ALGO-based quote
           projectId: project.id,
-          tokenAmount: buyAmount,
+          buyerAddress: activeAccount?.address || 'PLACEHOLDER',
+          algoAmount: algoInMicro.toString(),
         })
       })
 
       const data = await res.json()
 
       if (data.success) {
-        setPriceQuote(data.data)
+        setPriceQuote({
+          tokenAmount: data.data.tokensAmount,
+          algoAmount: data.data.totalCost,
+          currentPrice: data.data.averagePrice,
+          avgPrice: data.data.averagePrice,
+          priceImpact: data.data.priceImpact,
+          earlyBonus: 1,
+          pointsEarned: Number(data.data.pointsToEarn),
+        })
       }
     } catch (error) {
       console.error('Failed to get price quote:', error)
@@ -169,6 +249,9 @@ export default function ProjectDetailPage() {
 
     setPurchasing(true)
     try {
+      // Get the token amount from the quote (calculated from ALGO input)
+      const tokensToBuy = BigInt(priceQuote.tokenAmount)
+      
       // Step 1: Validate purchase
       const validateRes = await fetch('/api/launchpad/purchase', {
         method: 'POST',
@@ -176,9 +259,8 @@ export default function ProjectDetailPage() {
         body: JSON.stringify({
           action: 'validate',
           projectId: project.id,
-          userAddress: activeAccount.address,
-          tokenAmount: buyAmount,
-          algoAmount: priceQuote.algoAmount,
+          buyerAddress: activeAccount.address,
+          tokensAmount: tokensToBuy.toString(),
           currentRound: await blockchain.getCurrentRound()
         })
       })
@@ -206,8 +288,16 @@ export default function ProjectDetailPage() {
 
       const appId = BigInt(project.appId)
       const asaId = BigInt(project.asaId)
-      const tokensToBuy = BigInt(Number(buyAmount) * 1_000_000) // 6 decimals
-      const maxAlgoCost = BigInt(Math.ceil(Number(priceQuote.algoAmount) * 1_000_000)) // microALGO
+
+      // Use the CALCULATED cost from quote with 10% buffer for price slippage
+      const quotedCost = BigInt(priceQuote.algoAmount) // Already in microALGO
+      const algoCostWithBuffer = (quotedCost * BigInt(110)) / BigInt(100) // 10% buffer
+
+      console.log('📊 Purchase details:')
+      console.log('  - ALGO input:', buyAmount, 'ALGO')
+      console.log('  - Tokens to receive:', tokensToBuy.toString())
+      console.log('  - Quoted cost:', quotedCost.toString(), 'microALGO')
+      console.log('  - Cost with buffer:', algoCostWithBuffer.toString(), 'microALGO')
 
       // Execute purchase transaction on TestNet
       const txId = await blockchain.buyTokens(
@@ -216,7 +306,7 @@ export default function ProjectDetailPage() {
           appId: appId,
           asaId: asaId,
           tokensToBuy: tokensToBuy,
-          estimatedCost: maxAlgoCost,
+          estimatedCost: algoCostWithBuffer,
         },
         walletSigner
       )
@@ -230,9 +320,9 @@ export default function ProjectDetailPage() {
         body: JSON.stringify({
           action: 'record',
           projectId: project.id,
-          userAddress: activeAccount.address,
-          tokenAmount: buyAmount,
-          algoAmount: priceQuote.algoAmount,
+          buyerAddress: activeAccount.address,
+          tokensAmount: tokensToBuy.toString(),
+          algoPaid: priceQuote.algoAmount,
           transactionId: txId,
           blockRound: await blockchain.getCurrentRound(),
         })
@@ -277,18 +367,34 @@ export default function ProjectDetailPage() {
   }
 
   const formatAlgo = (microAlgo: string) => {
-    return (Number(microAlgo) / 1_000_000).toFixed(2)
+    return (Number(microAlgo) / 1_000_000).toFixed(6)
   }
 
   const formatTokens = (amount: string) => {
-    return Number(amount).toLocaleString()
+    // Format token amount with proper decimals (assuming 6 decimals like ALGO)
+    const tokenDecimals = project?.tokenDecimals || 6
+    const formatted = Number(amount) / Math.pow(10, tokenDecimals)
+    return formatted.toLocaleString(undefined, { 
+      minimumFractionDigits: 0,
+      maximumFractionDigits: tokenDecimals 
+    })
+  }
+
+  const truncateAddress = (address: string) => {
+    if (!address) return ''
+    if (address.length <= 12) return address
+    return `${address.slice(0, 6)}...${address.slice(-4)}`
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    // Could add toast here
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen p-6">
-        <SearchBar />
-        <div className="max-w-7xl mx-auto mt-6">
+      <div className="min-h-screen p-6 bg-background">
+        <div className="max-w-[1600px] mx-auto mt-6">
           <p className="text-center text-muted-foreground">Loading project...</p>
         </div>
       </div>
@@ -297,9 +403,8 @@ export default function ProjectDetailPage() {
 
   if (!project) {
     return (
-      <div className="min-h-screen p-6">
-        <SearchBar />
-        <div className="max-w-7xl mx-auto mt-6">
+      <div className="min-h-screen p-6 bg-background">
+        <div className="max-w-[1600px] mx-auto mt-6">
           <Card>
             <CardContent className="py-16 text-center">
               <h2 className="text-2xl font-bold mb-2">Project Not Found</h2>
@@ -319,315 +424,468 @@ export default function ProjectDetailPage() {
   const target = formatAlgo(project.bondingTarget)
 
   return (
-    <div className="min-h-screen p-6" >
-      <SearchBar />
-
-      <div className="max-w-7xl mx-auto mt-6 space-y-6">
-        {/* Back Button */}
-        <Link href="/launchpad">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Launchpad
-          </Button>
-        </Link>
-
-        {/* Header */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between gap-6">
-              <div className="flex items-start gap-4">
-                {project.logoUrl ? (
-                  <img src={project.logoUrl} alt={project.tokenName} className="h-16 w-16 rounded-full" />
-                ) : (
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-red-500 to-amber-500 flex items-center justify-center text-white font-bold text-2xl">
-                    {project.tokenSymbol?.charAt(0) || '?'}
-                  </div>
-                )}
-
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h1 className="text-3xl font-bold">{project.tokenName}</h1>
-                    <Badge variant={project.status === 'active' ? 'default' : 'secondary'}
-                      className={project.status === 'active' ? 'bg-green-600' : ''}>
-                      {project.status}
-                    </Badge>
-                  </div>
-                  <p className="text-xl text-muted-foreground mb-2">${project.tokenSymbol}</p>
-
-                  {project.description && (
-                    <p className="text-muted-foreground max-w-2xl">{project.description}</p>
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Top Navigation / Header */}
+      <div className="border-b border-border">
+        <div className="max-w-[1920px] mx-auto px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/launchpad" className="text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+            <div className="flex items-center gap-3">
+              {project.logoUrl ? (
+                <img src={project.logoUrl} alt={project.tokenName} className="h-10 w-10 rounded-full" />
+              ) : (
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-red-500 to-amber-500 flex items-center justify-center text-white font-bold">
+                  {project.tokenSymbol?.charAt(0) || '?'}
+                </div>
+              )}
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="font-bold text-lg">{project.tokenName}</h1>
+                  <span className="text-muted-foreground text-sm">${project.tokenSymbol}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="bg-green-500/10 text-green-500 px-1.5 py-0.5 rounded flex items-center gap-1">
+                    <Shield className="h-3 w-3" /> Anti-bot: Active
+                  </span>
+                  {project.websiteUrl && (
+                    <a href={project.websiteUrl} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
+                      <Globe className="h-3 w-3" />
+                    </a>
                   )}
-
-                  {/* Social Links */}
-                  <div className="flex gap-2 mt-3">
-                    {project.websiteUrl && (
-                      <Button variant="outline" size="sm" asChild>
-                        <a href={project.websiteUrl} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="h-4 w-4 mr-1" />
-                          Website
-                        </a>
-                      </Button>
-                    )}
-                    {project.twitterUrl && (
-                      <Button variant="outline" size="sm" asChild>
-                        <a href={project.twitterUrl} target="_blank" rel="noopener noreferrer">
-                          Twitter
-                        </a>
-                      </Button>
-                    )}
-                    {project.telegramUrl && (
-                      <Button variant="outline" size="sm" asChild>
-                        <a href={project.telegramUrl} target="_blank" rel="noopener noreferrer">
-                          Telegram
-                        </a>
-                      </Button>
-                    )}
-                  </div>
+                  {project.twitterUrl && (
+                    <a href={project.twitterUrl} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
+                      <Twitter className="h-3 w-3" />
+                    </a>
+                  )}
+                  {project.telegramUrl && (
+                    <a href={project.telegramUrl} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
+                      <Send className="h-3 w-3" />
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Stats & Chart */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Progress Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Sale Progress</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">Bonding Curve Progress</span>
-                    <span className="text-sm font-bold">{progress.toFixed(2)}%</span>
-                  </div>
-                  <Progress value={progress} className="h-3" />
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Tokens Sold</p>
-                    <p className="text-lg font-bold">{formatTokens(project.tokensSold)}</p>
-                    <p className="text-xs text-muted-foreground">/ {formatTokens(project.tokensForSale)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">ALGO Raised</p>
-                    <p className="text-lg font-bold">{raised}</p>
-                    <p className="text-xs text-muted-foreground">/ {target} target</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Participants</p>
-                    <p className="text-lg font-bold">{project.participantCount}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Platform Fee (1%)</p>
-                    <p className="text-lg font-bold text-blue-600">
-                      {formatAlgo((BigInt(project.algoRaised) / 100n).toString())}
-                    </p>
-                    <p className="text-xs text-muted-foreground">ALGO</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Bonding Curve Chart Placeholder */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Bonding Curve - {project.curveType?.toUpperCase() || 'SIGMOID'}</CardTitle>
-                <CardDescription>Price increases as more tokens are sold</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 bg-gradient-to-br from-red-50 to-amber-50 dark:from-red-950/20 dark:to-amber-950/20 rounded-lg flex items-center justify-center border-2 border-dashed">
-                  <div className="text-center">
-                    <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-muted-foreground">Chart visualization coming soon</p>
-                    <p className="text-xs text-muted-foreground mt-1">Base: {formatAlgo(project.basePrice)} → Max: {formatAlgo(project.maxPrice)} ALGO</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Security Features */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-green-600" />
-                  Security & Features
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <p className="font-semibold">Anti-Bot Protection</p>
-                      <p className="text-xs text-muted-foreground">
-                        {project.cooldownBlocks || '10'} block cooldown, {project.maxBuyPerTx && project.tokensForSale ? ((Number(project.maxBuyPerTx) / Number(project.tokensForSale)) * 100).toFixed(1) : '1'}% max per tx
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <p className="font-semibold">Fair Launch</p>
-                      <p className="text-xs text-muted-foreground">No pre-sale, equal opportunity</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <p className="font-semibold">LP Locked</p>
-                      <p className="text-xs text-muted-foreground">30-day lock after graduation</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <p className="font-semibold">Points Rewards</p>
-                      <p className="text-xs text-muted-foreground">Early buyers get 3x multiplier</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
-          {/* Right Column - Purchase Interface */}
-          <div className="space-y-6">
-            {/* User Points Card */}
-            {activeAccount?.address && userPoints && (
-              <Card className="border-2 border-amber-200 dark:border-amber-800/30">
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Gift className="h-4 w-4" />
-                    Your Points
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-xs text-muted-foreground">Total Earned</span>
-                      <span className="font-bold">{Number(userPoints.totalPoints).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-xs text-muted-foreground">Claimable</span>
-                      <span className="font-bold text-green-600">{Number(userPoints.claimablePoints).toLocaleString()}</span>
-                    </div>
-                    <Button className="w-full mt-2" size="sm" disabled={Number(userPoints.claimablePoints) === 0}>
-                      <Zap className="h-4 w-4 mr-1" />
-                      Claim Points
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Purchase Card */}
-            <Card className="border-2 border-red-200 dark:border-red-800/30">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Rocket className="h-5 w-5 text-red-500" />
-                  Buy ${project.tokenSymbol}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {project.status !== 'active' ? (
-                  <div className="text-center py-6">
-                    <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-2" />
-                    <p className="font-semibold">Sale Not Active</p>
-                    <p className="text-xs text-muted-foreground">
-                      {project.status === 'graduated' ? 'This project has graduated to DEX' : 'This sale is not currently active'}
-                    </p>
-                  </div>
-                ) : !activeAccount?.address ? (
-                  <div className="text-center py-6">
-                    <p className="text-muted-foreground mb-4">Connect wallet to purchase</p>
-                    <Button className="w-full">Connect Wallet</Button>
-                  </div>
-                ) : (
-                  <>
-                    <div>
-                      <Label htmlFor="buyAmount">Token Amount</Label>
-                      <Input
-                        id="buyAmount"
-                        type="number"
-                        placeholder="Enter amount"
-                        value={buyAmount}
-                        onChange={(e) => setBuyAmount(e.target.value)}
-                        min="0"
-                      />
-                    </div>
-
-                    {priceQuote && (
-                      <div className="bg-muted p-4 rounded-lg space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">You Pay</span>
-                          <span className="font-bold">{formatAlgo(priceQuote.algoAmount)} ALGO</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Avg Price</span>
-                          <span>{formatAlgo(priceQuote.avgPrice)} ALGO</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Current Price</span>
-                          <span>{formatAlgo(priceQuote.currentPrice)} ALGO</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Price Impact</span>
-                          <span className={priceQuote.priceImpact > 5 ? 'text-amber-600' : ''}>
-                            {priceQuote.priceImpact.toFixed(2)}%
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm border-t pt-2">
-                          <span className="text-muted-foreground flex items-center gap-1">
-                            <Gift className="h-3 w-3" />
-                            Points Earned
-                          </span>
-                          <span className="font-bold text-amber-600">
-                            {priceQuote.pointsEarned} pts (x{priceQuote.earlyBonus.toFixed(1)})
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    <Button
-                      className="w-full bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-700 hover:to-amber-700"
-                      disabled={!buyAmount || Number(buyAmount) <= 0 || purchasing}
-                      onClick={handlePurchase}
-                    >
-                      {purchasing ? (
-                        <>Processing...</>
-                      ) : (
-                        <>
-                          <Zap className="h-4 w-4 mr-2" />
-                          Buy Now
-                        </>
-                      )}
-                    </Button>
-
-                    <div className="text-xs text-muted-foreground space-y-1">
-                      <p className="flex items-center gap-1">
-                        <Shield className="h-3 w-3" />
-                        Max {project.maxBuyPerTx && project.tokensForSale ? ((Number(project.maxBuyPerTx) / Number(project.tokensForSale)) * 100).toFixed(1) : '1'}% of supply per transaction
-                      </p>
-                      <p className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {project.cooldownBlocks || '10'} block cooldown between purchases
-                      </p>
-                      <p className="flex items-center gap-1">
-                        <Target className="h-3 w-3" />
-                        Max {project.maxBuyPerUser && project.tokensForSale ? ((Number(project.maxBuyPerUser) / Number(project.tokensForSale)) * 100).toFixed(1) : '5'}% of supply per address
-                      </p>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+          <div className="flex items-center gap-8 text-sm">
+            <div>
+              <p className="text-muted-foreground text-xs">Current Price</p>
+              <p className="font-mono font-bold text-green-500">${formatAlgo(project.basePrice)} ALGO</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">Market Cap</p>
+              <p className="font-mono font-bold">${formatAlgo((BigInt(project.basePrice) * BigInt(project.totalSupply) / 1000000n).toString())}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">Created</p>
+              <p className="font-mono">{new Date(project.createdAt).toLocaleDateString()}</p>
+            </div>
           </div>
         </div>
       </div>
-    </div >
+
+      <div className="max-w-[1920px] mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* Left Column: Chart & Info (9 cols) */}
+        <div className="lg:col-span-9 space-y-4">
+          {/* Chart Area */}
+          <div className="h-[600px] w-full bg-card border border-border rounded-lg overflow-hidden">
+            <TokenPriceChart projectId={project.id} tokenSymbol={project.tokenSymbol} />
+          </div>
+
+          {/* Bottom Tabs: Details, Transactions, Holders */}
+          <Tabs defaultValue="details" className="w-full">
+            <TabsList className="w-full justify-start border-b border-border bg-transparent p-0 h-auto rounded-none">
+              <TabsTrigger value="details" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-6 py-3">
+                Token Details
+              </TabsTrigger>
+              <TabsTrigger value="transactions" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-6 py-3">
+                Transactions
+              </TabsTrigger>
+              <TabsTrigger value="holders" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-6 py-3">
+                Holders
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="details" className="p-6 bg-card border border-border border-t-0 rounded-b-lg mt-0">
+              <div className="grid grid-cols-2 gap-8">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">About {project.tokenName}</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {project.description || "No description provided."}
+                  </p>
+
+                  <div className="mt-6 space-y-3">
+                    <div className="flex justify-between py-2 border-b border-border">
+                      <span className="text-muted-foreground">Token ID (ASA)</span>
+                      <div className="flex items-center gap-2 font-mono text-sm">
+                        {project.asaId || 'Not deployed'}
+                        {project.asaId && (
+                          <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => copyToClipboard(project.asaId?.toString() || '')}>
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-border">
+                      <span className="text-muted-foreground">Creator Wallet</span>
+                      <div className="flex items-center gap-2 font-mono text-sm">
+                        {project.creatorAddress ? `${project.creatorAddress.substring(0, 8)}...${project.creatorAddress.substring(project.creatorAddress.length - 6)}` : 'Unknown'}
+                        {project.creatorAddress && (
+                          <a href={`https://testnet.algoexplorer.io/address/${project.creatorAddress}`} target="_blank" rel="noopener noreferrer">
+                            <Button variant="ghost" size="icon" className="h-4 w-4">
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-border">
+                      <span className="text-muted-foreground">Initial Price</span>
+                      <span className="font-mono">{formatAlgo(project.basePrice)} ALGO</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-border">
+                      <span className="text-muted-foreground">Graduation Target</span>
+                      <span className="font-mono">{formatAlgo(project.bondingTarget)} ALGO</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Bonding Curve</h3>
+                  <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-medium">Progress to Graduation</span>
+                      <span className="text-sm font-bold">{progress.toFixed(2)}%</span>
+                    </div>
+                    <Progress value={progress} className="h-3 mb-4" />
+                    <p className="text-xs text-muted-foreground">
+                      When the market cap reaches {formatAlgo(project.bondingTarget)} ALGO, all liquidity will be deposited into Tinyman and burned.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="transactions" className="p-6 bg-card border border-border border-t-0 rounded-b-lg mt-0">
+              {activityLoading && projectTransactions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-3">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <p>Loading transactions…</p>
+                </div>
+              ) : projectTransactions.length > 0 ? (
+                <div className="space-y-4">
+                  {activityStats && (
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                      <Card className="bg-muted/30 border-border/60">
+                        <CardContent className="py-3">
+                          <p className="text-xs text-muted-foreground">Total Purchases</p>
+                          <p className="text-lg font-semibold">{activityStats.totalTransactions}</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-muted/30 border-border/60">
+                        <CardContent className="py-3">
+                          <p className="text-xs text-muted-foreground">Unique Buyers</p>
+                          <p className="text-lg font-semibold">{activityStats.uniqueHolders}</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-muted/30 border-border/60">
+                        <CardContent className="py-3">
+                          <p className="text-xs text-muted-foreground">Volume (ALGO)</p>
+                          <p className="text-lg font-semibold">{formatAlgo(activityStats.totalAlgo)}</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-muted/30 border-border/60">
+                        <CardContent className="py-3">
+                          <p className="text-xs text-muted-foreground">Tokens Sold</p>
+                          <p className="text-lg font-semibold">{formatTokens(activityStats.totalTokens)}</p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+
+                  <div className="border border-border/60 rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[160px]">Timestamp</TableHead>
+                          <TableHead>Buyer</TableHead>
+                          <TableHead className="text-right">Tokens</TableHead>
+                          <TableHead className="text-right">Paid (ALGO)</TableHead>
+                          <TableHead className="text-right">Tx</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {projectTransactions.map((tx) => (
+                          <TableRow key={tx.id}>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {new Date(tx.timestamp).toLocaleString()}
+                            </TableCell>
+                            <TableCell className="font-mono text-xs">
+                              {truncateAddress(tx.buyerAddress)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatTokens(tx.tokensAmount)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatAlgo(tx.algoPaid)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <a
+                                href={`https://testnet.algoexplorer.io/tx/${tx.transactionId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary text-xs hover:underline"
+                              >
+                                View
+                              </a>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Clock className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                  <p>No transactions yet</p>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="holders" className="p-6 bg-card border border-border border-t-0 rounded-b-lg mt-0">
+              {activityLoading && projectHolders.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground gap-3">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <p>Loading holders…</p>
+                </div>
+              ) : projectHolders.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="border border-border/60 rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Address</TableHead>
+                          <TableHead className="text-right">Tokens Held</TableHead>
+                          <TableHead className="text-right">ALGO Spent</TableHead>
+                          <TableHead className="text-right">Buys</TableHead>
+                          <TableHead className="text-right">Last Activity</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {projectHolders.map((holder) => (
+                          <TableRow key={holder.buyerAddress}>
+                            <TableCell className="font-mono text-xs">
+                              {truncateAddress(holder.buyerAddress)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatTokens(holder.totalTokens)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatAlgo(holder.totalAlgo)}
+                            </TableCell>
+                            <TableCell className="text-right text-sm">{holder.purchaseCount}</TableCell>
+                            <TableCell className="text-right text-xs text-muted-foreground">
+                              {holder.lastPurchaseAt ? new Date(holder.lastPurchaseAt).toLocaleString() : '—'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Users className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                  <p>Holder list is empty</p>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Right Column: Trading Interface (3 cols) */}
+        <div className="lg:col-span-3 space-y-4">
+          {/* Trading Panel */}
+          <Card className="border-border bg-card/50 backdrop-blur">
+            <CardContent className="p-4 space-y-4">
+              {/* Anti-bot Badge */}
+              <div className="flex items-center justify-start">
+                <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20">
+                  <Shield className="h-3 w-3 mr-1" />
+                  Anti-bot: Active
+                </Badge>
+              </div>
+
+              {/* Buy/Sell Tabs with Slippage */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
+                  <Button
+                    variant={activeTab === 'buy' ? 'default' : 'ghost'}
+                    className={`flex-1 ${activeTab === 'buy' ? 'bg-card shadow-sm' : ''}`}
+                    onClick={() => setActiveTab('buy')}
+                  >
+                    Buy
+                  </Button>
+                  <Button
+                    variant={activeTab === 'sell' ? 'default' : 'ghost'}
+                    className={`flex-1 ${activeTab === 'sell' ? 'bg-card shadow-sm' : ''}`}
+                    onClick={() => setActiveTab('sell')}
+                    disabled
+                  >
+                    Sell
+                  </Button>
+                </div>
+                <Button variant="outline" size="sm" className="px-3">
+                  <Zap className="h-4 w-4 mr-1" />
+                  20%
+                </Button>
+              </div>
+
+              {activeTab === 'buy' ? (
+                <div className="space-y-4">
+                  {/* Large Input Field */}
+                  <div className="space-y-2">
+                    <div className="bg-muted/30 rounded-lg p-4 border border-border">
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        placeholder="0"
+                        className="w-full bg-transparent text-5xl font-light outline-none text-foreground placeholder:text-muted-foreground"
+                        value={buyAmount}
+                        onChange={(e) => setBuyAmount(e.target.value)}
+                      />
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-sm text-muted-foreground">$0.00</span>
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500" />
+                          <span className="font-semibold">ALGO</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-xs text-right text-muted-foreground flex items-center justify-end gap-1">
+                      <span className="h-4 w-4 rounded bg-muted flex items-center justify-center">💰</span>
+                      <span>0</span>
+                    </div>
+                  </div>
+
+                  {/* Quick Selection Buttons */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setBuyAmount("")}>
+                      Reset
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setBuyAmount("0.1")}>
+                      0.1 ALGO
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setBuyAmount("0.5")}>
+                      0.5 ALGO
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setBuyAmount("1")}>
+                      1 ALGO
+                    </Button>
+                    <Button variant="outline" size="sm" className="col-span-4" onClick={() => setBuyAmount("100")}>
+                      Max
+                    </Button>
+                  </div>
+
+                  {/* Estimated Receive & Rewards */}
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Estimated to Receive</span>
+                      <span className="font-mono font-bold">
+                        {priceQuote ? `${formatTokens(priceQuote.tokenAmount)} ${project.tokenSymbol}` : `0 ${project.tokenSymbol}`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Rewards to Earn</span>
+                      <span className="font-mono font-bold text-amber-500">
+                        {priceQuote ? `${priceQuote.pointsEarned} Points` : '0 Points'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Buy Button */}
+                  {!activeAccount ? (
+                    <Button className="w-full h-12 text-base font-semibold" size="lg">
+                      Connect Wallet
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full h-12 text-base font-semibold bg-amber-600 hover:bg-amber-700 text-black"
+                      size="lg"
+                      onClick={handlePurchase}
+                      disabled={purchasing || !buyAmount}
+                    >
+                      {purchasing ? 'Processing...' : `Buy ${project.tokenSymbol}`}
+                    </Button>
+                  )}
+
+                  {/* Disclaimer */}
+                  <p className="text-[10px] text-muted-foreground text-center leading-tight">
+                    By clicking Buy above, you hereby acknowledge that: (i) the token you're buying is a "meme coin" as defined by the U.S. Securities and Exchange Commission; and (ii) this site is protected by reCAPTCHA.
+                  </p>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-muted-foreground space-y-2">
+                  <Lock className="h-8 w-8 mx-auto opacity-50" />
+                  <p className="text-sm">Selling is currently disabled</p>
+                  <p className="text-xs">Available after bonding curve graduation</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Bonding Curve Info */}
+          <Card className="border-border bg-card/50 backdrop-blur">
+            <CardContent className="p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  <span className="font-semibold">Bonding</span>
+                </div>
+                <span className="text-sm font-mono font-bold">{progress.toFixed(2)}%</span>
+              </div>
+              <Progress value={progress} className="h-2" />
+              <div className="flex justify-between text-sm">
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">Current</span>
+                  <div className="h-3 w-3 rounded-full bg-gradient-to-br from-blue-500 to-purple-500" />
+                </div>
+                <span className="font-mono font-bold">{formatAlgo(project.algoRaised)} ALGO</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">Remaining</span>
+                  <div className="h-3 w-3 rounded-full bg-gradient-to-br from-blue-500 to-purple-500" />
+                </div>
+                <span className="font-mono font-bold">{formatAlgo((BigInt(project.bondingTarget) - BigInt(project.algoRaised)).toString())} ALGO</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* User Points */}
+          {activeAccount && userPoints && (
+            <Card className="border-amber-500/20 bg-amber-500/5">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium flex items-center gap-1">
+                    <Gift className="h-4 w-4 text-amber-500" /> Your Rewards
+                  </span>
+                  <Badge variant="outline" className="border-amber-500 text-amber-500">
+                    {userPoints.totalPoints} pts
+                  </Badge>
+                </div>
+                <Button variant="outline" size="sm" className="w-full border-amber-500/50 hover:bg-amber-500/10">
+                  Claim Rewards
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }

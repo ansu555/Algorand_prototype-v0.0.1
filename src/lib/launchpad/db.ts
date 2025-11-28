@@ -8,7 +8,10 @@ import type {
   PriceQuote,
   BondingCurveParams,
   CurveType,
-  ProjectStatus
+  ProjectStatus,
+  ProjectHolder,
+  LaunchpadPurchaseRecord,
+  UserPortfolioPosition
 } from './types'
 import {
   calculateProgress,
@@ -20,21 +23,44 @@ import {
   POINTS_MULTIPLIER_BASE
 } from './types'
 
-// Lazy-load libsql client for Turso
+// Lazy-load libsql client for Turso or local SQLite
 let clientPromise: Promise<any> | null = null
-async function getClient() {
+export async function getClient() {
   if (!clientPromise) {
     clientPromise = (async () => {
       const url = process.env.TURSO_DATABASE_URL || process.env.LIBSQL_DB_URL
       const authToken = process.env.TURSO_AUTH_TOKEN || process.env.LIBSQL_DB_AUTH_TOKEN
+      
+      // Use local SQLite file for development if Turso is not configured
+      const effectiveUrl = url || 'file:./data/launchpad.sqlite'
+      
       if (!url) {
-        throw new Error('TURSO_DATABASE_URL is not set. Please configure Turso database in Vercel environment variables.')
+        console.warn('⚠️ TURSO_DATABASE_URL not set. Using local SQLite database at ./data/launchpad.sqlite')
       }
+      
       const mod: any = await import('@libsql/client')
-      return mod.createClient({ url, authToken })
+      // Use intMode: 'bigint' to handle large integers safely
+      return mod.createClient({ 
+        url: effectiveUrl, 
+        authToken: authToken || undefined,
+        intMode: 'bigint'  // Return integers as BigInt to avoid overflow
+      })
     })()
   }
   return clientPromise
+}
+
+// Helper to safely convert to BigInt (handles bigint, number, string)
+function toBigInt(value: bigint | number | string | null | undefined): bigint {
+  if (value === null || value === undefined) return 0n
+  if (typeof value === 'bigint') return value
+  return BigInt(value)
+}
+
+function toBigIntOrUndefined(value: bigint | number | string | null | undefined): bigint | undefined {
+  if (value === null || value === undefined) return undefined
+  if (typeof value === 'bigint') return value
+  return BigInt(value)
 }
 
 // Initialize database tables
@@ -161,35 +187,35 @@ export async function getProject(projectId: string): Promise<LaunchProject | nul
     creatorAddress: row.creator_address,
     tokenName: row.token_name,
     tokenSymbol: row.token_symbol,
-    tokenDecimals: row.token_decimals,
-    totalSupply: BigInt(row.total_supply),
+    tokenDecimals: Number(row.token_decimals),
+    totalSupply: toBigInt(row.total_supply),
     description: row.description,
     logoUrl: row.logo_url,
     websiteUrl: row.website_url,
     twitterUrl: row.twitter_url,
     telegramUrl: row.telegram_url,
-    asaId: row.asa_id ? BigInt(row.asa_id) : undefined,
-    appId: row.app_id ? BigInt(row.app_id) : undefined,
+    asaId: toBigIntOrUndefined(row.asa_id),
+    appId: toBigIntOrUndefined(row.app_id),
     configTxId: row.config_tx_id,
     bootstrapTxId: row.bootstrap_tx_id,
     fundingTxId: row.funding_tx_id,
     curveType: row.curve_type as CurveType,
-    basePrice: BigInt(row.base_price),
-    maxPrice: BigInt(row.max_price),
-    bondingTarget: BigInt(row.bonding_target),
-    tokensForSale: BigInt(row.tokens_for_sale),
+    basePrice: toBigInt(row.base_price),
+    maxPrice: toBigInt(row.max_price),
+    bondingTarget: toBigInt(row.bonding_target),
+    tokensForSale: toBigInt(row.tokens_for_sale),
     status: row.status as ProjectStatus,
-    tokensSold: BigInt(row.tokens_sold),
-    algoRaised: BigInt(row.algo_raised),
-    participantCount: row.participant_count,
-    launchRound: row.launch_round ? BigInt(row.launch_round) : undefined,
-    graduationRound: row.graduation_round ? BigInt(row.graduation_round) : undefined,
-    liquidityPercentage: row.liquidity_percentage,
-    lpLockDuration: BigInt(row.lp_lock_duration),
+    tokensSold: toBigInt(row.tokens_sold),
+    algoRaised: toBigInt(row.algo_raised),
+    participantCount: Number(row.participant_count || 0),
+    launchRound: toBigIntOrUndefined(row.launch_round),
+    graduationRound: toBigIntOrUndefined(row.graduation_round),
+    liquidityPercentage: Number(row.liquidity_percentage || 0),
+    lpLockDuration: toBigInt(row.lp_lock_duration),
     dexPlatform: row.dex_platform,
-    maxBuyPerTx: row.max_buy_per_tx ? BigInt(row.max_buy_per_tx) : undefined,
-    maxBuyPerUser: row.max_buy_per_user ? BigInt(row.max_buy_per_user) : undefined,
-    cooldownBlocks: row.cooldown_blocks ? BigInt(row.cooldown_blocks) : undefined,
+    maxBuyPerTx: toBigIntOrUndefined(row.max_buy_per_tx),
+    maxBuyPerUser: toBigIntOrUndefined(row.max_buy_per_user),
+    cooldownBlocks: toBigIntOrUndefined(row.cooldown_blocks),
     createdAt: row.created_at,
     launchedAt: row.launched_at,
     graduatedAt: row.graduated_at,
@@ -205,40 +231,40 @@ export async function getAllProjects(status?: ProjectStatus): Promise<LaunchProj
     ? await client.execute({ sql: 'SELECT * FROM launch_projects WHERE status = ? ORDER BY created_at DESC', args: [status] })
     : await client.execute('SELECT * FROM launch_projects ORDER BY created_at DESC')
 
-  return rows.map((row: { id: any; creator_address: any; token_name: any; token_symbol: any; token_decimals: any; total_supply: string | number | bigint | boolean; description: any; logo_url: any; website_url: any; twitter_url: any; telegram_url: any; asa_id: string | number | bigint | boolean; app_id: string | number | bigint | boolean; config_tx_id: any; bootstrap_tx_id: any; funding_tx_id: any; curve_type: string; base_price: string | number | bigint | boolean; max_price: string | number | bigint | boolean; bonding_target: string | number | bigint | boolean; tokens_for_sale: string | number | bigint | boolean; status: string; tokens_sold: string | number | bigint | boolean; algo_raised: string | number | bigint | boolean; participant_count: any; launch_round: string | number | bigint | boolean; graduation_round: string | number | bigint | boolean; liquidity_percentage: any; lp_lock_duration: string | number | bigint | boolean; dex_platform: any; max_buy_per_tx: string | number | bigint | boolean; max_buy_per_user: string | number | bigint | boolean; cooldown_blocks: string | number | bigint | boolean; created_at: any; launched_at: any; graduated_at: any; updated_at: any }) => ({
+  return rows.map((row: any) => ({
     id: row.id,
     creatorAddress: row.creator_address,
     tokenName: row.token_name,
     tokenSymbol: row.token_symbol,
-    tokenDecimals: row.token_decimals,
-    totalSupply: BigInt(row.total_supply),
+    tokenDecimals: Number(row.token_decimals),
+    totalSupply: toBigInt(row.total_supply),
     description: row.description,
     logoUrl: row.logo_url,
     websiteUrl: row.website_url,
     twitterUrl: row.twitter_url,
     telegramUrl: row.telegram_url,
-    asaId: row.asa_id ? BigInt(row.asa_id) : undefined,
-    appId: row.app_id ? BigInt(row.app_id) : undefined,
+    asaId: toBigIntOrUndefined(row.asa_id),
+    appId: toBigIntOrUndefined(row.app_id),
     configTxId: row.config_tx_id,
     bootstrapTxId: row.bootstrap_tx_id,
     fundingTxId: row.funding_tx_id,
     curveType: row.curve_type as CurveType,
-    basePrice: BigInt(row.base_price),
-    maxPrice: BigInt(row.max_price),
-    bondingTarget: BigInt(row.bonding_target),
-    tokensForSale: BigInt(row.tokens_for_sale),
+    basePrice: toBigInt(row.base_price),
+    maxPrice: toBigInt(row.max_price),
+    bondingTarget: toBigInt(row.bonding_target),
+    tokensForSale: toBigInt(row.tokens_for_sale),
     status: row.status as ProjectStatus,
-    tokensSold: BigInt(row.tokens_sold),
-    algoRaised: BigInt(row.algo_raised),
-    participantCount: row.participant_count,
-    launchRound: row.launch_round ? BigInt(row.launch_round) : undefined,
-    graduationRound: row.graduation_round ? BigInt(row.graduation_round) : undefined,
-    liquidityPercentage: row.liquidity_percentage,
-    lpLockDuration: BigInt(row.lp_lock_duration),
+    tokensSold: toBigInt(row.tokens_sold),
+    algoRaised: toBigInt(row.algo_raised),
+    participantCount: Number(row.participant_count || 0),
+    launchRound: toBigIntOrUndefined(row.launch_round),
+    graduationRound: toBigIntOrUndefined(row.graduation_round),
+    liquidityPercentage: Number(row.liquidity_percentage || 0),
+    lpLockDuration: toBigInt(row.lp_lock_duration),
     dexPlatform: row.dex_platform,
-    maxBuyPerTx: row.max_buy_per_tx ? BigInt(row.max_buy_per_tx) : undefined,
-    maxBuyPerUser: row.max_buy_per_user ? BigInt(row.max_buy_per_user) : undefined,
-    cooldownBlocks: row.cooldown_blocks ? BigInt(row.cooldown_blocks) : undefined,
+    maxBuyPerTx: toBigIntOrUndefined(row.max_buy_per_tx),
+    maxBuyPerUser: toBigIntOrUndefined(row.max_buy_per_user),
+    cooldownBlocks: toBigIntOrUndefined(row.cooldown_blocks),
     createdAt: row.created_at,
     launchedAt: row.launched_at,
     graduatedAt: row.graduated_at,
@@ -332,6 +358,214 @@ export function calculatePrice(params: BondingCurveParams): bigint {
   }
 }
 
+/**
+ * Calculate the total cost for purchasing n tokens using the bonding curve.
+ * This matches the smart contract's formula for linear curve:
+ *   cost = p0*n + delta_p * n * (2*s + n) / (2 * tokens_for_sale)
+ * Where:
+ *   p0 = start_price (basePrice)
+ *   p1 = target_price (maxPrice)
+ *   delta_p = p1 - p0
+ *   s = tokens_sold (current tokens sold)
+ *   n = quantity to buy
+ */
+export function calculateLinearCurveCost(
+  basePrice: bigint,
+  maxPrice: bigint,
+  tokensForSale: bigint,
+  tokensSold: bigint,
+  quantity: bigint
+): bigint {
+  const p0 = basePrice
+  const deltaP = maxPrice - basePrice
+  
+  // cost = p0*n + delta_p * n * (2*s + n) / (2 * tokens_for_sale)
+  const numerator = deltaP * quantity * ((tokensSold * 2n) + quantity)
+  const denominator = tokensForSale * 2n
+  const curveAdd = numerator / denominator
+  const cost = p0 * quantity + curveAdd
+  
+  return cost
+}
+
+/**
+ * Calculate the total cost for purchasing tokens based on curve type.
+ * For linear curve, this integrates along the curve (not just spot price × quantity).
+ */
+export function calculateTotalCost(
+  curveType: CurveType,
+  basePrice: bigint,
+  maxPrice: bigint,
+  tokensForSale: bigint,
+  tokensSold: bigint,
+  quantity: bigint
+): bigint {
+  switch (curveType) {
+    case 'linear':
+      return calculateLinearCurveCost(basePrice, maxPrice, tokensForSale, tokensSold, quantity)
+    case 'sigmoid':
+    case 'exponential':
+    default:
+      // For now, use linear integration for all curve types
+      // TODO: Add proper integration for sigmoid and exponential curves
+      return calculateLinearCurveCost(basePrice, maxPrice, tokensForSale, tokensSold, quantity)
+  }
+}
+
+/**
+ * Calculate how many tokens you can buy for a given ALGO amount.
+ * This is the inverse of calculateLinearCurveCost - solving for n given cost.
+ * 
+ * From: cost = p0*n + delta_p * n * (2*s + n) / (2 * T)
+ * Rearranging: delta_p/(2T) * n^2 + (p0 + delta_p*s/T) * n - cost = 0
+ * 
+ * Using quadratic formula: n = (-b + sqrt(b^2 + 4ac)) / (2a)
+ * Where:
+ *   a = delta_p / (2*T)
+ *   b = p0 + delta_p * s / T
+ *   c = cost
+ */
+export function calculateTokensForAlgo(
+  basePrice: bigint,
+  maxPrice: bigint,
+  tokensForSale: bigint,
+  tokensSold: bigint,
+  algoAmount: bigint  // in microALGO
+): bigint {
+  const p0 = basePrice
+  const deltaP = maxPrice - basePrice
+  const T = tokensForSale
+  const s = tokensSold
+  const cost = algoAmount
+  
+  // If deltaP is 0 (flat price), simple division
+  if (deltaP === 0n) {
+    return p0 > 0n ? cost / p0 : 0n
+  }
+  
+  // For the quadratic formula, we need to work with scaled integers
+  // a = deltaP / (2*T), b = p0 + deltaP*s/T
+  // To avoid precision loss, multiply everything by 2*T
+  // New equation: deltaP * n^2 + (2*T*p0 + 2*deltaP*s) * n - 2*T*cost = 0
+  
+  const a = deltaP
+  const b = 2n * T * p0 + 2n * deltaP * s
+  const c = 2n * T * cost
+  
+  // Discriminant: b^2 + 4*a*c (note: +4ac because we moved cost to other side)
+  const discriminant = b * b + 4n * a * c
+  
+  // Integer square root using Newton's method
+  const sqrtDiscriminant = bigIntSqrt(discriminant)
+  
+  // n = (-b + sqrt(discriminant)) / (2*a)
+  // Since b is positive and we want positive n, use: (sqrt(discriminant) - b) / (2*a)
+  // Wait, the original equation has -cost, so it's actually +4ac
+  // n = (-b + sqrt(b^2 + 4ac)) / (2a)
+  
+  const numerator = sqrtDiscriminant - b
+  const denominator = 2n * a
+  
+  // If numerator is negative, no valid solution (can't afford any tokens)
+  if (numerator <= 0n) {
+    return 0n
+  }
+  
+  const tokens = numerator / denominator
+  
+  // Ensure we don't exceed available tokens
+  const available = tokensForSale - tokensSold
+  return tokens > available ? available : tokens
+}
+
+/**
+ * Integer square root using Newton's method
+ */
+function bigIntSqrt(n: bigint): bigint {
+  if (n < 0n) throw new Error('Square root of negative number')
+  if (n === 0n) return 0n
+  if (n === 1n) return 1n
+  
+  let x = n
+  let y = (x + 1n) / 2n
+  
+  while (y < x) {
+    x = y
+    y = (x + n / x) / 2n
+  }
+  
+  return x
+}
+
+/**
+ * Get a price quote based on ALGO amount (how many tokens for X ALGO)
+ */
+export async function getQuoteForAlgo(projectId: string, algoAmount: bigint): Promise<PriceQuote | null> {
+  const project = await getProject(projectId)
+  if (!project) return null
+
+  // Calculate how many tokens we can buy for this ALGO amount
+  const tokensAmount = calculateTokensForAlgo(
+    project.basePrice,
+    project.maxPrice,
+    project.tokensForSale,
+    project.tokensSold,
+    algoAmount
+  )
+  
+  if (tokensAmount <= 0n) {
+    return {
+      tokensAmount: 0n,
+      totalCost: 0n,
+      averagePrice: project.basePrice,
+      priceImpact: 0,
+      pointsToEarn: 0n
+    }
+  }
+
+  // Now get the actual cost for these tokens (should be close to algoAmount)
+  const totalCost = calculateTotalCost(
+    project.curveType,
+    project.basePrice,
+    project.maxPrice,
+    project.tokensForSale,
+    project.tokensSold,
+    tokensAmount
+  )
+
+  const currentPrice = calculatePrice({
+    curveType: project.curveType,
+    basePrice: project.basePrice,
+    maxPrice: project.maxPrice,
+    totalSupply: project.tokensForSale,
+    tokensSold: project.tokensSold
+  })
+
+  const priceAfter = calculatePrice({
+    curveType: project.curveType,
+    basePrice: project.basePrice,
+    maxPrice: project.maxPrice,
+    totalSupply: project.tokensForSale,
+    tokensSold: project.tokensSold + tokensAmount
+  })
+
+  const priceImpact = currentPrice > 0n 
+    ? Number((priceAfter - currentPrice) * 10000n / currentPrice) / 100
+    : 0
+
+  const progress = calculateProgress(project.tokensSold, project.tokensForSale)
+  const earlyBonus = calculateEarlyBonus(progress)
+  const pointsToEarn = BigInt(Math.floor(Number(tokensAmount) * earlyBonus))
+
+  return {
+    tokensAmount,
+    totalCost,
+    averagePrice: currentPrice,
+    priceImpact,
+    pointsToEarn
+  }
+}
+
 export async function getPriceQuote(projectId: string, tokensAmount: bigint): Promise<PriceQuote | null> {
   const project = await getProject(projectId)
   if (!project) return null
@@ -344,8 +578,16 @@ export async function getPriceQuote(projectId: string, tokensAmount: bigint): Pr
     tokensSold: project.tokensSold
   })
 
-  // Calculate total cost (simplified - should integrate for accurate pricing)
-  const totalCost = (tokensAmount * currentPrice) / BigInt(10 ** project.tokenDecimals)
+  // Calculate total cost using proper integration along the bonding curve
+  // This matches the smart contract's formula exactly
+  const totalCost = calculateTotalCost(
+    project.curveType,
+    project.basePrice,
+    project.maxPrice,
+    project.tokensForSale,
+    project.tokensSold,
+    tokensAmount
+  )
 
   // Calculate price impact
   const priceAfter = calculatePrice({
@@ -356,7 +598,9 @@ export async function getPriceQuote(projectId: string, tokensAmount: bigint): Pr
     tokensSold: project.tokensSold + tokensAmount
   })
 
-  const priceImpact = Number((priceAfter - currentPrice) * 10000n / currentPrice) / 100
+  const priceImpact = currentPrice > 0n 
+    ? Number((priceAfter - currentPrice) * 10000n / currentPrice) / 100
+    : 0
 
   // Calculate points with early bonus
   const progress = calculateProgress(project.tokensSold, project.tokensForSale)
@@ -574,4 +818,102 @@ export async function getPurchaseHistory(projectId: string, buyerAddress?: strin
     blockRound: BigInt(row.block_round),
     timestamp: row.timestamp
   }))
+}
+
+export async function getProjectHolders(projectId: string): Promise<ProjectHolder[]> {
+  await ensureInit()
+  const client = await getClient()
+
+  const { rows } = await client.execute({
+    sql: `SELECT buyer_address, SUM(tokens_amount) AS total_tokens, SUM(algo_paid) AS total_algo,
+                 COUNT(*) AS purchase_count, MAX(timestamp) AS last_purchase
+          FROM token_purchases
+          WHERE project_id = ?
+          GROUP BY buyer_address
+          ORDER BY total_tokens DESC`,
+    args: [projectId]
+  })
+
+  return rows.map((row: any) => ({
+    buyerAddress: row.buyer_address,
+    totalTokens: toBigInt(row.total_tokens ?? 0),
+    totalAlgo: toBigInt(row.total_algo ?? 0),
+    purchaseCount: Number(row.purchase_count ?? 0),
+    lastPurchaseAt: row.last_purchase ?? null,
+  }))
+}
+
+export async function getGlobalPurchases(options?: { projectId?: string; limit?: number; offset?: number }): Promise<LaunchpadPurchaseRecord[]> {
+  await ensureInit()
+  const client = await getClient()
+  const limit = options?.limit ?? 100
+  const offset = options?.offset ?? 0
+
+  const baseSql = `SELECT tp.*, lp.token_name, lp.token_symbol, lp.token_decimals, lp.logo_url
+    FROM token_purchases tp
+    INNER JOIN launch_projects lp ON lp.id = tp.project_id
+    ${options?.projectId ? 'WHERE tp.project_id = ?' : ''}
+    ORDER BY datetime(tp.timestamp) DESC
+    LIMIT ? OFFSET ?`
+
+  const args = options?.projectId
+    ? [options.projectId, limit, offset]
+    : [limit, offset]
+
+  const { rows } = await client.execute({ sql: baseSql, args })
+
+  return rows.map((row: any) => ({
+    id: row.id,
+    projectId: row.project_id,
+    buyerAddress: row.buyer_address,
+    tokensAmount: BigInt(row.tokens_amount),
+    algoPaid: BigInt(row.algo_paid),
+    pricePerToken: BigInt(row.price_per_token),
+    pointsEarned: BigInt(row.points_earned),
+    transactionId: row.transaction_id,
+    blockRound: BigInt(row.block_round),
+    timestamp: row.timestamp,
+    tokenName: row.token_name,
+    tokenSymbol: row.token_symbol,
+    tokenDecimals: Number(row.token_decimals ?? 6),
+    logoUrl: row.logo_url ?? null,
+  }))
+}
+
+export async function getUserPortfolio(userAddress: string): Promise<UserPortfolioPosition[]> {
+  await ensureInit()
+  const client = await getClient()
+
+  const { rows } = await client.execute({
+    sql: `SELECT tp.project_id, lp.token_name, lp.token_symbol, lp.token_decimals, lp.logo_url,
+                 SUM(tp.tokens_amount) AS tokens_held,
+                 SUM(tp.algo_paid) AS algo_spent,
+                 COUNT(*) AS purchase_count,
+                 MAX(tp.timestamp) AS last_purchase
+          FROM token_purchases tp
+          INNER JOIN launch_projects lp ON lp.id = tp.project_id
+          WHERE tp.buyer_address = ?
+          GROUP BY tp.project_id, lp.token_name, lp.token_symbol, lp.token_decimals, lp.logo_url
+          ORDER BY datetime(last_purchase) DESC`,
+    args: [userAddress]
+  })
+
+  return rows.map((row: any) => {
+    const tokensHeld = toBigInt(row.tokens_held ?? 0)
+    const algoSpent = toBigInt(row.algo_spent ?? 0)
+    const averagePrice = tokensHeld > 0n ? algoSpent / tokensHeld : 0n
+
+    return {
+      projectId: row.project_id,
+      tokenName: row.token_name,
+      tokenSymbol: row.token_symbol,
+      tokenDecimals: Number(row.token_decimals ?? 6),
+      logoUrl: row.logo_url ?? null,
+      tokensHeld,
+      algoSpent,
+      averagePrice,
+      purchaseCount: Number(row.purchase_count ?? 0),
+      lastPurchaseAt: row.last_purchase ?? null,
+    }
+  })
 }
