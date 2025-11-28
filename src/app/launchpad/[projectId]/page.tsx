@@ -24,6 +24,7 @@ import { TokenPriceChart } from "@/components/features/launchpad/token-price-cha
 
 interface Project {
   id: string
+  creatorAddress: string
   tokenName: string
   tokenSymbol: string
   description?: string
@@ -145,7 +146,7 @@ export default function ProjectDetailPage() {
   }
 
   const getPriceQuote = async () => {
-    if (!project) return
+    if (!project || !buyAmount) return
 
     try {
       const res = await fetch('/api/launchpad/purchase', {
@@ -154,14 +155,23 @@ export default function ProjectDetailPage() {
         body: JSON.stringify({
           action: 'quote',
           projectId: project.id,
-          tokenAmount: buyAmount,
+          buyerAddress: activeAccount?.address || 'PLACEHOLDER',
+          tokensAmount: (BigInt(Number(buyAmount) * 1_000_000)).toString(),
         })
       })
 
       const data = await res.json()
 
       if (data.success) {
-        setPriceQuote(data.data)
+        setPriceQuote({
+          tokenAmount: data.data.tokensAmount,
+          algoAmount: data.data.totalCost,
+          currentPrice: data.data.averagePrice,
+          avgPrice: data.data.averagePrice,
+          priceImpact: data.data.priceImpact,
+          earlyBonus: 1,
+          pointsEarned: Number(data.data.pointsToEarn),
+        })
       }
     } catch (error) {
       console.error('Failed to get price quote:', error)
@@ -180,9 +190,8 @@ export default function ProjectDetailPage() {
         body: JSON.stringify({
           action: 'validate',
           projectId: project.id,
-          userAddress: activeAccount.address,
-          tokenAmount: buyAmount,
-          algoAmount: priceQuote.algoAmount,
+          buyerAddress: activeAccount.address,
+          tokensAmount: (BigInt(Number(buyAmount) * 1_000_000)).toString(),
           currentRound: await blockchain.getCurrentRound()
         })
       })
@@ -210,8 +219,19 @@ export default function ProjectDetailPage() {
 
       const appId = BigInt(project.appId)
       const asaId = BigInt(project.asaId)
-      const tokensToBuy = BigInt(Number(buyAmount) * 1_000_000) // 6 decimals
-      const maxAlgoCost = BigInt(Math.ceil(Number(priceQuote.algoAmount) * 1_000_000)) // microALGO
+
+      // Use token amount from price quote
+      const tokensToBuy = BigInt(priceQuote.tokenAmount)
+
+      // Use the CALCULATED cost from quote with 10% buffer for price slippage
+      const quotedCost = BigInt(priceQuote.algoAmount) // Already in microALGO
+      const algoCostWithBuffer = (quotedCost * BigInt(110)) / BigInt(100) // 10% buffer
+
+      console.log('📊 Purchase details:')
+      console.log('  - ALGO input:', buyAmount, 'ALGO')
+      console.log('  - Tokens to receive:', tokensToBuy.toString())
+      console.log('  - Quoted cost:', quotedCost.toString(), 'microALGO')
+      console.log('  - Cost with buffer:', algoCostWithBuffer.toString(), 'microALGO')
 
       // Execute purchase transaction on TestNet
       const txId = await blockchain.buyTokens(
@@ -220,7 +240,7 @@ export default function ProjectDetailPage() {
           appId: appId,
           asaId: asaId,
           tokensToBuy: tokensToBuy,
-          estimatedCost: maxAlgoCost,
+          estimatedCost: algoCostWithBuffer,
         },
         walletSigner
       )
@@ -234,9 +254,9 @@ export default function ProjectDetailPage() {
         body: JSON.stringify({
           action: 'record',
           projectId: project.id,
-          userAddress: activeAccount.address,
-          tokenAmount: buyAmount,
-          algoAmount: priceQuote.algoAmount,
+          buyerAddress: activeAccount.address,
+          tokensAmount: (BigInt(Number(buyAmount) * 1_000_000)).toString(),
+          algoPaid: priceQuote.algoAmount,
           transactionId: txId,
           blockRound: await blockchain.getCurrentRound(),
         })
@@ -420,21 +440,27 @@ export default function ProjectDetailPage() {
 
                   <div className="mt-6 space-y-3">
                     <div className="flex justify-between py-2 border-b border-border">
-                      <span className="text-muted-foreground">Contract Address</span>
+                      <span className="text-muted-foreground">Token ID (ASA)</span>
                       <div className="flex items-center gap-2 font-mono text-sm">
-                        {project.appId}
-                        <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => copyToClipboard(project.appId || '')}>
-                          <Copy className="h-3 w-3" />
-                        </Button>
+                        {project.asaId || 'Not deployed'}
+                        {project.asaId && (
+                          <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => copyToClipboard(project.asaId?.toString() || '')}>
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                     <div className="flex justify-between py-2 border-b border-border">
                       <span className="text-muted-foreground">Creator Wallet</span>
                       <div className="flex items-center gap-2 font-mono text-sm">
-                        {project.id.substring(0, 8)}...
-                        <Button variant="ghost" size="icon" className="h-4 w-4">
-                          <ExternalLink className="h-3 w-3" />
-                        </Button>
+                        {project.creatorAddress ? `${project.creatorAddress.substring(0, 8)}...${project.creatorAddress.substring(project.creatorAddress.length - 6)}` : 'Unknown'}
+                        {project.creatorAddress && (
+                          <a href={`https://testnet.algoexplorer.io/address/${project.creatorAddress}`} target="_blank" rel="noopener noreferrer">
+                            <Button variant="ghost" size="icon" className="h-4 w-4">
+                              <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          </a>
+                        )}
                       </div>
                     </div>
                     <div className="flex justify-between py-2 border-b border-border">
@@ -483,73 +509,112 @@ export default function ProjectDetailPage() {
         {/* Right Column: Trading Interface (3 cols) */}
         <div className="lg:col-span-3 space-y-4">
           {/* Trading Panel */}
-          <Card className="border-border">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-4 bg-muted/50 p-1 rounded-lg">
-                <Button
-                  variant={activeTab === 'buy' ? 'default' : 'ghost'}
-                  className={`flex-1 ${activeTab === 'buy' ? 'bg-green-600 hover:bg-green-700' : ''}`}
-                  onClick={() => setActiveTab('buy')}
-                >
-                  Buy
-                </Button>
-                <Button
-                  variant={activeTab === 'sell' ? 'default' : 'ghost'}
-                  className={`flex-1 ${activeTab === 'sell' ? 'bg-red-600 hover:bg-red-700' : ''}`}
-                  onClick={() => setActiveTab('sell')}
-                >
-                  Sell
+          <Card className="border-border bg-card/50 backdrop-blur">
+            <CardContent className="p-4 space-y-4">
+              {/* Anti-bot Badge */}
+              <div className="flex items-center justify-start">
+                <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20">
+                  <Shield className="h-3 w-3 mr-1" />
+                  Anti-bot: Active
+                </Badge>
+              </div>
+
+              {/* Buy/Sell Tabs with Slippage */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
+                  <Button
+                    variant={activeTab === 'buy' ? 'default' : 'ghost'}
+                    className={`flex-1 ${activeTab === 'buy' ? 'bg-card shadow-sm' : ''}`}
+                    onClick={() => setActiveTab('buy')}
+                  >
+                    Buy
+                  </Button>
+                  <Button
+                    variant={activeTab === 'sell' ? 'default' : 'ghost'}
+                    className={`flex-1 ${activeTab === 'sell' ? 'bg-card shadow-sm' : ''}`}
+                    onClick={() => setActiveTab('sell')}
+                    disabled
+                  >
+                    Sell
+                  </Button>
+                </div>
+                <Button variant="outline" size="sm" className="px-3">
+                  <Zap className="h-4 w-4 mr-1" />
+                  20%
                 </Button>
               </div>
 
               {activeTab === 'buy' ? (
                 <div className="space-y-4">
+                  {/* Large Input Field */}
                   <div className="space-y-2">
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <Label>Amount (ALGO)</Label>
-                      <span>Balance: {activeAccount ? 'Loading...' : '0'}</span>
-                    </div>
-                    <div className="relative">
-                      <Input
+                    <div className="bg-muted/30 rounded-lg p-4 border border-border">
+                      <input
                         type="number"
-                        placeholder="0.0"
-                        className="pr-16 text-right font-mono text-lg"
+                        step="0.1"
+                        min="0"
+                        placeholder="0"
+                        className="w-full bg-transparent text-5xl font-light outline-none text-foreground placeholder:text-muted-foreground"
                         value={buyAmount}
                         onChange={(e) => setBuyAmount(e.target.value)}
                       />
-                      <div className="absolute left-3 top-1/2 -translate-y-1/2 flex gap-1">
-                        <Button variant="outline" size="xs" className="h-6 text-[10px]" onClick={() => setBuyAmount("10")}>10</Button>
-                        <Button variant="outline" size="xs" className="h-6 text-[10px]" onClick={() => setBuyAmount("50")}>50</Button>
-                        <Button variant="outline" size="xs" className="h-6 text-[10px]" onClick={() => setBuyAmount("100")}>100</Button>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-sm text-muted-foreground">$0.00</span>
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500" />
+                          <span className="font-semibold">ALGO</span>
+                        </div>
                       </div>
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">ALGO</span>
+                    </div>
+                    <div className="text-xs text-right text-muted-foreground flex items-center justify-end gap-1">
+                      <span className="h-4 w-4 rounded bg-muted flex items-center justify-center">💰</span>
+                      <span>0</span>
                     </div>
                   </div>
 
-                  {priceQuote && (
-                    <div className="space-y-2 text-sm border border-border rounded p-3 bg-muted/30">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Receive</span>
-                        <span className="font-bold">{formatTokens(priceQuote.tokenAmount)} {project.tokenSymbol}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Price Impact</span>
-                        <span className={priceQuote.priceImpact > 5 ? 'text-red-500' : 'text-green-500'}>
-                          {priceQuote.priceImpact.toFixed(2)}%
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Points</span>
-                        <span className="text-amber-500 font-bold">+{priceQuote.pointsEarned}</span>
-                      </div>
-                    </div>
-                  )}
+                  {/* Quick Selection Buttons */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setBuyAmount("")}>
+                      Reset
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setBuyAmount("0.1")}>
+                      0.1 ALGO
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setBuyAmount("0.5")}>
+                      0.5 ALGO
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setBuyAmount("1")}>
+                      1 ALGO
+                    </Button>
+                    <Button variant="outline" size="sm" className="col-span-4" onClick={() => setBuyAmount("100")}>
+                      Max
+                    </Button>
+                  </div>
 
+                  {/* Estimated Receive & Rewards */}
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Estimated to Receive</span>
+                      <span className="font-mono font-bold">
+                        {priceQuote ? `${formatTokens(priceQuote.tokenAmount)} ${project.tokenSymbol}` : `0 ${project.tokenSymbol}`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Rewards to Earn</span>
+                      <span className="font-mono font-bold text-amber-500">
+                        {priceQuote ? `${priceQuote.pointsEarned} Points` : '0 Points'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Buy Button */}
                   {!activeAccount ? (
-                    <Button className="w-full" size="lg">Connect Wallet</Button>
+                    <Button className="w-full h-12 text-base font-semibold" size="lg">
+                      Connect Wallet
+                    </Button>
                   ) : (
                     <Button
-                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      className="w-full h-12 text-base font-semibold bg-amber-600 hover:bg-amber-700 text-black"
                       size="lg"
                       onClick={handlePurchase}
                       disabled={purchasing || !buyAmount}
@@ -557,39 +622,46 @@ export default function ProjectDetailPage() {
                       {purchasing ? 'Processing...' : `Buy ${project.tokenSymbol}`}
                     </Button>
                   )}
+
+                  {/* Disclaimer */}
+                  <p className="text-[10px] text-muted-foreground text-center leading-tight">
+                    By clicking Buy above, you hereby acknowledge that: (i) the token you're buying is a "meme coin" as defined by the U.S. Securities and Exchange Commission; and (ii) this site is protected by reCAPTCHA.
+                  </p>
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>Selling is currently disabled during the bonding curve phase.</p>
+                <div className="text-center py-12 text-muted-foreground space-y-2">
+                  <Lock className="h-8 w-8 mx-auto opacity-50" />
+                  <p className="text-sm">Selling is currently disabled</p>
+                  <p className="text-xs">Available after bonding curve graduation</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* Bonding Curve Info */}
-          <Card className="border-border">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" /> Bonding Curve
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span>Progress</span>
-                    <span>{progress.toFixed(2)}%</span>
-                  </div>
-                  <Progress value={progress} className="h-2" />
+          <Card className="border-border bg-card/50 backdrop-blur">
+            <CardContent className="p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  <span className="font-semibold">Bonding</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Market Cap</span>
-                  <span className="font-mono">${formatAlgo((BigInt(project.basePrice) * BigInt(project.totalSupply) / 1000000n).toString())}</span>
+                <span className="text-sm font-mono font-bold">{progress.toFixed(2)}%</span>
+              </div>
+              <Progress value={progress} className="h-2" />
+              <div className="flex justify-between text-sm">
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">Current</span>
+                  <div className="h-3 w-3 rounded-full bg-gradient-to-br from-blue-500 to-purple-500" />
                 </div>
-                <div className="flex justify-between text-sm">
+                <span className="font-mono font-bold">{formatAlgo(project.algoRaised)} ALGO</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <div className="flex items-center gap-1">
                   <span className="text-muted-foreground">Remaining</span>
-                  <span className="font-mono">{formatAlgo((BigInt(project.bondingTarget) - BigInt(project.algoRaised)).toString())} ALGO</span>
+                  <div className="h-3 w-3 rounded-full bg-gradient-to-br from-blue-500 to-purple-500" />
                 </div>
+                <span className="font-mono font-bold">{formatAlgo((BigInt(project.bondingTarget) - BigInt(project.algoRaised)).toString())} ALGO</span>
               </div>
             </CardContent>
           </Card>
