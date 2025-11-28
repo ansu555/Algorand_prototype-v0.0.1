@@ -13,7 +13,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { formatTrigger, type Rule, describeRule } from "@/lib/shared/rules"
 import { forceRunPoller, useAgentData } from "@/features/agent/hooks/useAgentData"
 import { deleteRule as apiDeleteRule, createRule } from "@/features/agent/api/client"
-import { ChevronDown, ChevronUp, Play, Trash2, Eye, RefreshCw, Zap, Activity, Clock, Target, TrendingUp, AlertCircle, CheckCircle2, XCircle, Pause, DollarSign, TrendingDown, BarChart3, Lock, Wallet, Plus, Copy } from "lucide-react"
+import { ChevronDown, ChevronUp, Play, Trash2, Eye, RefreshCw, Zap, Activity, Clock, Target, TrendingUp, AlertCircle, CheckCircle2, XCircle, Pause, DollarSign, TrendingDown, BarChart3, Lock, Wallet, Plus } from "lucide-react"
 import { useWalletConnection, useWalletActions } from '@/components/providers/txnlab-wallet-provider'
 import algosdk from 'algosdk'
 import RuleBuilderModal from "@/components/features/rules/rule-builder-modal"
@@ -93,6 +93,7 @@ export default function PortfolioPage() {
             if (!next[id]) {
               next[id] = sym
               changed = true
+
             }
           }
           return changed ? next : prev
@@ -407,36 +408,36 @@ export default function PortfolioPage() {
 
         {/* Agent Wallet Section */}
         {address && (
-          <Card className="relative overflow-hidden border-border/50 shadow-2xl bg-gradient-to-br from-card via-card/95 to-background">
-            <div className="absolute top-0 right-0 -mt-20 -mr-20 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
-            <div className="absolute bottom-0 left-0 -mb-20 -ml-20 h-64 w-64 rounded-full bg-red-500/5 blur-3xl" />
+          <Card className="shadow-xl border-border/50">
+            <CardHeader className="pb-3">
 
-            <CardHeader className="relative pb-6">
+
+
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-red-500/25 ring-1 ring-white/10">
-                    <Wallet className="h-7 w-7 text-white" />
+                <div className="flex items-center gap-2">
+                  <div className="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center">
+                    <Wallet className="h-5 w-5 text-white" />
                   </div>
                   <div>
-                    <CardTitle className="text-xl font-bold tracking-tight">Agent Wallet</CardTitle>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-sm text-muted-foreground">Automated Trading</p>
-                      {agentWalletData?.network && (
-                        <Badge variant="outline" className="h-5 px-2 text-[10px] uppercase tracking-wider bg-background/50 backdrop-blur">
-                          {agentWalletData.network}
-                        </Badge>
-                      )}
-                    </div>
+                    <CardTitle className="text-lg">Agent Wallet</CardTitle>
+                    <p className="text-xs text-muted-foreground">Automated trading balance</p>
+
+
+
+
+
+
+
                   </div>
                 </div>
                 <Dialog open={rechargeDialogOpen} onOpenChange={setRechargeDialogOpen}>
                   <DialogTrigger asChild>
                     <Button
-                      size="lg"
-                      className="gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg shadow-red-500/20 transition-all duration-300 hover:scale-105"
+                      size="sm"
+                      className="gap-2 bg-red-500 hover:bg-red-600 text-white shadow-lg"
                     >
-                      <Plus className="h-5 w-5" />
-                      <span className="font-semibold">Recharge</span>
+                      <Plus className="h-4 w-4" />
+                      Recharge
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-md">
@@ -457,22 +458,22 @@ export default function PortfolioPage() {
                           onChange={(e) => setRechargeAmount(e.target.value)}
                           min="0"
                           step="0.1"
-                          className="text-lg"
+
                         />
                       </div>
-                      <div className="rounded-lg bg-muted/50 p-4 space-y-2 border border-border/50">
+                      <div className="rounded-lg bg-muted p-3 space-y-1">
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Current Balance:</span>
-                          <span className="font-mono font-medium">{agentWalletData?.accountInfo?.algoBalance?.toFixed(2) || '0.00'} ALGO</span>
+                          <span className="font-semibold">{agentWalletData?.accountInfo?.algoBalance?.toFixed(2) || '0.00'} ALGO</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">After Recharge:</span>
-                          <span className="font-mono font-bold text-red-500">
+                          <span className="font-semibold text-red-500">
                             {((agentWalletData?.accountInfo?.algoBalance || 0) + (parseFloat(rechargeAmount) || 0)).toFixed(2)} ALGO
                           </span>
                         </div>
                       </div>
-                      <div className="flex gap-3 pt-2">
+                      <div className="flex gap-2">
                         <Button
                           variant="outline"
                           className="flex-1"
@@ -600,108 +601,115 @@ export default function PortfolioPage() {
                 </Dialog>
               </div>
             </CardHeader>
-            <CardContent className="relative space-y-8">
-              {/* Main Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Balance Card */}
-                <div className="rounded-2xl bg-gradient-to-br from-background/80 to-background/40 p-5 border border-border/50 backdrop-blur-sm shadow-sm">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Total Balance</p>
-                      <h3 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent mt-1">
-                        {agentWalletData?.accountInfo?.algoBalance?.toFixed(4) || '0.0000'} <span className="text-lg text-muted-foreground font-normal">ALGO</span>
-                      </h3>
-                    </div>
-                    <div className="p-2 rounded-full bg-primary/10">
-                      <Wallet className="h-5 w-5 text-primary" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm p-2 rounded-lg bg-muted/30">
-                      <span className="text-muted-foreground">Available</span>
-                      <span className="font-mono font-medium text-green-600 dark:text-green-400">
-                        {agentWalletData?.accountInfo?.availableBalance?.toFixed(4) || '0.0000'}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm p-2 rounded-lg bg-muted/30">
-                      <span className="text-muted-foreground">Reserved</span>
-                      <span className="font-mono font-medium text-orange-600 dark:text-orange-400">
-                        {agentWalletData?.accountInfo?.minBalance?.toFixed(4) || '0.0000'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Performance Stats */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="col-span-2 rounded-xl bg-muted/30 p-4 border border-border/50 flex items-center justify-between group hover:bg-muted/50 transition-colors">
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1">Total Spent</p>
-                      <p className="text-xl font-bold">${agentWalletStats?.totalSpendUSD?.toFixed(2) || '0.00'}</p>
-                    </div>
-                    <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
-                      <DollarSign className="h-5 w-5 text-blue-500" />
-                    </div>
-                  </div>
-                  <div className="rounded-xl bg-muted/30 p-4 border border-border/50 flex flex-col justify-between group hover:bg-muted/50 transition-colors">
-                    <div className="h-8 w-8 rounded-full bg-purple-500/10 flex items-center justify-center mb-2 group-hover:bg-purple-500/20 transition-colors">
-                      <Activity className="h-4 w-4 text-purple-500" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground">Trades</p>
-                      <p className="text-lg font-bold">{agentWalletStats?.totalTrades || 0}</p>
-                    </div>
-                  </div>
-                  <div className="rounded-xl bg-muted/30 p-4 border border-border/50 flex flex-col justify-between group hover:bg-muted/50 transition-colors">
-                    <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center mb-2 group-hover:bg-emerald-500/20 transition-colors">
-                      <TrendingUp className="h-4 w-4 text-emerald-500" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground">Success</p>
-                      <p className="text-lg font-bold">{agentWalletStats?.successRate?.toFixed(0) || 0}%</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Address & Warnings */}
+            <CardContent>
               <div className="space-y-4">
+                {/* Agent Wallet Address */}
                 {agentWalletData?.agentAddress && (
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 border border-border/50">
-                    <div className="h-8 w-8 rounded-lg bg-background flex items-center justify-center border border-border/50">
-                      <Target className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-muted-foreground mb-0.5">Agent Address</p>
-                      <code className="text-xs font-mono block truncate">
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground">Agent Wallet Address</label>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 rounded-md bg-muted px-3 py-2 text-xs font-mono break-all">
                         {agentWalletData.agentAddress}
                       </code>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(agentWalletData.agentAddress)
+                          toast({ title: "Address copied" })
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 hover:bg-background hover:shadow-sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(agentWalletData.agentAddress)
-                        toast({ title: "Address copied" })
-                      }}
-                    >
-                      <Copy className="h-4 w-4 text-muted-foreground" />
-                    </Button>
+                  </div>
+                )}
+
+                {/* Balance Display */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-lg bg-card/50 p-4 border border-border/50">
+                    <p className="text-xs text-muted-foreground mb-1">Total Balance</p>
+                    <p className="text-2xl font-bold text-red-500">
+                      {agentWalletData?.accountInfo?.algoBalance?.toFixed(6) || '0.000000'} ALGO
+                    </p>
+
+
+
+
+
+
+                  </div>
+                  <div className="rounded-lg bg-card/50 p-4 border border-border/50">
+                    <p className="text-xs text-muted-foreground mb-1">Available Balance</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {agentWalletData?.accountInfo?.availableBalance?.toFixed(6) || '0.000000'} ALGO
+                    </p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                  </div>
+                </div>
+
+
+                {/* Min Balance Info */}
+                {agentWalletData?.accountInfo && (
+                  <div className="text-xs text-muted-foreground">
+                    Minimum balance reserved: {agentWalletData.accountInfo.minBalance.toFixed(6)} ALGO
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                   </div>
                 )}
 
                 {/* Low Balance Warning */}
                 {agentWalletData?.accountInfo && agentWalletData.accountInfo.algoBalance < 0.3 && (
-                  <div className="rounded-xl bg-yellow-500/10 border border-yellow-500/20 p-4">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 shrink-0" />
-                      <div>
-                        <p className="text-sm font-semibold text-yellow-900 dark:text-yellow-100">
+                  <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 p-3">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
                           Low ALGO Balance
                         </p>
-                        <p className="text-xs text-yellow-800 dark:text-yellow-200/80 mt-1 leading-relaxed">
+                        <p className="text-xs text-yellow-800 dark:text-yellow-200 mt-1">
                           {agentWalletData.accountInfo.algoBalance === 0
                             ? "Your agent wallet needs ALGO to opt-in to assets and pay transaction fees. Please recharge with at least 0.5 ALGO."
                             : "Your agent wallet is low on ALGO. Recharge to ensure smooth trading and asset opt-ins."}
@@ -710,42 +718,60 @@ export default function PortfolioPage() {
                     </div>
                   </div>
                 )}
-              </div>
 
-              {/* Asset Holdings */}
-              {agentWalletData?.accountInfo?.assets && agentWalletData.accountInfo.assets.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-semibold text-foreground">
-                      Asset Holdings
+
+                {/* Asset Holdings */}
+                {agentWalletData?.accountInfo?.assets && agentWalletData.accountInfo.assets.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Asset Holdings ({agentWalletData.accountInfo.totalAssets})
+
                     </label>
-                    <Badge variant="secondary" className="rounded-full px-2.5">
-                      {agentWalletData.accountInfo.totalAssets}
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {agentWalletData.accountInfo.assets.map((asset) => (
-                      <div
-                        key={asset.assetId}
-                        className="flex items-center justify-between rounded-xl border border-border/50 bg-card/50 p-3 hover:bg-card hover:shadow-md transition-all duration-200"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                            {asset.symbol.slice(0, 2)}
+                    <div className="space-y-2">
+                      {agentWalletData.accountInfo.assets.map((asset) => (
+                        <div
+                          key={asset.assetId}
+                          className="flex items-center justify-between rounded-md border p-3"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Badge variant="secondary">{asset.symbol}</Badge>
+                            <span className="text-xs text-muted-foreground">
+                              ID: {asset.assetId}
+                            </span>
+
+
+
+
+
+
                           </div>
-                          <div>
-                            <p className="text-sm font-bold">{asset.symbol}</p>
-                            <p className="text-[10px] text-muted-foreground">ID: {asset.assetId}</p>
-                          </div>
+                          <span className="text-sm font-medium">
+                            {parseFloat(asset.balance).toFixed(asset.decimals)} {asset.symbol}
+                          </span>
                         </div>
-                        <span className="text-sm font-mono font-medium">
-                          {parseFloat(asset.balance).toFixed(asset.decimals)}
-                        </span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Quick Stats */}
+                <div className="grid grid-cols-3 gap-3 pt-2">
+                  <div className="rounded-lg bg-card/50 p-3 border border-border/50 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Total Spent</p>
+                    <p className="text-lg font-semibold">${agentWalletStats?.totalSpendUSD?.toFixed(2) || '0.00'}</p>
+                  </div>
+                  <div className="rounded-lg bg-card/50 p-3 border border-border/50 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Trades</p>
+                    <p className="text-lg font-semibold">{agentWalletStats?.totalTrades || 0}</p>
+                  </div>
+                  <div className="rounded-lg bg-card/50 p-3 border border-border/50 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Success Rate</p>
+                    <p className="text-lg font-semibold">
+                      {agentWalletStats?.successRate?.toFixed(0) || 0}%
+                    </p>
                   </div>
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
         )}
