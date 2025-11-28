@@ -441,7 +441,7 @@ export default function PortfolioPage() {
   const avgProfitPerTrade = profitData.length > 0 ? totalProfit / profitData.length : 0
 
   return (
-    <div className="min-h-screen bg-background/50 pb-20">
+    <div className="min-h-screen pb-20">
       <div className="container mx-auto px-4 py-6 space-y-6">
         {/* Top Navigation / Header */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
