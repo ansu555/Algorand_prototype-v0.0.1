@@ -13,11 +13,12 @@ import { useToast } from "@/components/ui/use-toast"
 import { formatTrigger, type Rule, describeRule } from "@/lib/shared/rules"
 import { forceRunPoller, useAgentData } from "@/features/agent/hooks/useAgentData"
 import { deleteRule as apiDeleteRule, createRule } from "@/features/agent/api/client"
-import { ChevronDown, ChevronUp, Play, Trash2, Eye, RefreshCw, Zap, Activity, Clock, Target, TrendingUp, AlertCircle, CheckCircle2, XCircle, Pause, DollarSign, TrendingDown, BarChart3, Lock, Wallet, Plus, Copy } from "lucide-react"
+import { ChevronDown, ChevronUp, Play, Trash2, Eye, RefreshCw, Zap, Activity, Clock, Target, TrendingUp, AlertCircle, CheckCircle2, XCircle, Pause, DollarSign, TrendingDown, BarChart3, Lock, Wallet, Plus } from "lucide-react"
 import { useWalletConnection, useWalletActions } from '@/components/providers/txnlab-wallet-provider'
 import algosdk from 'algosdk'
 import RuleBuilderModal from "@/components/features/rules/rule-builder-modal"
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function PortfolioPage() {
   const { activeAccount } = useWalletConnection()
@@ -93,6 +94,7 @@ export default function PortfolioPage() {
             if (!next[id]) {
               next[id] = sym
               changed = true
+
             }
           }
           return changed ? next : prev
@@ -345,1349 +347,517 @@ export default function PortfolioPage() {
   const avgProfitPerTrade = profitData.length > 0 ? totalProfit / profitData.length : 0
 
   return (
-    <div className="min-h-screen">
-      <div className="container mx-auto px-4 py-8 space-y-8">
-        {/* Search Bar */}
-        <SearchBar />
-
-        {/* Header Section */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
-              Portfolio & Agent Dashboard
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Manage your automated trading rules and monitor activity
-            </p>
+    <div className="min-h-screen bg-background/50 pb-20">
+      <div className="container mx-auto px-4 py-6 space-y-6">
+        {/* Top Navigation / Header */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Wallet className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Portfolio</h1>
+              <p className="text-sm text-muted-foreground">Manage your assets & agent</p>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2 w-full lg:w-auto">
-            <RuleBuilderModal
-              trigger={
-                <Button
-                  size="lg"
-                  className="group relative overflow-hidden transition-all duration-300 hover:scale-105 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg shadow-red-500/25"
-                >
-                  <Zap className="h-4 w-4 mr-2" />
-                  <span className="relative z-10">Create Auto-Pilot Rule</span>
-                </Button>
-              }
-              availableCoins={[
-                { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
-                { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
-              ]}
-              onPreview={(rule) => {
-                toast({ title: "Preview", description: describeRule(rule) })
-              }}
-              onSave={(rule) => {
-                saveRule(rule)
-                toast({ title: "Rule saved", description: describeRule(rule) })
-              }}
-            />
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => address && refresh()}
-              disabled={loading || !address}
-              className="transition-all duration-200 hover:scale-105"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-            <Button
-              size="lg"
-              onClick={forceRun}
-              disabled={!address}
-              className="transition-all duration-200 hover:scale-105"
-            >
-              <Play className="h-4 w-4 mr-2" />
-              Force Run
-            </Button>
+          <div className="flex items-center gap-2 w-full md:w-auto">
+             <SearchBar />
           </div>
         </div>
 
-        {/* Agent Wallet Section */}
-        {address && (
-          <Card className="relative overflow-hidden border-border/50 shadow-2xl bg-gradient-to-br from-card via-card/95 to-background">
-            <div className="absolute top-0 right-0 -mt-20 -mr-20 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
-            <div className="absolute bottom-0 left-0 -mb-20 -ml-20 h-64 w-64 rounded-full bg-red-500/5 blur-3xl" />
-
-            <CardHeader className="relative pb-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-red-500/25 ring-1 ring-white/10">
-                    <Wallet className="h-7 w-7 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-xl font-bold tracking-tight">Agent Wallet</CardTitle>
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-sm text-muted-foreground">Automated Trading</p>
-                      {agentWalletData?.network && (
-                        <Badge variant="outline" className="h-5 px-2 text-[10px] uppercase tracking-wider bg-background/50 backdrop-blur">
-                          {agentWalletData.network}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
+        {/* Main Dashboard Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* Left Column: Net Worth & Agent Wallet (Span 4) */}
+          <div className="lg:col-span-4 space-y-6">
+            
+            {/* Net Worth Card */}
+            <Card className="overflow-hidden border-border/50 shadow-xl bg-gradient-to-br from-background to-muted/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Net Worth</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-bold tracking-tighter">${totalProfit.toFixed(2)}</span>
+                  <span className="text-sm text-muted-foreground">USD</span>
                 </div>
-                <Dialog open={rechargeDialogOpen} onOpenChange={setRechargeDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button
-                      size="lg"
-                      className="gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg shadow-red-500/20 transition-all duration-300 hover:scale-105"
-                    >
-                      <Plus className="h-5 w-5" />
-                      <span className="font-semibold">Recharge</span>
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle className="flex items-center gap-2">
-                        <Wallet className="h-5 w-5 text-red-500" />
-                        Recharge Agent Wallet
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="recharge-amount">Amount (ALGO)</Label>
-                        <Input
-                          id="recharge-amount"
-                          type="number"
-                          placeholder="Enter amount"
-                          value={rechargeAmount}
-                          onChange={(e) => setRechargeAmount(e.target.value)}
-                          min="0"
-                          step="0.1"
-                          className="text-lg"
-                        />
-                      </div>
-                      <div className="rounded-lg bg-muted/50 p-4 space-y-2 border border-border/50">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Current Balance:</span>
-                          <span className="font-mono font-medium">{agentWalletData?.accountInfo?.algoBalance?.toFixed(2) || '0.00'} ALGO</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">After Recharge:</span>
-                          <span className="font-mono font-bold text-red-500">
-                            {((agentWalletData?.accountInfo?.algoBalance || 0) + (parseFloat(rechargeAmount) || 0)).toFixed(2)} ALGO
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex gap-3 pt-2">
-                        <Button
-                          variant="outline"
-                          className="flex-1"
-                          onClick={() => setRechargeDialogOpen(false)}
-                          disabled={rechargingWallet}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          className="flex-1 bg-red-500 hover:bg-red-600 text-white"
-                          onClick={async () => {
-                            if (!address) {
-                              toast({
-                                title: "Wallet Not Connected",
-                                description: "Please connect your wallet first",
-                                variant: "destructive"
-                              })
-                              return
-                            }
-
-                            const amount = parseFloat(rechargeAmount)
-                            if (!amount || amount <= 0) {
-                              toast({
-                                title: "Invalid Amount",
-                                description: "Please enter a valid amount",
-                                variant: "destructive"
-                              })
-                              return
-                            }
-
-                            setRechargingWallet(true)
-                            try {
-                              // Get agent wallet address from backend
-                              const res = await fetch('/api/agent/wallet/recharge', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ userAddress: address, amount })
-                              })
-                              const data = await res.json()
-
-                              if (!data.success || !data.data?.agentAddress) {
-                                throw new Error(data.message || 'Failed to get agent wallet address')
-                              }
-
-                              const agentAddress = data.data.agentAddress || agentWalletData?.agentAddress
-                              const microAlgos = Math.floor(amount * 1_000_000)
-
-                              // Get suggested params from algod
-                              const algodClient = new algosdk.Algodv2(
-                                '',
-                                'https://testnet-api.algonode.cloud',
-                                ''
-                              )
-                              const suggestedParams = await algodClient.getTransactionParams().do()
-
-                              // Build payment transaction
-                              const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
-                                sender: address,
-                                receiver: agentAddress,
-                                amount: microAlgos,
-                                note: new Uint8Array(Buffer.from('Agent Wallet Recharge')),
-                                suggestedParams
-                              })
-
-                              // Sign transaction with connected wallet
-                              const signedTxns = await signTransactions([txn])
-
-                              if (!signedTxns || signedTxns.length === 0) {
-                                throw new Error('Transaction signing cancelled')
-                              }
-
-                              // Submit to network
-                              const result = await algodClient.sendRawTransaction(signedTxns[0] as Uint8Array).do()
-                              const txId = result.txid
-
-                              // Wait for confirmation
-                              await algosdk.waitForConfirmation(algodClient, txId, 4)
-
-                              // Refresh complete agent wallet data
-                              const balanceRes = await fetch(`/api/agent/wallet?userAddress=${address}`)
-                              const balanceData = await balanceRes.json()
-                              if (balanceData.success) {
-                                setAgentWalletData({
-                                  agentAddress: balanceData.agentAddress,
-                                  isNew: balanceData.isNew,
-                                  accountInfo: balanceData.accountInfo,
-                                  network: balanceData.network
-                                })
-                              }
-
-                              setRechargeDialogOpen(false)
-                              setRechargeAmount("")
-                              toast({
-                                title: "Wallet Recharged Successfully",
-                                description: `Added ${amount} ALGO to your agent wallet. Tx: ${txId.substring(0, 10)}...`,
-                              })
-                            } catch (error) {
-                              console.error('Recharge failed:', error)
-                              toast({
-                                title: "Recharge Failed",
-                                description: error instanceof Error ? error.message : 'Failed to recharge wallet',
-                                variant: "destructive"
-                              })
-                            } finally {
-                              setRechargingWallet(false)
-                            }
-                          }}
-                          disabled={!rechargeAmount || parseFloat(rechargeAmount) <= 0 || rechargingWallet}
-                        >
-                          {rechargingWallet ? (
-                            <>
-                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                              Recharging...
-                            </>
-                          ) : (
-                            <>
-                              <Plus className="h-4 w-4 mr-2" />
-                              Confirm Recharge
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </CardHeader>
-            <CardContent className="relative space-y-8">
-              {/* Main Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Balance Card */}
-                <div className="rounded-2xl bg-gradient-to-br from-background/80 to-background/40 p-5 border border-border/50 backdrop-blur-sm shadow-sm">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Total Balance</p>
-                      <h3 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent mt-1">
-                        {agentWalletData?.accountInfo?.algoBalance?.toFixed(4) || '0.0000'} <span className="text-lg text-muted-foreground font-normal">ALGO</span>
-                      </h3>
-                    </div>
-                    <div className="p-2 rounded-full bg-primary/10">
-                      <Wallet className="h-5 w-5 text-primary" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm p-2 rounded-lg bg-muted/30">
-                      <span className="text-muted-foreground">Available</span>
-                      <span className="font-mono font-medium text-green-600 dark:text-green-400">
-                        {agentWalletData?.accountInfo?.availableBalance?.toFixed(4) || '0.0000'}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm p-2 rounded-lg bg-muted/30">
-                      <span className="text-muted-foreground">Reserved</span>
-                      <span className="font-mono font-medium text-orange-600 dark:text-orange-400">
-                        {agentWalletData?.accountInfo?.minBalance?.toFixed(4) || '0.0000'}
-                      </span>
-                    </div>
-                  </div>
+                <div className="mt-4 flex items-center gap-2 text-sm">
+                  <Badge variant={totalProfit >= 0 ? "default" : "destructive"} className="rounded-sm px-1.5">
+                    {totalProfit >= 0 ? "+" : ""}{totalProfit.toFixed(2)}%
+                  </Badge>
+                  <span className="text-muted-foreground">vs last month</span>
                 </div>
+              </CardContent>
+            </Card>
 
-                {/* Performance Stats */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="col-span-2 rounded-xl bg-muted/30 p-4 border border-border/50 flex items-center justify-between group hover:bg-muted/50 transition-colors">
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1">Total Spent</p>
-                      <p className="text-xl font-bold">${agentWalletStats?.totalSpendUSD?.toFixed(2) || '0.00'}</p>
-                    </div>
-                    <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
-                      <DollarSign className="h-5 w-5 text-blue-500" />
-                    </div>
-                  </div>
-                  <div className="rounded-xl bg-muted/30 p-4 border border-border/50 flex flex-col justify-between group hover:bg-muted/50 transition-colors">
-                    <div className="h-8 w-8 rounded-full bg-purple-500/10 flex items-center justify-center mb-2 group-hover:bg-purple-500/20 transition-colors">
-                      <Activity className="h-4 w-4 text-purple-500" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground">Trades</p>
-                      <p className="text-lg font-bold">{agentWalletStats?.totalTrades || 0}</p>
-                    </div>
-                  </div>
-                  <div className="rounded-xl bg-muted/30 p-4 border border-border/50 flex flex-col justify-between group hover:bg-muted/50 transition-colors">
-                    <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center mb-2 group-hover:bg-emerald-500/20 transition-colors">
-                      <TrendingUp className="h-4 w-4 text-emerald-500" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground">Success</p>
-                      <p className="text-lg font-bold">{agentWalletStats?.successRate?.toFixed(0) || 0}%</p>
-                    </div>
-                  </div>
+            {/* Agent Wallet Card */}
+            <Card className="border-border/50 shadow-xl">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-medium flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-yellow-500" />
+                    Agent Wallet
+                  </CardTitle>
+                  <Badge variant="outline" className="font-mono text-[10px]">
+                    {agentWalletData?.network || 'TESTNET'}
+                  </Badge>
                 </div>
-              </div>
-
-              {/* Address & Warnings */}
-              <div className="space-y-4">
-                {agentWalletData?.agentAddress && (
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 border border-border/50">
-                    <div className="h-8 w-8 rounded-lg bg-background flex items-center justify-center border border-border/50">
-                      <Target className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-muted-foreground mb-0.5">Agent Address</p>
-                      <code className="text-xs font-mono block truncate">
-                        {agentWalletData.agentAddress}
-                      </code>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 hover:bg-background hover:shadow-sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(agentWalletData.agentAddress)
-                        toast({ title: "Address copied" })
-                      }}
-                    >
-                      <Copy className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </div>
-                )}
-
-                {/* Low Balance Warning */}
-                {agentWalletData?.accountInfo && agentWalletData.accountInfo.algoBalance < 0.3 && (
-                  <div className="rounded-xl bg-yellow-500/10 border border-yellow-500/20 p-4">
-                    <div className="flex items-start gap-3">
-                      <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 shrink-0" />
-                      <div>
-                        <p className="text-sm font-semibold text-yellow-900 dark:text-yellow-100">
-                          Low ALGO Balance
-                        </p>
-                        <p className="text-xs text-yellow-800 dark:text-yellow-200/80 mt-1 leading-relaxed">
-                          {agentWalletData.accountInfo.algoBalance === 0
-                            ? "Your agent wallet needs ALGO to opt-in to assets and pay transaction fees. Please recharge with at least 0.5 ALGO."
-                            : "Your agent wallet is low on ALGO. Recharge to ensure smooth trading and asset opt-ins."}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Asset Holdings */}
-              {agentWalletData?.accountInfo?.assets && agentWalletData.accountInfo.assets.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-semibold text-foreground">
-                      Asset Holdings
-                    </label>
-                    <Badge variant="secondary" className="rounded-full px-2.5">
-                      {agentWalletData.accountInfo.totalAssets}
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {agentWalletData.accountInfo.assets.map((asset) => (
-                      <div
-                        key={asset.assetId}
-                        className="flex items-center justify-between rounded-xl border border-border/50 bg-card/50 p-3 hover:bg-card hover:shadow-md transition-all duration-200"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                            {asset.symbol.slice(0, 2)}
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold">{asset.symbol}</p>
-                            <p className="text-[10px] text-muted-foreground">ID: {asset.assetId}</p>
-                          </div>
-                        </div>
-                        <span className="text-sm font-mono font-medium">
-                          {parseFloat(asset.balance).toFixed(asset.decimals)}
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {address ? (
+                  <>
+                    <div className="p-3 bg-muted/30 rounded-lg border border-border/50 space-y-1">
+                      <div className="text-xs text-muted-foreground">Balance</div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xl font-bold">
+                          {agentWalletData?.accountInfo?.algoBalance?.toFixed(4) || '0.0000'} 
+                          <span className="text-sm font-normal text-muted-foreground ml-1">ALGO</span>
                         </span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column - Net Worth Card */}
-          <Card className="shadow-xl border-border/50 bg-gradient-to-br from-card to-card/50">
-            <CardContent className="p-5">
-              {address ? (
-                <div className="space-y-4">
-                  {/* Net Worth Header & Amount */}
-                  <div className="space-y-1.5">
-                    <h3 className="text-xs font-medium text-muted-foreground">Net Worth</h3>
-                    <div className="space-y-0.5">
-                      <p className="text-3xl md:text-4xl font-bold tracking-tight">${totalProfit.toFixed(2)}</p>
-                      <p className="text-xs text-muted-foreground/70">$ Total Algo</p>
-                    </div>
-                  </div>
-
-                  {/* Holdings PNL */}
-                  <div className="flex items-center justify-between pb-2.5 border-b border-border/40">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      <span className="text-xs font-medium">Holdings PnL</span>
-                    </div>
-                    <div className="text-right">
-                      <span className={`text-sm font-bold block ${totalProfit >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                        $ {Math.abs(totalProfit).toFixed(2)}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">Amount</span>
-                    </div>
-                  </div>
-
-                  {/* Token Holdings */}
-                  <div className="flex items-center justify-between pb-2.5 border-b border-border/40">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                      <span className="text-xs font-medium">Token Holdings</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-sm font-semibold block">{activeRules}</span>
-                      <span className="text-[10px] text-muted-foreground">Number</span>
-                    </div>
-                  </div>
-
-                  {/* Token Staked */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                      <span className="text-xs font-medium">Token Staked</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-sm font-semibold block">$ {avgProfitPerTrade.toFixed(2)}</span>
-                      <span className="text-[10px] text-muted-foreground">Amount %</span>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-16">
-                  <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-sm text-muted-foreground text-center">
-                    Connect wallet to view net worth
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Right Column - Burst the Chart */}
-          <Card className="shadow-xl border-border/40 bg-card/95">
-            <CardHeader className="pb-2 px-4 pt-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full hover:bg-muted/50">
-                    <Eye className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full hover:bg-muted/50">
-                    <Activity className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-2 rounded-full bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20 text-[10px]"
-                  >
-                    <BarChart3 className="h-3 w-3 mr-1" />
-                    Chart
-                  </Button>
-                </div>
-                <div className="flex items-center gap-0.5">
-                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] hover:bg-muted/50">1D</Button>
-                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] hover:bg-muted/50">1W</Button>
-                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] hover:bg-muted/50">1M</Button>
-                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20">3M</Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4 pt-2">
-              {address && profitOverTime.length > 0 ? (
-                <div className="space-y-2">
-                  <ResponsiveContainer width="100%" height={220}>
-                    <AreaChart data={profitOverTime}>
-                      <defs>
-                        <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#6b7280" stopOpacity={0.2} />
-                          <stop offset="95%" stopColor="#6b7280" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                      <XAxis
-                        dataKey="date"
-                        stroke="#6b7280"
-                        fontSize={11}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <YAxis
-                        stroke="#6b7280"
-                        fontSize={11}
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={(value) => `$${value.toFixed(0)}`}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: '#1a1a1a',
-                          border: '1px solid #374151',
-                          borderRadius: '8px',
-                          padding: '8px'
-                        }}
-                        formatter={(value: any) => [`$${value.toFixed(2)}`, 'Value']}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="cumulativeProfit"
-                        stroke="#6b7280"
-                        strokeWidth={1.5}
-                        fill="url(#chartGradient)"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <div className="relative flex flex-col items-center justify-center h-[220px]">
-                  {/* Chart Locked Overlay */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-                    <div className="bg-card/95 backdrop-blur-sm rounded-lg p-4 border border-border/40 text-center space-y-2">
-                      <div className="flex items-center justify-center gap-2">
-                        <Lock className="h-4 w-4 text-muted-foreground" />
-                        <h3 className="text-sm font-semibold">Can't show Chart in testnet</h3>
+                      <div className="text-[10px] text-muted-foreground flex justify-between pt-1">
+                        <span>Min: {agentWalletData?.accountInfo?.minBalance.toFixed(3)}</span>
+                        <span>Avail: {agentWalletData?.accountInfo?.availableBalance?.toFixed(3)}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground max-w-xs">
-                        {address ? 'Chart visualization is not available for testnet data' : 'Connect wallet to access portfolio features'}
-                      </p>
                     </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-muted/50 rounded-md px-3 py-2 flex items-center justify-between border border-border/50">
+                        <span className="text-xs font-mono text-muted-foreground truncate max-w-[120px]">
+                          {agentWalletData?.agentAddress || "Loading..."}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 hover:bg-background"
+                          onClick={() => {
+                            if (agentWalletData?.agentAddress) {
+                              navigator.clipboard.writeText(agentWalletData.agentAddress)
+                              toast({ title: "Address copied" })
+                            }
+                          }}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                       <Dialog open={rechargeDialogOpen} onOpenChange={setRechargeDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button className="w-full bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 shadow-none">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Recharge
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                          <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                              <Wallet className="h-5 w-5 text-primary" />
+                              Recharge Agent Wallet
+                            </DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="recharge-amount">Amount (ALGO)</Label>
+                              <Input
+                                id="recharge-amount"
+                                type="number"
+                                placeholder="Enter amount"
+                                value={rechargeAmount}
+                                onChange={(e) => setRechargeAmount(e.target.value)}
+                                min="0"
+                                step="0.1"
+                              />
+                            </div>
+                            <div className="rounded-lg bg-muted p-3 space-y-1">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Current Balance:</span>
+                                <span className="font-semibold">{agentWalletData?.accountInfo?.algoBalance?.toFixed(2) || '0.00'} ALGO</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">After Recharge:</span>
+                                <span className="font-semibold text-primary">
+                                  {((agentWalletData?.accountInfo?.algoBalance || 0) + (parseFloat(rechargeAmount) || 0)).toFixed(2)} ALGO
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                className="flex-1"
+                                onClick={() => setRechargeDialogOpen(false)}
+                                disabled={rechargingWallet}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                className="flex-1"
+                                onClick={async () => {
+                                  if (!address) {
+                                    toast({
+                                      title: "Wallet Not Connected",
+                                      description: "Please connect your wallet first",
+                                      variant: "destructive"
+                                    })
+                                    return
+                                  }
+
+                                  const amount = parseFloat(rechargeAmount)
+                                  if (!amount || amount <= 0) {
+                                    toast({
+                                      title: "Invalid Amount",
+                                      description: "Please enter a valid amount",
+                                      variant: "destructive"
+                                    })
+                                    return
+                                  }
+
+                                  setRechargingWallet(true)
+                                  try {
+                                    // Get agent wallet address from backend
+                                    const res = await fetch('/api/agent/wallet/recharge', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ userAddress: address, amount })
+                                    })
+                                    const data = await res.json()
+
+                                    if (!data.success || !data.data?.agentAddress) {
+                                      throw new Error(data.message || 'Failed to get agent wallet address')
+                                    }
+
+                                    const agentAddress = data.data.agentAddress || agentWalletData?.agentAddress
+                                    const microAlgos = Math.floor(amount * 1_000_000)
+
+                                    // Get suggested params from algod
+                                    const algodClient = new algosdk.Algodv2(
+                                      '',
+                                      'https://testnet-api.algonode.cloud',
+                                      ''
+                                    )
+                                    const suggestedParams = await algodClient.getTransactionParams().do()
+
+                                    // Build payment transaction
+                                    const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+                                      sender: address,
+                                      receiver: agentAddress,
+                                      amount: microAlgos,
+                                      note: new Uint8Array(Buffer.from('Agent Wallet Recharge')),
+                                      suggestedParams
+                                    })
+
+                                    // Sign transaction with connected wallet
+                                    const signedTxns = await signTransactions([txn])
+
+                                    if (!signedTxns || signedTxns.length === 0) {
+                                      throw new Error('Transaction signing cancelled')
+                                    }
+
+                                    // Submit to network
+                                    const result = await algodClient.sendRawTransaction(signedTxns[0] as Uint8Array).do()
+                                    const txId = result.txid
+
+                                    // Wait for confirmation
+                                    await algosdk.waitForConfirmation(algodClient, txId, 4)
+
+                                    // Refresh complete agent wallet data
+                                    const balanceRes = await fetch(`/api/agent/wallet?userAddress=${address}`)
+                                    const balanceData = await balanceRes.json()
+                                    if (balanceData.success) {
+                                      setAgentWalletData({
+                                        agentAddress: balanceData.agentAddress,
+                                        isNew: balanceData.isNew,
+                                        accountInfo: balanceData.accountInfo,
+                                        network: balanceData.network
+                                      })
+                                    }
+
+                                    setRechargeDialogOpen(false)
+                                    setRechargeAmount("")
+                                    toast({
+                                      title: "Wallet Recharged Successfully",
+                                      description: `Added ${amount} ALGO to your agent wallet. Tx: ${txId.substring(0, 10)}...`,
+                                    })
+                                  } catch (error) {
+                                    console.error('Recharge failed:', error)
+                                    toast({
+                                      title: "Recharge Failed",
+                                      description: error instanceof Error ? error.message : 'Failed to recharge wallet',
+                                      variant: "destructive"
+                                    })
+                                  } finally {
+                                    setRechargingWallet(false)
+                                  }
+                                }}
+                                disabled={!rechargeAmount || parseFloat(rechargeAmount) <= 0 || rechargingWallet}
+                              >
+                                {rechargingWallet ? (
+                                  <>
+                                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                    Recharging...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Confirm
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                      
+                      <Button variant="outline" className="w-full" onClick={() => refreshAgentStats()}>
+                        <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground text-sm">
+                    Connect wallet to view agent details
                   </div>
-                  {/* Blurred background chart */}
-                  <div className="absolute inset-0 blur-sm opacity-30">
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-2 gap-4">
+               <RuleBuilderModal
+                  trigger={
+                    <Button className="w-full h-auto py-4 flex flex-col gap-2 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg shadow-primary/20">
+                      <Zap className="h-6 w-6" />
+                      <span className="text-xs font-semibold">New Auto-Pilot</span>
+                    </Button>
+                  }
+                  availableCoins={[
+                    { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
+                    { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
+                  ]}
+                  onPreview={(rule) => {
+                    toast({ title: "Preview", description: describeRule(rule) })
+                  }}
+                  onSave={(rule) => {
+                    saveRule(rule)
+                    toast({ title: "Rule saved", description: describeRule(rule) })
+                  }}
+                />
+                <Button 
+                  variant="outline" 
+                  className="w-full h-auto py-4 flex flex-col gap-2 border-dashed border-2 hover:border-primary/50 hover:bg-primary/5"
+                  onClick={forceRun}
+                  disabled={!address}
+                >
+                  <Play className="h-6 w-6 text-muted-foreground" />
+                  <span className="text-xs font-semibold text-muted-foreground">Force Run</span>
+                </Button>
+            </div>
+
+          </div>
+
+          {/* Right Column: Chart & Tabs (Span 8) */}
+          <div className="lg:col-span-8 space-y-6">
+            
+            {/* Chart Section */}
+            <Card className="border-border/50 shadow-xl bg-card/50 backdrop-blur-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-lg font-medium">Performance</CardTitle>
+                <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
+                  {['1D', '1W', '1M', 'ALL'].map((period) => (
+                    <Button 
+                      key={period} 
+                      variant="ghost" 
+                      size="sm" 
+                      className={`h-7 px-3 text-xs ${period === 'ALL' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      {period}
+                    </Button>
+                  ))}
+                </div>
+              </CardHeader>
+              <CardContent className="h-[300px] w-full">
+                 {address && profitOverTime.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={[
-                        { date: '2025-08-16', value: 10 },
-                        { date: '2025-09-03', value: 30 },
-                        { date: '2025-09-21', value: 25 },
-                        { date: '2025-10-09', value: 40 },
-                        { date: '2025-10-27', value: 35 },
-                        { date: '2025-11-14', value: 45 }
-                      ]}>
+                      <AreaChart data={profitOverTime}>
+                        <defs>
+                          <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#22c55e" stopOpacity={0.2} />
+                            <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} vertical={false} />
+                        <XAxis
+                          dataKey="date"
+                          stroke="#6b7280"
+                          fontSize={11}
+                          tickLine={false}
+                          axisLine={false}
+                          dy={10}
+                        />
+                        <YAxis
+                          stroke="#6b7280"
+                          fontSize={11}
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={(value) => `$${value.toFixed(0)}`}
+                          dx={-10}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                            padding: '8px',
+                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                          }}
+                          formatter={(value: any) => [`$${value.toFixed(2)}`, 'Value']}
+                        />
                         <Area
                           type="monotone"
-                          dataKey="value"
-                          stroke="#6b7280"
-                          fill="#374151"
+                          dataKey="cumulativeProfit"
+                          stroke="#22c55e"
+                          strokeWidth={2}
+                          fill="url(#chartGradient)"
                         />
                       </AreaChart>
                     </ResponsiveContainer>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                 ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-2">
+                       <BarChart3 className="h-10 w-10 opacity-20" />
+                       <p className="text-sm">No performance data available</p>
+                    </div>
+                 )}
+              </CardContent>
+            </Card>
 
-        {/* No Wallet Connected State */}
-        {!address && (
-          <Card className="border-2 border-dashed border-primary/20 shadow-lg">
-            <CardContent className="flex flex-col items-center justify-center py-16 px-4">
-              <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-                <AlertCircle className="h-10 w-10 text-primary" />
-              </div>
-              <h3 className="text-2xl font-bold mb-2">Connect Your Wallet</h3>
-              <p className="text-muted-foreground text-center max-w-md">
-                Connect your wallet to view and manage your automated trading rules and monitor activity.
-              </p>
-            </CardContent>
-          </Card>
-        )}
+            {/* Tabs Section */}
+            <Tabs defaultValue="rules" className="w-full">
+              <TabsList className="w-full justify-start bg-transparent border-b rounded-none h-auto p-0 space-x-6">
+                <TabsTrigger 
+                  value="rules" 
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2"
+                >
+                  Active Rules ({rules.length})
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="assets" 
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2"
+                >
+                  Assets ({agentWalletData?.accountInfo?.assets?.length || 0})
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="activity" 
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-2"
+                >
+                  Activity Log
+                </TabsTrigger>
+              </TabsList>
 
-        {/* Rules Table */}
-        {address && (
-          <Card className="shadow-xl border-primary/20">
-            <CardHeader className="border-b bg-gradient-to-r from-muted/50 to-muted/30">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Target className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-2xl">Your Trading Rules</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {rules.length === 0 ? 'No rules created yet' : `Managing ${rules.length} rule${rules.length !== 1 ? 's' : ''}`}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              {rules.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 px-4">
-                  <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                    <TrendingUp className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <p className="text-lg font-medium mb-2">No trading rules yet</p>
-                  <p className="text-sm text-muted-foreground mb-6 text-center max-w-md">
-                    Create your first Auto-Pilot rule to start automated trading based on your strategy
-                  </p>
-                  <RuleBuilderModal
-                    trigger={
-                      <Button className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg shadow-red-500/25">
-                        <Zap className="h-4 w-4 mr-2" />
-                        Create Your First Rule
-                      </Button>
-                    }
-                    availableCoins={[
-                      { id: 'ALGO', symbol: 'ALGO', name: 'Algorand' },
-                      { id: 'USDC', symbol: 'USDC', name: 'USDC (Testnet)' },
-                    ]}
-                    onPreview={(rule) => {
-                      toast({ title: "Preview", description: describeRule(rule) })
-                    }}
-                    onSave={(rule) => {
-                      saveRule(rule)
-                      toast({ title: "Rule saved", description: describeRule(rule) })
-                    }}
-                  />
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="hover:bg-transparent border-b-2">
-                        <TableHead className="font-semibold w-[100px]">Type</TableHead>
-                        <TableHead className="font-semibold w-[140px]">Targets</TableHead>
-                        <TableHead className="font-semibold w-[200px]">Trigger</TableHead>
-                        <TableHead className="font-semibold w-[100px]">Cooldown</TableHead>
-                        <TableHead className="font-semibold w-[140px]">Next Check</TableHead>
-                        <TableHead className="font-semibold w-[100px]">Status</TableHead>
-                        <TableHead className="text-center font-semibold w-[340px]">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {rules.map((rule) => {
-                        const isPaused = rule.status === "paused"
-                        return (
-                          <TableRow
-                            key={rule.id}
-                            className="group hover:bg-muted/50 transition-colors duration-150"
-                          >
-                            <TableCell className="font-medium align-middle">
-                              <Badge variant="outline" className="font-semibold">
-                                {rule.type.toUpperCase()}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-sm align-middle">
-                              <div className="flex flex-wrap gap-1">
-                                {rule.targets.slice(0, 2).map((id, idx) => (
-                                  <Badge key={idx} variant="secondary" className="text-xs">
-                                    {symbolById[id] || id}
-                                  </Badge>
-                                ))}
-                                {rule.targets.length > 2 && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    +{rule.targets.length - 2}
-                                  </Badge>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-sm align-middle">
-                              <div className="flex items-center gap-2">
-                                <Clock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                                <span className="font-medium whitespace-nowrap">{formatTrigger(rule.trigger)}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-sm font-medium align-middle">{rule.cooldownMinutes}m</TableCell>
-                            <TableCell className="text-sm text-muted-foreground whitespace-nowrap align-middle">
-                              {nextCheck(rule)}
-                            </TableCell>
-                            <TableCell className="align-middle">
-                              <Badge
-                                variant={isPaused ? "secondary" : "default"}
-                                className={isPaused ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20" : "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20"}
-                              >
-                                {isPaused ? "Paused" : "Active"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-center align-middle">
-                              <div className="flex items-center justify-center gap-1.5">
-                                <Button
-                                  size="sm"
-                                  onClick={() => executeNow(rule)}
-                                  className="h-9 px-3 bg-primary hover:bg-primary/90"
-                                >
-                                  <Play className="h-3 w-3 mr-1.5" />
-                                  Execute
-                                </Button>
-                                {isPaused ? (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => pauseResume(rule, "active")}
-                                    className="h-9 px-3 hover:bg-green-500/10 hover:text-green-600 hover:border-green-500/20"
-                                  >
-                                    <Play className="h-3 w-3 mr-1.5" />
-                                    Resume
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => pauseResume(rule, "paused")}
-                                    className="h-9 px-3 hover:bg-yellow-500/10 hover:text-yellow-600 hover:border-yellow-500/20"
-                                  >
-                                    <Pause className="h-3 w-3 mr-1.5" />
-                                    Pause
-                                  </Button>
-                                )}
-                                <Dialog>
-                                  <DialogTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-9 px-3 hover:bg-primary/10"
-                                    >
-                                      <Eye className="h-3 w-3 mr-1.5" />
-                                      <span className="hidden sm:inline">Details</span>
-                                    </Button>
-                                  </DialogTrigger>
-                                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                                    <DialogHeader>
-                                      <DialogTitle className="text-2xl flex items-center gap-2">
-                                        <Target className="h-6 w-6 text-primary" />
-                                        Rule Details
-                                      </DialogTitle>
-                                    </DialogHeader>
-
-                                    {/* Compact 2-column layout */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                                      {/* Left Column */}
-                                      <div className="space-y-3">
-                                        {/* Type & Status */}
-                                        <div className="flex gap-2">
-                                          <div className="flex-1 p-4 bg-gradient-to-br from-muted/80 to-muted/40 rounded-lg border">
-                                            <div className="text-xs font-semibold text-muted-foreground mb-2">Type</div>
-                                            <Badge variant="outline" className="font-semibold">{rule.type.toUpperCase()}</Badge>
-                                          </div>
-                                          <div className="flex-1 p-4 bg-gradient-to-br from-muted/80 to-muted/40 rounded-lg border">
-                                            <div className="text-xs font-semibold text-muted-foreground mb-2">Status</div>
-                                            <Badge variant={rule.status === "paused" ? "secondary" : "default"}>
-                                              {rule.status.toUpperCase()}
-                                            </Badge>
-                                          </div>
-                                        </div>
-
-                                        {/* Targets */}
-                                        <div className="p-4 bg-gradient-to-br from-muted/80 to-muted/40 rounded-lg border">
-                                          <div className="text-xs font-semibold text-muted-foreground mb-2">Target Assets</div>
-                                          <div className="flex flex-wrap gap-1.5">
-                                            {rule.targets.map((target, idx) => (
-                                              <Badge key={idx} variant="default" className="text-xs font-medium">
-                                                {symbolById[target] || target}
-                                              </Badge>
-                                            ))}
-                                          </div>
-                                        </div>
-
-                                        {/* Trigger */}
-                                        <div className="p-4 bg-gradient-to-br from-muted/80 to-muted/40 rounded-lg border">
-                                          <div className="text-xs font-semibold text-muted-foreground mb-2">Trigger Condition</div>
-                                          <div className="text-sm font-medium">{formatTrigger(rule.trigger)}</div>
-                                          {rule.trigger?.value && (
-                                            <div className="text-xs text-muted-foreground mt-2">
-                                              Threshold: <span className="font-semibold">{rule.trigger.value}%</span>
-                                            </div>
-                                          )}
-                                        </div>
-
-                                        {/* Trading Params */}
-                                        <div className="p-4 bg-gradient-to-br from-muted/80 to-muted/40 rounded-lg border">
-                                          <div className="text-xs font-semibold text-muted-foreground mb-3">Trading Parameters</div>
-                                          <div className="grid grid-cols-2 gap-3 text-xs">
-                                            <div className="flex flex-col gap-1">
-                                              <span className="text-muted-foreground">Max Spend</span>
-                                              <span className="text-base font-bold">${rule.maxSpendUSD}</span>
-                                            </div>
-                                            <div className="flex flex-col gap-1">
-                                              <span className="text-muted-foreground">Max Slippage</span>
-                                              <span className="text-base font-bold">{rule.maxSlippage}%</span>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-
-                                      {/* Right Column */}
-                                      <div className="space-y-3">
-                                        {/* Timing */}
-                                        <div className="p-4 bg-gradient-to-br from-muted/80 to-muted/40 rounded-lg border">
-                                          <div className="text-xs font-semibold text-muted-foreground mb-3">Timing</div>
-                                          <div className="space-y-2 text-sm">
-                                            <div className="flex justify-between items-center">
-                                              <span className="text-muted-foreground">Cooldown Period</span>
-                                              <span className="font-semibold">{rule.cooldownMinutes}m</span>
-                                            </div>
-                                            <div className="flex justify-between items-center">
-                                              <span className="text-muted-foreground">Next Check</span>
-                                              <span className="font-semibold">{nextCheck(rule)}</span>
-                                            </div>
-                                          </div>
-                                        </div>
-
-                                        {/* Created */}
-                                        <div className="p-4 bg-gradient-to-br from-muted/80 to-muted/40 rounded-lg border">
-                                          <div className="text-xs font-semibold text-muted-foreground mb-2">Created At</div>
-                                          <div className="text-sm font-mono">
-                                            {new Date(rule.createdAt).toLocaleString()}
-                                          </div>
-                                        </div>
-
-                                        {/* Rule ID */}
-                                        <div className="p-4 bg-gradient-to-br from-muted/80 to-muted/40 rounded-lg border">
-                                          <div className="text-xs font-semibold text-muted-foreground mb-2">Rule ID</div>
-                                          <div className="text-xs font-mono break-all bg-background/50 p-2 rounded">
-                                            {rule.id}
-                                          </div>
-                                        </div>
-
-                                        {/* Owner */}
-                                        <div className="p-4 bg-gradient-to-br from-muted/80 to-muted/40 rounded-lg border">
-                                          <div className="text-xs font-semibold text-muted-foreground mb-2">Owner Address</div>
-                                          <div className="text-xs font-mono break-all bg-background/50 p-2 rounded">
-                                            {rule.ownerAddress.slice(0, 12)}...{rule.ownerAddress.slice(-8)}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    {/* Action Buttons */}
-                                    <div className="flex gap-2 pt-6 border-t mt-4">
-                                      <Button
-                                        size="default"
-                                        onClick={() => executeNow(rule)}
-                                        className="flex-1 bg-primary hover:bg-primary/90"
-                                      >
-                                        <Play className="h-4 w-4 mr-2" />
-                                        Execute Now
-                                      </Button>
-                                      <Button
-                                        size="default"
-                                        variant="destructive"
-                                        onClick={() => onDelete(rule)}
-                                        className="flex-1"
-                                      >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Delete Rule
-                                      </Button>
-                                    </div>
-                                  </DialogContent>
-                                </Dialog>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => onDelete(rule)}
-                                  className="h-9 px-2 hover:bg-destructive/10 hover:text-destructive"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Activity Log */}
-        {address && (
-          <Card className="shadow-xl border-primary/20">
-            <CardHeader className="border-b bg-gradient-to-r from-muted/50 to-muted/30">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Activity className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-2xl">Recent Activity</CardTitle>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {sortedLogs.length === 0 ? 'No activity yet' : `${sortedLogs.length} event${sortedLogs.length !== 1 ? 's' : ''} recorded`}
-                    </p>
-                  </div>
-                </div>
-                {sortedLogs.length > 3 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setActivityExpanded(!activityExpanded)}
-                    className="text-sm hover:bg-primary/10"
-                  >
-                    {activityExpanded ? (
-                      <>
-                        <ChevronUp className="h-4 w-4 mr-2" />
-                        Show less
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="h-4 w-4 mr-2" />
-                        Show all ({sortedLogs.length})
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="p-6">
-              {visibleLogs.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <div className="h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                    <Activity className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <p className="text-lg font-medium mb-2">No activity yet</p>
-                  <p className="text-sm text-muted-foreground text-center max-w-md">
-                    Your trading activity and rule executions will appear here
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {visibleLogs.map((log) => {
-                    const isSuccess = log.status === "success"
-                    const isFailed = log.status === "failed"
-                    return (
-                      <div
-                        key={log.id}
-                        className="group relative overflow-hidden rounded-lg border bg-gradient-to-r from-card to-card/50 p-4 hover:shadow-md transition-all duration-200"
-                      >
-                        <div className="flex items-start gap-4">
-                          {/* Status Icon */}
-                          <div className={`h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 ${isSuccess ? 'bg-green-500/10' : isFailed ? 'bg-red-500/10' : 'bg-blue-500/10'
-                            }`}>
-                            {isSuccess ? (
-                              <CheckCircle2 className="h-5 w-5 text-green-500" />
-                            ) : isFailed ? (
-                              <XCircle className="h-5 w-5 text-red-500" />
-                            ) : (
-                              <Clock className="h-5 w-5 text-blue-500" />
-                            )}
-                          </div>
-
-                          {/* Content */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-sm font-semibold capitalize">
-                                {log.action.replace(/_/g, ' ')}
-                              </span>
-                              <Badge
-                                variant={isFailed ? "destructive" : "default"}
-                                className={`text-xs ${isSuccess ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' :
-                                  isFailed ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20' :
-                                    'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                                  }`}
-                              >
-                                {log.status}
-                              </Badge>
-                            </div>
-
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-                              <Clock className="h-3 w-3" />
-                              {new Date(log.createdAt).toLocaleString()}
-                            </div>
-
-                            {/* Details - Collapsible */}
-                            {log.details && (
-                              <details className="group/details mt-2">
-                                <summary className="cursor-pointer text-xs text-primary hover:text-primary/80 font-medium flex items-center gap-1.5 select-none">
-                                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-open/details:rotate-180" />
-                                  View Technical Details
-                                </summary>
-                                <div className="mt-3 p-4 rounded-lg bg-muted/30 border border-border/50">
-                                  {/* Parse and display key information */}
-                                  {(() => {
-                                    const details = log.details
-
-                                    // If it's a rule deletion log
-                                    if (log.action === 'rule_deleted' && details.id) {
-                                      return (
-                                        <div className="space-y-3">
-                                          <div className="flex flex-col gap-1">
-                                            <span className="text-xs font-semibold text-muted-foreground">Deleted Rule ID</span>
-                                            <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all">
-                                              {details.id}
-                                            </code>
-                                          </div>
-                                        </div>
-                                      )
-                                    }
-
-                                    // If it's a rule update log
-                                    if ((log.action === 'rule_updated' || log.action === 'rule_paused' || log.action === 'rule_resumed') && details.before) {
-                                      return (
-                                        <div className="space-y-3">
-                                          <div className="flex flex-col gap-1">
-                                            <span className="text-xs font-semibold text-muted-foreground">Rule ID</span>
-                                            <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all">
-                                              {details.before?.id || details.after?.id || details.id}
-                                            </code>
-                                          </div>
-
-                                          {/* Show what changed */}
-                                          {details.before && details.after && (
-                                            <div className="space-y-2">
-                                              <span className="text-xs font-semibold text-muted-foreground block">Changes</span>
-
-                                              {/* Status change */}
-                                              {details.before.status !== details.after.status && (
-                                                <div className="flex items-center gap-2 text-xs bg-background px-3 py-2 rounded border">
-                                                  <span className="text-muted-foreground">Status:</span>
-                                                  <Badge variant="secondary" className="text-xs">
-                                                    {details.before.status}
-                                                  </Badge>
-                                                  <span className="text-muted-foreground">→</span>
-                                                  <Badge variant="default" className="text-xs">
-                                                    {details.after.status}
-                                                  </Badge>
-                                                </div>
-                                              )}
-
-                                              {/* Other changes */}
-                                              {Object.keys(details.after || {}).map((key) => {
-                                                if (key === 'status' || key === 'id' || key === 'createdAt' || key === 'ownerAddress') return null
-                                                if (JSON.stringify(details.before?.[key]) !== JSON.stringify(details.after?.[key])) {
-                                                  return (
-                                                    <div key={key} className="flex items-start gap-2 text-xs bg-background px-3 py-2 rounded border">
-                                                      <span className="text-muted-foreground capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
-                                                      <span className="line-through text-muted-foreground">
-                                                        {JSON.stringify(details.before?.[key])}
-                                                      </span>
-                                                      <span className="text-muted-foreground">→</span>
-                                                      <span className="font-medium">
-                                                        {JSON.stringify(details.after?.[key])}
-                                                      </span>
-                                                    </div>
-                                                  )
-                                                }
-                                                return null
-                                              })}
-                                            </div>
-                                          )}
-
-                                          {/* Show raw JSON in collapsed state */}
-                                          <details className="mt-3">
-                                            <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground font-medium">
-                                              Show Raw Data
-                                            </summary>
-                                            <pre className="mt-2 text-xs whitespace-pre-wrap break-all overflow-x-auto max-h-48 overflow-y-auto scrollbar-hide bg-background/50 p-3 rounded border">
-                                              {JSON.stringify(details, null, 2)}
-                                            </pre>
-                                          </details>
-                                        </div>
-                                      )
-                                    }
-
-                                    // If it's a rule creation log
-                                    if (log.action === 'rule_created' && details.id) {
-                                      return (
-                                        <div className="space-y-3">
-                                          <div className="grid grid-cols-2 gap-3">
-                                            <div className="flex flex-col gap-1">
-                                              <span className="text-xs font-semibold text-muted-foreground">Rule Type</span>
-                                              <Badge variant="outline" className="w-fit text-xs">
-                                                {details.type?.toUpperCase() || 'N/A'}
-                                              </Badge>
-                                            </div>
-                                            <div className="flex flex-col gap-1">
-                                              <span className="text-xs font-semibold text-muted-foreground">Status</span>
-                                              <Badge variant="default" className="w-fit text-xs">
-                                                {details.status?.toUpperCase() || 'ACTIVE'}
-                                              </Badge>
-                                            </div>
-                                          </div>
-
-                                          {details.targets && details.targets.length > 0 && (
-                                            <div className="flex flex-col gap-1">
-                                              <span className="text-xs font-semibold text-muted-foreground">Target Assets</span>
-                                              <div className="flex flex-wrap gap-1.5">
-                                                {details.targets.map((target: string, idx: number) => (
-                                                  <Badge key={idx} variant="secondary" className="text-xs">
-                                                    {target}
-                                                  </Badge>
-                                                ))}
-                                              </div>
-                                            </div>
-                                          )}
-
-                                          {details.trigger && (
-                                            <div className="flex flex-col gap-1">
-                                              <span className="text-xs font-semibold text-muted-foreground">Trigger Condition</span>
-                                              <div className="text-xs bg-background px-3 py-2 rounded border">
-                                                {formatTrigger(details.trigger)}
-                                              </div>
-                                            </div>
-                                          )}
-
-                                          <div className="grid grid-cols-3 gap-3">
-                                            {details.maxSpendUSD && (
-                                              <div className="flex flex-col gap-1">
-                                                <span className="text-xs font-semibold text-muted-foreground">Max Spend</span>
-                                                <div className="text-xs bg-background px-2 py-1 rounded border font-medium">
-                                                  ${details.maxSpendUSD}
-                                                </div>
-                                              </div>
-                                            )}
-                                            {details.maxSlippage !== undefined && (
-                                              <div className="flex flex-col gap-1">
-                                                <span className="text-xs font-semibold text-muted-foreground">Max Slippage</span>
-                                                <div className="text-xs bg-background px-2 py-1 rounded border font-medium">
-                                                  {details.maxSlippage}%
-                                                </div>
-                                              </div>
-                                            )}
-                                            {details.cooldownMinutes && (
-                                              <div className="flex flex-col gap-1">
-                                                <span className="text-xs font-semibold text-muted-foreground">Cooldown</span>
-                                                <div className="text-xs bg-background px-2 py-1 rounded border font-medium">
-                                                  {details.cooldownMinutes}m
-                                                </div>
-                                              </div>
-                                            )}
-                                          </div>
-
-                                          {details.id && (
-                                            <div className="flex flex-col gap-1">
-                                              <span className="text-xs font-semibold text-muted-foreground">Rule ID</span>
-                                              <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all">
-                                                {details.id}
-                                              </code>
-                                            </div>
-                                          )}
-
-                                          {/* Show raw JSON in collapsed state */}
-                                          <details className="mt-3">
-                                            <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground font-medium">
-                                              Show Raw Data
-                                            </summary>
-                                            <pre className="mt-2 text-xs whitespace-pre-wrap break-all overflow-x-auto max-h-48 overflow-y-auto scrollbar-hide bg-background/50 p-3 rounded border">
-                                              {JSON.stringify(details, null, 2)}
-                                            </pre>
-                                          </details>
-                                        </div>
-                                      )
-                                    }
-
-                                    // If it's a rule execution/preview log
-                                    if ((log.action === 'execute_rule' || log.action === 'preview_trade') && details.result) {
-                                      return (
-                                        <div className="space-y-3">
-                                          {details.ruleId && (
-                                            <div className="flex flex-col gap-1">
-                                              <span className="text-xs font-semibold text-muted-foreground">Rule ID</span>
-                                              <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all">
-                                                {details.ruleId}
-                                              </code>
-                                            </div>
-                                          )}
-
-                                          {details.result?.txHash && (
-                                            <div className="flex flex-col gap-1">
-                                              <span className="text-xs font-semibold text-muted-foreground">Transaction Hash</span>
-                                              <div className="flex items-center gap-2">
-                                                <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all">
-                                                  {details.result.txHash}
-                                                </code>
-                                                <a
-                                                  href={`https://lora.algokit.io/testnet/transaction/${details.result.txHash}`}
-                                                  target="_blank"
-                                                  rel="noopener noreferrer"
-                                                  className="text-xs text-primary hover:text-primary/80 font-medium whitespace-nowrap"
-                                                >
-                                                  View on Explorer →
-                                                </a>
-                                              </div>
-                                            </div>
-                                          )}
-
-                                          {details.result?.fromAsset && details.result?.toAsset && (
-                                            <div className="grid grid-cols-2 gap-3">
-                                              <div className="flex flex-col gap-1">
-                                                <span className="text-xs font-semibold text-muted-foreground">From</span>
-                                                <div className="text-xs bg-background px-2 py-1 rounded border">
-                                                  {details.result.fromAmount || details.result.fromAmountBaseUnits} {details.result.fromAsset}
-                                                </div>
-                                              </div>
-                                              <div className="flex flex-col gap-1">
-                                                <span className="text-xs font-semibold text-muted-foreground">To</span>
-                                                <div className="text-xs bg-background px-2 py-1 rounded border">
-                                                  {details.result.toAmount || details.result.toAmountBaseUnits} {details.result.toAsset}
-                                                </div>
-                                              </div>
-                                            </div>
-                                          )}
-
-                                          {/* Show raw JSON in collapsed state */}
-                                          <details className="mt-3">
-                                            <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground font-medium">
-                                              Show Raw Data
-                                            </summary>
-                                            <pre className="mt-2 text-xs whitespace-pre-wrap break-all overflow-x-auto max-h-48 overflow-y-auto scrollbar-hide bg-background/50 p-3 rounded border">
-                                              {JSON.stringify(details, null, 2)}
-                                            </pre>
-                                          </details>
-                                        </div>
-                                      )
-                                    }
-
-                                    // If it's a swap/transaction with structured data
-                                    if (details.txId || details.txHash) {
-                                      return (
-                                        <div className="space-y-3">
-                                          {details.txId && (
-                                            <div className="flex flex-col gap-1">
-                                              <span className="text-xs font-semibold text-muted-foreground">Transaction ID</span>
-                                              <div className="flex items-center gap-2">
-                                                <code className="text-xs bg-background px-2 py-1 rounded border font-mono break-all">
-                                                  {details.txId}
-                                                </code>
-                                                <a
-                                                  href={`https://lora.algokit.io/testnet/transaction/${details.txId}`}
-                                                  target="_blank"
-                                                  rel="noopener noreferrer"
-                                                  className="text-xs text-primary hover:text-primary/80 font-medium whitespace-nowrap"
-                                                >
-                                                  View on Explorer →
-                                                </a>
-                                              </div>
-                                            </div>
-                                          )}
-
-                                          {details.fromAssetName && details.toAssetName && (
-                                            <div className="grid grid-cols-2 gap-3">
-                                              <div className="flex flex-col gap-1">
-                                                <span className="text-xs font-semibold text-muted-foreground">From</span>
-                                                <div className="text-xs bg-background px-2 py-1 rounded border">
-                                                  {details.fromAmount || details.fromAmountBaseUnits} {details.fromAssetName}
-                                                </div>
-                                              </div>
-                                              <div className="flex flex-col gap-1">
-                                                <span className="text-xs font-semibold text-muted-foreground">To</span>
-                                                <div className="text-xs bg-background px-2 py-1 rounded border">
-                                                  {details.toAmount || details.toAmountBaseUnits} {details.toAssetName}
-                                                </div>
-                                              </div>
-                                            </div>
-                                          )}
-
-                                          {details.confirmedRound && (
-                                            <div className="flex flex-col gap-1">
-                                              <span className="text-xs font-semibold text-muted-foreground">Confirmed Round</span>
-                                              <div className="text-xs bg-background px-2 py-1 rounded border font-mono">
-                                                {details.confirmedRound}
-                                              </div>
-                                            </div>
-                                          )}
-
-                                          {/* Show raw JSON in collapsed state */}
-                                          <details className="mt-3">
-                                            <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground font-medium">
-                                              Show Raw Data
-                                            </summary>
-                                            <pre className="mt-2 text-xs whitespace-pre-wrap break-all overflow-x-auto max-h-48 overflow-y-auto scrollbar-hide bg-background/50 p-3 rounded border">
-                                              {JSON.stringify(details, null, 2)}
-                                            </pre>
-                                          </details>
-                                        </div>
-                                      )
-                                    }
-
-                                    // If it's an error
-                                    if (details.error) {
-                                      return (
-                                        <div className="space-y-2">
-                                          <div className="flex flex-col gap-1">
-                                            <span className="text-xs font-semibold text-red-600 dark:text-red-400">Error Message</span>
-                                            <div className="text-xs bg-red-500/5 text-red-700 dark:text-red-300 px-3 py-2 rounded border border-red-500/20">
-                                              {details.error}
-                                            </div>
-                                          </div>
-
-                                          {/* Show full details if available */}
-                                          {Object.keys(details).length > 1 && (
-                                            <details className="mt-3">
-                                              <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground font-medium">
-                                                Show Full Details
-                                              </summary>
-                                              <pre className="mt-2 text-xs whitespace-pre-wrap break-all overflow-x-auto max-h-48 overflow-y-auto scrollbar-hide bg-background/50 p-3 rounded border">
-                                                {JSON.stringify(details, null, 2)}
-                                              </pre>
-                                            </details>
-                                          )}
-                                        </div>
-                                      )
-                                    }
-
-                                    // Default: show formatted JSON
-                                    return (
-                                      <pre className="text-xs whitespace-pre-wrap break-all overflow-x-auto max-h-48 overflow-y-auto scrollbar-hide">
-                                        {JSON.stringify(details, null, 2)}
-                                      </pre>
-                                    )
-                                  })()}
-                                </div>
-                              </details>
-                            )}
-                          </div>
-                        </div>
+              <div className="mt-6">
+                <TabsContent value="rules" className="space-y-4">
+                   {/* Rules List */}
+                   {rules.length === 0 ? (
+                      <div className="text-center py-12 border-2 border-dashed rounded-xl">
+                        <p className="text-muted-foreground">No active trading rules</p>
+                        <Button variant="link" className="mt-2">Create your first rule</Button>
                       </div>
-                    )
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+                   ) : (
+                      <div className="grid grid-cols-1 gap-4">
+                        {rules.map((rule) => (
+                          <Card key={rule.id} className="group hover:border-primary/50 transition-colors">
+                            <CardContent className="p-4 flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div className={`h-10 w-10 rounded-full flex items-center justify-center ${rule.status === 'paused' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-green-500/10 text-green-500'}`}>
+                                  {rule.type === 'dca' ? <Clock className="h-5 w-5" /> : <RefreshCw className="h-5 w-5" />}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-semibold text-sm">{rule.type.toUpperCase()} Strategy</h4>
+                                    <Badge variant={rule.status === 'paused' ? 'secondary' : 'default'} className="text-[10px] h-5">
+                                      {rule.status}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {renderTargets(rule.targets)} • {formatTrigger(rule.trigger)}
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-2">
+                                <Button size="sm" variant="ghost" onClick={() => executeNow(rule)}>
+                                  <Play className="h-4 w-4" />
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={() => pauseResume(rule, rule.status === 'active' ? 'paused' : 'active')}>
+                                  {rule.status === 'active' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                                </Button>
+                                <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => onDelete(rule)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                   )}
+                </TabsContent>
+
+                <TabsContent value="assets">
+                  <Card>
+                    <CardContent className="p-0">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Asset</TableHead>
+                            <TableHead>ID</TableHead>
+                            <TableHead className="text-right">Balance</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {agentWalletData?.accountInfo?.assets?.map((asset) => (
+                            <TableRow key={asset.assetId}>
+                              <TableCell className="font-medium">{asset.symbol}</TableCell>
+                              <TableCell className="text-xs text-muted-foreground">{asset.assetId}</TableCell>
+                              <TableCell className="text-right">
+                                {parseFloat(asset.balance).toFixed(asset.decimals)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          {(!agentWalletData?.accountInfo?.assets || agentWalletData.accountInfo.assets.length === 0) && (
+                            <TableRow>
+                              <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                                No assets found in agent wallet
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="activity">
+                   <div className="space-y-2">
+                      {visibleLogs.map((log) => (
+                        <div key={log.id} className="flex items-center justify-between p-3 rounded-lg border bg-card/50 text-sm">
+                           <div className="flex items-center gap-3">
+                              <div className={`h-2 w-2 rounded-full ${log.status === 'success' ? 'bg-green-500' : log.status === 'failed' ? 'bg-red-500' : 'bg-blue-500'}`} />
+                              <span className="font-medium capitalize">{log.action.replace(/_/g, ' ')}</span>
+                           </div>
+                           <span className="text-muted-foreground text-xs">
+                              {new Date(log.createdAt).toLocaleString()}
+                           </span>
+                        </div>
+                      ))}
+                      {visibleLogs.length === 0 && (
+                        <div className="text-center py-8 text-muted-foreground">No recent activity</div>
+                      )}
+                   </div>
+                </TabsContent>
+              </div>
+            </Tabs>
+
+          </div>
+        </div>
       </div>
     </div>
   )

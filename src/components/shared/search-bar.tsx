@@ -1,12 +1,15 @@
 "use client"
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react"
-import { Search, Loader2, X } from "lucide-react"
+import { Search, Loader2, X, CheckCircle2, RefreshCw } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { cn } from "@/lib/utils"
 import type { PoolInfo } from "@/lib/dex/types"
 import { useAssetSearch, useTradeableAssets } from "@/hooks/use-tradeable-assets"
 import { useRouter } from "next/navigation"
+import { useWalletConnection } from '@/components/providers/txnlab-wallet-provider'
 
 interface SearchBarProps {
   placeholder?: string
@@ -26,6 +29,31 @@ export function SearchBar({ placeholder, value, onChange, className }: SearchBar
   // Tokens
   const { assets: tradeableAssets, loading: assetsLoading, error: assetsError } = useTradeableAssets()
   const { results: searchedAssets, loading: searchLoading } = useAssetSearch(searchQuery)
+  const { isConnected, activeAccount } = useWalletConnection()
+  const [optingIds, setOptingIds] = useState<Record<number, boolean>>({})
+
+  const optInAsset = async (assetId: number) => {
+    if (!activeAccount?.address) {
+      toast.error('Connect your wallet first')
+      return
+    }
+    setOptingIds((s) => ({ ...s, [assetId]: true }))
+    try {
+      const res = await fetch('/api/agent/wallet/opt-in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userAddress: activeAccount.address, assetId })
+      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error || 'Opt-in failed')
+      toast.success(data.message || 'Opted in successfully')
+      // Optionally refresh pools or cache
+    } catch (e: any) {
+      toast.error('Opt-in failed', { description: e?.message })
+    } finally {
+      setOptingIds((s) => ({ ...s, [assetId]: false }))
+    }
+  }
 
   // Pools
   const [pools, setPools] = useState<PoolInfo[]>([])
@@ -340,28 +368,52 @@ export function SearchBar({ placeholder, value, onChange, className }: SearchBar
                     const a = entry.item
                     const isActive = activeIndex === flatResults.findIndex((fr) => fr === entry)
                     return (
-                      <button
+                      <div
                         key={`tok-${a.id}`}
                         onMouseEnter={() => setActiveIndex(flatResults.findIndex((fr) => fr === entry))}
-                        onClick={() => handleSelect(entry)}
                         className={cn(
                           "w-full flex items-center gap-3 p-2 rounded-lg transition-colors",
                           isActive ? "bg-gray-100 dark:bg-gray-900/60" : "hover:bg-gray-50 dark:hover:bg-gray-900/50"
                         )}
                       >
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 overflow-hidden flex items-center justify-center text-white font-bold text-xs">
-                          {a.unitName?.slice(0, 2) || 'AS'}
-                        </div>
-                        <div className="flex-1 text-left">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-foreground">{a.unitName || a.name}</span>
-                            {a.verified && (
-                              <span className="px-1.5 py-0.5 text-[10px] bg-gray-200 dark:bg-gray-800 rounded">verified</span>
-                            )}
+                        <div
+                          role="button"
+                          onClick={() => handleSelect(entry)}
+                          className="flex-1 flex items-center gap-3"
+                        >
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 overflow-hidden flex items-center justify-center text-white font-bold text-xs">
+                            {a.unitName?.slice(0, 2) || 'AS'}
                           </div>
-                          <span className="text-xs text-muted-foreground">{a.name} • {a.id}</span>
+                          <div className="flex-1 text-left">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-foreground">{a.unitName || a.name}</span>
+                              {a.verified && (
+                                <span className="px-1.5 py-0.5 text-[10px] bg-gray-200 dark:bg-gray-800 rounded">verified</span>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground">{a.name} • {a.id}</span>
+                          </div>
                         </div>
-                      </button>
+
+                        {/* Opt-in button */}
+                        <div className="flex-shrink-0">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              optInAsset(Number(a.id))
+                            }}
+                            disabled={!isConnected || Boolean(optingIds[a.id])}
+                          >
+                            {optingIds[a.id] ? (
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
                     )
                   })}
                 </div>
