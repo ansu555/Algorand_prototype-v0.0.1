@@ -147,6 +147,7 @@ export function Header() {
     { name: "Launchpad", href: "/launchpad" },
     { name: "Portfolio", href: "/portfolio" },
     { name: "Rewards", href: "/rewards" },
+    { name: "Developers", href: "/developers" },
   ];
 
   const exploreItems = [
