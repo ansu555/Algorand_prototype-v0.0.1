@@ -965,9 +965,8 @@ Before mainnet deployment:
 - [ARC-56 Contract Spec](https://github.com/algorandfoundation/ARCs/blob/main/ARCs/arc-0056.md)
 
 ### Explorers
-- [Lora AlgoKit (Testnet)](https://lora.algokit.io/testnet)
-- [Lora AlgoKit (Mainnet)](https://lora.algokit.io/mainnet)
-- [Allo Explorer (Testnet)](https://testnet.explorer.perawallet.app/)
+- [Lora AlgoKit (Primary)](https://lora.algokit.io/testnet) - Recommended for smart contract debugging and ABI exploration
+- [Allo Explorer](https://testnet.explorer.perawallet.app/) - Alternative explorer by Pera Wallet
 
 ### Tools
 - [Testnet Faucet](https://bank.testnet.algorand.network/)

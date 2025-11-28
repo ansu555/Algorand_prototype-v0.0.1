@@ -761,7 +761,7 @@ From `.gitignore`:
 - **API Routes:** Serverless functions in `src/app/api/`
 - **Components:** Feature-based organization
 - **Smart Contracts:** Python/AlgoPy → TEAL compilation
-- **Documentation:** 12 canonical guides (no duplicates)
+- **Documentation:** Comprehensive guides in `/docs` (no duplicates)
 
 **Next Steps:**
 - See [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) for setup
@@ -773,4 +773,4 @@ From `.gitignore`:
 **Last Updated:** November 28, 2025  
 **Version:** 1.1.0  
 **Total Files:** ~500+ source files  
-**Documentation:** 12 canonical guides
+**Documentation:** See `/docs` folder for all guides
