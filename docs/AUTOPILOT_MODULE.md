@@ -57,7 +57,7 @@ The Autopilot Module enables users to create automated trading rules that execut
                  ▼
 ┌────────────────────────────────────────────────────┐
 │          EXECUTION ENGINE (On-Chain)               │
-│  - AutoPilotRuleContract (App ID: 749361072)      │
+│  - AutoPilotRuleContract (App ID: 749509231)      │
 │  - MultihopSwapRouter for swaps                   │
 │  - Asset transfers and validations                │
 └────────────────────────────────────────────────────┘
@@ -909,6 +909,6 @@ Replace `YOUR_CRON_SECRET` with the value from your `.env` file.
 
 ---
 
-**Last Updated:** November 12, 2025  
-**Version:** 1.0.0  
+**Last Updated:** November 28, 2025  
+**Version:** 1.1.0  
 **Status:** Production Ready (Testnet)
