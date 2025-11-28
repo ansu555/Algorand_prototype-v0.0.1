@@ -216,7 +216,7 @@ export default function ProjectDetailPage() {
           appId: appId,
           asaId: asaId,
           tokensToBuy: tokensToBuy,
-          maxAlgoCost: maxAlgoCost,
+          estimatedCost: maxAlgoCost,
         },
         walletSigner
       )

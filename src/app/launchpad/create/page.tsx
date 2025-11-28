@@ -333,7 +333,19 @@ export default function CreateProjectPage() {
 
       console.log('✅ ASA Created:', asaId)
 
-      // Step 3: Initialize Project (Configure, Bootstrap, Fund)
+      // Step 3: Deploy NEW contract instance for this project
+      setBlockchainStep('Deploying smart contract...')
+
+      const appId = await blockchain.deployLaunchpadContract(
+        {
+          creator: activeAccount.address,
+        },
+        walletSigner
+      )
+
+      console.log('✅ Contract Deployed! App ID:', appId)
+
+      // Step 4: Initialize Project (Configure, Bootstrap, Fund)
       setBlockchainStep('Initializing project (Configure, Bootstrap, Fund)...')
 
       // Map curve type to number
@@ -346,6 +358,7 @@ export default function CreateProjectPage() {
       const { configTxId, bootstrapTxId, fundingTxId } = await blockchain.initializeProject(
         {
           userAddress: activeAccount.address,
+          appId: appId,  // ← Use the newly deployed contract!
           asaId: asaId,
           totalSupply: totalSupplyMicro,
           tokensForSale: BigInt(formData.tokensForSale) * BigInt(1_000_000),
@@ -363,7 +376,7 @@ export default function CreateProjectPage() {
 
       console.log('✅ Project Initialized:', { configTxId, bootstrapTxId, fundingTxId })
 
-      // Step 6: Save to database
+      // Step 5: Save to database
       setBlockchainStep('Saving project details...')
 
       const res = await fetch('/api/launchpad/projects', {
@@ -388,7 +401,7 @@ export default function CreateProjectPage() {
           lpLockDays: Number(formData.lpLockDays),
           // Blockchain references
           asaId: asaId,
-          appId: blockchain.LAUNCHPAD_APP_ID,
+          appId: appId,  // ← Store the new contract's App ID
           configTxId: configTxId,
           bootstrapTxId: bootstrapTxId,
           fundingTxId: fundingTxId,

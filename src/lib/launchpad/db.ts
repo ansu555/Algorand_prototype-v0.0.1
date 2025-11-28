@@ -46,6 +46,7 @@ async function ensureInit() {
     const fs = await import('fs')
     const path = await import('path')
 
+    // Run base schema
     const schemaPath = path.join(process.cwd(), 'src', 'lib', 'launchpad', 'schema.sql')
 
     if (fs.existsSync(schemaPath)) {
@@ -53,7 +54,40 @@ async function ensureInit() {
       const statements = schema.split(';').filter(s => s.trim())
       for (const statement of statements) {
         if (statement.trim()) {
-          await client.execute(statement.trim())
+          try {
+            await client.execute(statement.trim())
+          } catch (error: any) {
+            // Ignore errors for existing tables
+            if (!error.message?.includes('already exists')) {
+              console.error('Schema error:', error.message)
+            }
+          }
+        }
+      }
+    }
+
+    // Run migrations
+    const migrationsPath = path.join(process.cwd(), 'src', 'lib', 'launchpad', 'migrations')
+    if (fs.existsSync(migrationsPath)) {
+      const migrationFiles = fs.readdirSync(migrationsPath)
+        .filter(f => f.endsWith('.sql'))
+        .sort()
+
+      for (const file of migrationFiles) {
+        const migrationSql = fs.readFileSync(path.join(migrationsPath, file), 'utf-8')
+        const statements = migrationSql.split(';').filter(s => s.trim() && !s.trim().startsWith('--'))
+
+        for (const statement of statements) {
+          if (statement.trim()) {
+            try {
+              await client.execute(statement.trim())
+            } catch (error: any) {
+              // Ignore duplicate column errors
+              if (!error.message?.includes('duplicate column name')) {
+                console.error(`Migration ${file} error:`, error.message)
+              }
+            }
+          }
         }
       }
     }
