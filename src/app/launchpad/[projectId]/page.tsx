@@ -8,23 +8,26 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SearchBar } from "@/components/shared/search-bar"
 import {
   Rocket, TrendingUp, Users, Shield, Clock, Target,
   Flame, AlertTriangle, CheckCircle2, ArrowLeft, ExternalLink,
-  Zap, Gift, Lock
+  Zap, Gift, Lock, Copy, Globe, Twitter, Send
 } from "lucide-react"
 import Link from "next/link"
 import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
 import { useWallet } from "@txnlab/use-wallet-react"
 import * as blockchain from "@/lib/launchpad/blockchain"
 import algosdk from "algosdk"
+import { TokenPriceChart } from "@/components/features/launchpad/token-price-chart"
 
 interface Project {
   id: string
   tokenName: string
   tokenSymbol: string
   description?: string
+  totalSupply: string
   logoUrl?: string
   websiteUrl?: string
   twitterUrl?: string
@@ -85,6 +88,7 @@ export default function ProjectDetailPage() {
   const [buyAmount, setBuyAmount] = useState("")
   const [priceQuote, setPriceQuote] = useState<PriceQuote | null>(null)
   const [userPoints, setUserPoints] = useState<UserPoints | null>(null)
+  const [activeTab, setActiveTab] = useState("buy")
 
   useEffect(() => {
     loadProject()
@@ -277,18 +281,22 @@ export default function ProjectDetailPage() {
   }
 
   const formatAlgo = (microAlgo: string) => {
-    return (Number(microAlgo) / 1_000_000).toFixed(2)
+    return (Number(microAlgo) / 1_000_000).toFixed(6)
   }
 
   const formatTokens = (amount: string) => {
     return Number(amount).toLocaleString()
   }
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    // Could add toast here
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen p-6">
-        <SearchBar />
-        <div className="max-w-7xl mx-auto mt-6">
+      <div className="min-h-screen p-6 bg-background">
+        <div className="max-w-[1600px] mx-auto mt-6">
           <p className="text-center text-muted-foreground">Loading project...</p>
         </div>
       </div>
@@ -297,9 +305,8 @@ export default function ProjectDetailPage() {
 
   if (!project) {
     return (
-      <div className="min-h-screen p-6">
-        <SearchBar />
-        <div className="max-w-7xl mx-auto mt-6">
+      <div className="min-h-screen p-6 bg-background">
+        <div className="max-w-[1600px] mx-auto mt-6">
           <Card>
             <CardContent className="py-16 text-center">
               <h2 className="text-2xl font-bold mb-2">Project Not Found</h2>
@@ -319,315 +326,294 @@ export default function ProjectDetailPage() {
   const target = formatAlgo(project.bondingTarget)
 
   return (
-    <div className="min-h-screen p-6" >
-      <SearchBar />
-
-      <div className="max-w-7xl mx-auto mt-6 space-y-6">
-        {/* Back Button */}
-        <Link href="/launchpad">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Launchpad
-          </Button>
-        </Link>
-
-        {/* Header */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between gap-6">
-              <div className="flex items-start gap-4">
-                {project.logoUrl ? (
-                  <img src={project.logoUrl} alt={project.tokenName} className="h-16 w-16 rounded-full" />
-                ) : (
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-red-500 to-amber-500 flex items-center justify-center text-white font-bold text-2xl">
-                    {project.tokenSymbol?.charAt(0) || '?'}
-                  </div>
-                )}
-
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h1 className="text-3xl font-bold">{project.tokenName}</h1>
-                    <Badge variant={project.status === 'active' ? 'default' : 'secondary'}
-                      className={project.status === 'active' ? 'bg-green-600' : ''}>
-                      {project.status}
-                    </Badge>
-                  </div>
-                  <p className="text-xl text-muted-foreground mb-2">${project.tokenSymbol}</p>
-
-                  {project.description && (
-                    <p className="text-muted-foreground max-w-2xl">{project.description}</p>
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Top Navigation / Header */}
+      <div className="border-b border-border">
+        <div className="max-w-[1920px] mx-auto px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/launchpad" className="text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+            <div className="flex items-center gap-3">
+              {project.logoUrl ? (
+                <img src={project.logoUrl} alt={project.tokenName} className="h-10 w-10 rounded-full" />
+              ) : (
+                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-red-500 to-amber-500 flex items-center justify-center text-white font-bold">
+                  {project.tokenSymbol?.charAt(0) || '?'}
+                </div>
+              )}
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="font-bold text-lg">{project.tokenName}</h1>
+                  <span className="text-muted-foreground text-sm">${project.tokenSymbol}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="bg-green-500/10 text-green-500 px-1.5 py-0.5 rounded flex items-center gap-1">
+                    <Shield className="h-3 w-3" /> Anti-bot: Active
+                  </span>
+                  {project.websiteUrl && (
+                    <a href={project.websiteUrl} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
+                      <Globe className="h-3 w-3" />
+                    </a>
                   )}
-
-                  {/* Social Links */}
-                  <div className="flex gap-2 mt-3">
-                    {project.websiteUrl && (
-                      <Button variant="outline" size="sm" asChild>
-                        <a href={project.websiteUrl} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="h-4 w-4 mr-1" />
-                          Website
-                        </a>
-                      </Button>
-                    )}
-                    {project.twitterUrl && (
-                      <Button variant="outline" size="sm" asChild>
-                        <a href={project.twitterUrl} target="_blank" rel="noopener noreferrer">
-                          Twitter
-                        </a>
-                      </Button>
-                    )}
-                    {project.telegramUrl && (
-                      <Button variant="outline" size="sm" asChild>
-                        <a href={project.telegramUrl} target="_blank" rel="noopener noreferrer">
-                          Telegram
-                        </a>
-                      </Button>
-                    )}
-                  </div>
+                  {project.twitterUrl && (
+                    <a href={project.twitterUrl} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
+                      <Twitter className="h-3 w-3" />
+                    </a>
+                  )}
+                  {project.telegramUrl && (
+                    <a href={project.telegramUrl} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
+                      <Send className="h-3 w-3" />
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Stats & Chart */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Progress Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Sale Progress</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">Bonding Curve Progress</span>
-                    <span className="text-sm font-bold">{progress.toFixed(2)}%</span>
-                  </div>
-                  <Progress value={progress} className="h-3" />
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Tokens Sold</p>
-                    <p className="text-lg font-bold">{formatTokens(project.tokensSold)}</p>
-                    <p className="text-xs text-muted-foreground">/ {formatTokens(project.tokensForSale)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">ALGO Raised</p>
-                    <p className="text-lg font-bold">{raised}</p>
-                    <p className="text-xs text-muted-foreground">/ {target} target</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Participants</p>
-                    <p className="text-lg font-bold">{project.participantCount}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Platform Fee (1%)</p>
-                    <p className="text-lg font-bold text-blue-600">
-                      {formatAlgo((BigInt(project.algoRaised) / 100n).toString())}
-                    </p>
-                    <p className="text-xs text-muted-foreground">ALGO</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Bonding Curve Chart Placeholder */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Bonding Curve - {project.curveType?.toUpperCase() || 'SIGMOID'}</CardTitle>
-                <CardDescription>Price increases as more tokens are sold</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 bg-gradient-to-br from-red-50 to-amber-50 dark:from-red-950/20 dark:to-amber-950/20 rounded-lg flex items-center justify-center border-2 border-dashed">
-                  <div className="text-center">
-                    <TrendingUp className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-muted-foreground">Chart visualization coming soon</p>
-                    <p className="text-xs text-muted-foreground mt-1">Base: {formatAlgo(project.basePrice)} → Max: {formatAlgo(project.maxPrice)} ALGO</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Security Features */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-green-600" />
-                  Security & Features
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <p className="font-semibold">Anti-Bot Protection</p>
-                      <p className="text-xs text-muted-foreground">
-                        {project.cooldownBlocks || '10'} block cooldown, {project.maxBuyPerTx && project.tokensForSale ? ((Number(project.maxBuyPerTx) / Number(project.tokensForSale)) * 100).toFixed(1) : '1'}% max per tx
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <p className="font-semibold">Fair Launch</p>
-                      <p className="text-xs text-muted-foreground">No pre-sale, equal opportunity</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <p className="font-semibold">LP Locked</p>
-                      <p className="text-xs text-muted-foreground">30-day lock after graduation</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-                    <div>
-                      <p className="font-semibold">Points Rewards</p>
-                      <p className="text-xs text-muted-foreground">Early buyers get 3x multiplier</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
-          {/* Right Column - Purchase Interface */}
-          <div className="space-y-6">
-            {/* User Points Card */}
-            {activeAccount?.address && userPoints && (
-              <Card className="border-2 border-amber-200 dark:border-amber-800/30">
-                <CardHeader>
-                  <CardTitle className="text-sm flex items-center gap-2">
-                    <Gift className="h-4 w-4" />
-                    Your Points
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-xs text-muted-foreground">Total Earned</span>
-                      <span className="font-bold">{Number(userPoints.totalPoints).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-xs text-muted-foreground">Claimable</span>
-                      <span className="font-bold text-green-600">{Number(userPoints.claimablePoints).toLocaleString()}</span>
-                    </div>
-                    <Button className="w-full mt-2" size="sm" disabled={Number(userPoints.claimablePoints) === 0}>
-                      <Zap className="h-4 w-4 mr-1" />
-                      Claim Points
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Purchase Card */}
-            <Card className="border-2 border-red-200 dark:border-red-800/30">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Rocket className="h-5 w-5 text-red-500" />
-                  Buy ${project.tokenSymbol}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {project.status !== 'active' ? (
-                  <div className="text-center py-6">
-                    <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-2" />
-                    <p className="font-semibold">Sale Not Active</p>
-                    <p className="text-xs text-muted-foreground">
-                      {project.status === 'graduated' ? 'This project has graduated to DEX' : 'This sale is not currently active'}
-                    </p>
-                  </div>
-                ) : !activeAccount?.address ? (
-                  <div className="text-center py-6">
-                    <p className="text-muted-foreground mb-4">Connect wallet to purchase</p>
-                    <Button className="w-full">Connect Wallet</Button>
-                  </div>
-                ) : (
-                  <>
-                    <div>
-                      <Label htmlFor="buyAmount">Token Amount</Label>
-                      <Input
-                        id="buyAmount"
-                        type="number"
-                        placeholder="Enter amount"
-                        value={buyAmount}
-                        onChange={(e) => setBuyAmount(e.target.value)}
-                        min="0"
-                      />
-                    </div>
-
-                    {priceQuote && (
-                      <div className="bg-muted p-4 rounded-lg space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">You Pay</span>
-                          <span className="font-bold">{formatAlgo(priceQuote.algoAmount)} ALGO</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Avg Price</span>
-                          <span>{formatAlgo(priceQuote.avgPrice)} ALGO</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Current Price</span>
-                          <span>{formatAlgo(priceQuote.currentPrice)} ALGO</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Price Impact</span>
-                          <span className={priceQuote.priceImpact > 5 ? 'text-amber-600' : ''}>
-                            {priceQuote.priceImpact.toFixed(2)}%
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm border-t pt-2">
-                          <span className="text-muted-foreground flex items-center gap-1">
-                            <Gift className="h-3 w-3" />
-                            Points Earned
-                          </span>
-                          <span className="font-bold text-amber-600">
-                            {priceQuote.pointsEarned} pts (x{priceQuote.earlyBonus.toFixed(1)})
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    <Button
-                      className="w-full bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-700 hover:to-amber-700"
-                      disabled={!buyAmount || Number(buyAmount) <= 0 || purchasing}
-                      onClick={handlePurchase}
-                    >
-                      {purchasing ? (
-                        <>Processing...</>
-                      ) : (
-                        <>
-                          <Zap className="h-4 w-4 mr-2" />
-                          Buy Now
-                        </>
-                      )}
-                    </Button>
-
-                    <div className="text-xs text-muted-foreground space-y-1">
-                      <p className="flex items-center gap-1">
-                        <Shield className="h-3 w-3" />
-                        Max {project.maxBuyPerTx && project.tokensForSale ? ((Number(project.maxBuyPerTx) / Number(project.tokensForSale)) * 100).toFixed(1) : '1'}% of supply per transaction
-                      </p>
-                      <p className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {project.cooldownBlocks || '10'} block cooldown between purchases
-                      </p>
-                      <p className="flex items-center gap-1">
-                        <Target className="h-3 w-3" />
-                        Max {project.maxBuyPerUser && project.tokensForSale ? ((Number(project.maxBuyPerUser) / Number(project.tokensForSale)) * 100).toFixed(1) : '5'}% of supply per address
-                      </p>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+          <div className="flex items-center gap-8 text-sm">
+            <div>
+              <p className="text-muted-foreground text-xs">Current Price</p>
+              <p className="font-mono font-bold text-green-500">${formatAlgo(project.basePrice)} ALGO</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">Market Cap</p>
+              <p className="font-mono font-bold">${formatAlgo((BigInt(project.basePrice) * BigInt(project.totalSupply) / 1000000n).toString())}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs">Created</p>
+              <p className="font-mono">{new Date(project.createdAt).toLocaleDateString()}</p>
+            </div>
           </div>
         </div>
       </div>
-    </div >
+
+      <div className="max-w-[1920px] mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {/* Left Column: Chart & Info (9 cols) */}
+        <div className="lg:col-span-9 space-y-4">
+          {/* Chart Area */}
+          <div className="h-[600px] w-full bg-card border border-border rounded-lg overflow-hidden">
+            <TokenPriceChart projectId={project.id} tokenSymbol={project.tokenSymbol} />
+          </div>
+
+          {/* Bottom Tabs: Details, Transactions, Holders */}
+          <Tabs defaultValue="details" className="w-full">
+            <TabsList className="w-full justify-start border-b border-border bg-transparent p-0 h-auto rounded-none">
+              <TabsTrigger value="details" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-6 py-3">
+                Token Details
+              </TabsTrigger>
+              <TabsTrigger value="transactions" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-6 py-3">
+                Transactions
+              </TabsTrigger>
+              <TabsTrigger value="holders" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-6 py-3">
+                Holders
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="details" className="p-6 bg-card border border-border border-t-0 rounded-b-lg mt-0">
+              <div className="grid grid-cols-2 gap-8">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">About {project.tokenName}</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {project.description || "No description provided."}
+                  </p>
+
+                  <div className="mt-6 space-y-3">
+                    <div className="flex justify-between py-2 border-b border-border">
+                      <span className="text-muted-foreground">Contract Address</span>
+                      <div className="flex items-center gap-2 font-mono text-sm">
+                        {project.appId}
+                        <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => copyToClipboard(project.appId || '')}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-border">
+                      <span className="text-muted-foreground">Creator Wallet</span>
+                      <div className="flex items-center gap-2 font-mono text-sm">
+                        {project.id.substring(0, 8)}...
+                        <Button variant="ghost" size="icon" className="h-4 w-4">
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-border">
+                      <span className="text-muted-foreground">Initial Price</span>
+                      <span className="font-mono">{formatAlgo(project.basePrice)} ALGO</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-border">
+                      <span className="text-muted-foreground">Graduation Target</span>
+                      <span className="font-mono">{formatAlgo(project.bondingTarget)} ALGO</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Bonding Curve</h3>
+                  <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm font-medium">Progress to Graduation</span>
+                      <span className="text-sm font-bold">{progress.toFixed(2)}%</span>
+                    </div>
+                    <Progress value={progress} className="h-3 mb-4" />
+                    <p className="text-xs text-muted-foreground">
+                      When the market cap reaches {formatAlgo(project.bondingTarget)} ALGO, all liquidity will be deposited into Tinyman and burned.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="transactions" className="p-6 bg-card border border-border border-t-0 rounded-b-lg mt-0">
+              <div className="text-center py-12 text-muted-foreground">
+                <Clock className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                <p>No transactions yet</p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="holders" className="p-6 bg-card border border-border border-t-0 rounded-b-lg mt-0">
+              <div className="text-center py-12 text-muted-foreground">
+                <Users className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                <p>Holder list is empty</p>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Right Column: Trading Interface (3 cols) */}
+        <div className="lg:col-span-3 space-y-4">
+          {/* Trading Panel */}
+          <Card className="border-border">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-4 bg-muted/50 p-1 rounded-lg">
+                <Button
+                  variant={activeTab === 'buy' ? 'default' : 'ghost'}
+                  className={`flex-1 ${activeTab === 'buy' ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                  onClick={() => setActiveTab('buy')}
+                >
+                  Buy
+                </Button>
+                <Button
+                  variant={activeTab === 'sell' ? 'default' : 'ghost'}
+                  className={`flex-1 ${activeTab === 'sell' ? 'bg-red-600 hover:bg-red-700' : ''}`}
+                  onClick={() => setActiveTab('sell')}
+                >
+                  Sell
+                </Button>
+              </div>
+
+              {activeTab === 'buy' ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <Label>Amount (ALGO)</Label>
+                      <span>Balance: {activeAccount ? 'Loading...' : '0'}</span>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        placeholder="0.0"
+                        className="pr-16 text-right font-mono text-lg"
+                        value={buyAmount}
+                        onChange={(e) => setBuyAmount(e.target.value)}
+                      />
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 flex gap-1">
+                        <Button variant="outline" size="xs" className="h-6 text-[10px]" onClick={() => setBuyAmount("10")}>10</Button>
+                        <Button variant="outline" size="xs" className="h-6 text-[10px]" onClick={() => setBuyAmount("50")}>50</Button>
+                        <Button variant="outline" size="xs" className="h-6 text-[10px]" onClick={() => setBuyAmount("100")}>100</Button>
+                      </div>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">ALGO</span>
+                    </div>
+                  </div>
+
+                  {priceQuote && (
+                    <div className="space-y-2 text-sm border border-border rounded p-3 bg-muted/30">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Receive</span>
+                        <span className="font-bold">{formatTokens(priceQuote.tokenAmount)} {project.tokenSymbol}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Price Impact</span>
+                        <span className={priceQuote.priceImpact > 5 ? 'text-red-500' : 'text-green-500'}>
+                          {priceQuote.priceImpact.toFixed(2)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Points</span>
+                        <span className="text-amber-500 font-bold">+{priceQuote.pointsEarned}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {!activeAccount ? (
+                    <Button className="w-full" size="lg">Connect Wallet</Button>
+                  ) : (
+                    <Button
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      size="lg"
+                      onClick={handlePurchase}
+                      disabled={purchasing || !buyAmount}
+                    >
+                      {purchasing ? 'Processing...' : `Buy ${project.tokenSymbol}`}
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Selling is currently disabled during the bonding curve phase.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Bonding Curve Info */}
+          <Card className="border-border">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" /> Bonding Curve
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span>Progress</span>
+                    <span>{progress.toFixed(2)}%</span>
+                  </div>
+                  <Progress value={progress} className="h-2" />
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Market Cap</span>
+                  <span className="font-mono">${formatAlgo((BigInt(project.basePrice) * BigInt(project.totalSupply) / 1000000n).toString())}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Remaining</span>
+                  <span className="font-mono">{formatAlgo((BigInt(project.bondingTarget) - BigInt(project.algoRaised)).toString())} ALGO</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* User Points */}
+          {activeAccount && userPoints && (
+            <Card className="border-amber-500/20 bg-amber-500/5">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium flex items-center gap-1">
+                    <Gift className="h-4 w-4 text-amber-500" /> Your Rewards
+                  </span>
+                  <Badge variant="outline" className="border-amber-500 text-amber-500">
+                    {userPoints.totalPoints} pts
+                  </Badge>
+                </div>
+                <Button variant="outline" size="sm" className="w-full border-amber-500/50 hover:bg-amber-500/10">
+                  Claim Rewards
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
