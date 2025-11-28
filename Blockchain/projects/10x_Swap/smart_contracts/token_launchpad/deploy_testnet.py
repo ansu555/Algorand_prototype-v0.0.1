@@ -79,14 +79,14 @@ def main():
         if response.lower() != 'y':
             exit(0)
     
-    # Load TEAL files directly
-    artifacts_dir = Path(__file__).parent
+    # Load TEAL files from artifacts directory
+    artifacts_dir = Path(__file__).parent.parent.parent.parent.parent.parent / "artifacts/token_launchpad"
     approval_teal_path = artifacts_dir / "TokenLaunchpad.approval.teal"
     clear_teal_path = artifacts_dir / "TokenLaunchpad.clear.teal"
     
     if not approval_teal_path.exists() or not clear_teal_path.exists():
         print(f"❌ TEAL files not found in: {artifacts_dir}")
-        print("   Run 'algokit compile py contract.py' first")
+        print("   Run 'algokit compile py contract.py --out-dir artifacts/token_launchpad' first")
         exit(1)
     
     with open(approval_teal_path) as f:
@@ -138,7 +138,7 @@ def main():
         print(f"   App ID: {app_id}")
         print(f"   Confirmed in round: {confirmed_txn['confirmed-round']}")
         
-        # Save deployment info
+        # Save deployment info to artifacts directory
         deployment_info = {
             "network": "testnet",
             "app_id": app_id,
@@ -147,11 +147,11 @@ def main():
             "confirmed_round": confirmed_txn["confirmed-round"]
         }
         
-        output_file = Path(__file__).parent / "deployment_testnet.json"
-        with open(output_file, 'w') as f:
+        deployment_file = artifacts_dir / "deployment_testnet.json"
+        with open(deployment_file, 'w') as f:
             json.dump(deployment_info, f, indent=2)
         
-        print(f"\n💾 Deployment info saved to: {output_file.name}")
+        print(f"\n💾 Deployment info saved to: {deployment_file.name}")
         print(f"\n🔗 View on AlgoExplorer:")
         print(f"   https://testnet.algoexplorer.io/application/{app_id}")
         
