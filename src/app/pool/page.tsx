@@ -9,8 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
-import { Loader2, TrendingUp, Activity, BarChart3, Copy, Check } from "lucide-react"
+import { Loader2, TrendingUp, Activity, BarChart3, Copy, Check, CheckCircle2, RefreshCw } from "lucide-react"
 import { useMemo, useState, useEffect } from "react"
+import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
+import { toast } from "sonner"
 import type { PoolInfo } from "@/lib/dex/types"
 
 type Pool = {
@@ -45,6 +47,35 @@ export default function PoolPage() {
   const [allPools, setAllPools] = useState<Pool[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { activeAccount } = useWalletConnection()
+  const [optingIds, setOptingIds] = useState<Record<string, boolean>>({})
+
+  const optInAsset = async (assetId: number, assetName: string) => {
+    if (!activeAccount?.address) {
+      toast.error('Connect your wallet to opt-in')
+      return
+    }
+    if (assetId === 0) {
+      toast.info('ALGO does not require opt-in')
+      return
+    }
+    const key = String(assetId)
+    setOptingIds((s) => ({ ...s, [key]: true }))
+    try {
+      const res = await fetch('/api/agent/wallet/opt-in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userAddress: activeAccount.address, assetId })
+      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error || 'Opt-in failed')
+      toast.success(data.message || `Opted in to ${assetName}`)
+    } catch (e: any) {
+      toast.error('Opt-in failed', { description: e?.message || String(e) })
+    } finally {
+      setOptingIds((s) => ({ ...s, [key]: false }))
+    }
+  }
 
   // Fetch pools when network changes
   useEffect(() => {
@@ -544,7 +575,34 @@ function PoolTable({ pools, emptyLabel = "No pools found." }: { pools: Pool[]; e
                   </div>
                 </div>
                 <div className="flex flex-col items-start min-w-0">
-                  <span className="font-semibold whitespace-nowrap">{p.token0}/{p.token1}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold whitespace-nowrap">{p.token0}/{p.token1}</span>
+                    {/* Opt-in buttons for both tokens */}
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          // Get asset IDs from pool data - you'll need to add these to Pool type
+                          // For now, we'll need to extract from pool metadata or pass through
+                          toast.info('Token opt-in coming soon - use search bar for now')
+                        }}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                        title={`Opt-in to ${p.token0}`}
+                      >
+                        <CheckCircle2 className="w-3 h-3 text-muted-foreground hover:text-blue-500" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toast.info('Token opt-in coming soon - use search bar for now')
+                        }}
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                        title={`Opt-in to ${p.token1}`}
+                      >
+                        <CheckCircle2 className="w-3 h-3 text-muted-foreground hover:text-purple-500" />
+                      </button>
+                    </div>
+                  </div>
                   {p.poolAddress && (
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs text-muted-foreground font-mono">

@@ -35,6 +35,8 @@ export function AgentWalletCard() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [optingIn, setOptingIn] = useState(false)
+  const [assetIdInput, setAssetIdInput] = useState<string>('')
+  const [optingSingle, setOptingSingle] = useState(false)
 
   const loadAgentWallet = async () => {
     if (!activeAccount?.address) return
@@ -305,24 +307,69 @@ export function AgentWalletCard() {
 
         {/* Opt-in Button */}
         <div className="pt-2">
-          <Button 
-            onClick={optInToAllAssets} 
-            disabled={optingIn || loading || accountInfo.algoBalance < 0.3}
-            className="w-full"
-            variant="outline"
-          >
-            {optingIn ? (
-              <>
-                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                Opting into assets...
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-                Opt-in to All Trading Assets
-              </>
-            )}
-          </Button>
+          <div className="space-y-2">
+            <Button 
+              onClick={optInToAllAssets} 
+              disabled={optingIn || loading || accountInfo.algoBalance < 0.3}
+              className="w-full"
+              variant="outline"
+            >
+              {optingIn ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Opting into assets...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Opt-in to All Trading Assets
+                </>
+              )}
+            </Button>
+
+            {/* Single asset opt-in */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                placeholder="Asset ID (e.g. 31566704)"
+                value={assetIdInput}
+                onChange={(e) => setAssetIdInput(e.target.value)}
+                className="flex-1 rounded-md border px-3 py-2 bg-background text-sm"
+              />
+              <Button
+                onClick={async () => {
+                  if (!activeAccount?.address) return
+                  const id = Number(assetIdInput)
+                  if (!id || id <= 0) {
+                    toast.error('Enter a valid numeric asset ID')
+                    return
+                  }
+                  setOptingSingle(true)
+                  try {
+                    const res = await fetch('/api/agent/wallet/opt-in', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ userAddress: activeAccount.address, assetId: id })
+                    })
+                    const data = await res.json()
+                    if (!data.success) throw new Error(data.error || 'Opt-in failed')
+                    toast.success(data.message || 'Opted in successfully')
+                    setAssetIdInput('')
+                    await loadAgentWallet()
+                  } catch (err: any) {
+                    toast.error('Opt-in failed', { description: err.message })
+                  } finally {
+                    setOptingSingle(false)
+                  }
+                }}
+                disabled={optingSingle || loading || accountInfo.algoBalance < 0.101}
+                variant="ghost"
+              >
+                {optingSingle ? 'Opting...' : 'Opt-in'}
+              </Button>
+            </div>
+          </div>
           <p className="text-xs text-muted-foreground mt-2 text-center">
             {accountInfo.algoBalance < 0.3 
               ? "Fund agent wallet with at least 0.5 ALGO first"
