@@ -16,7 +16,8 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
-import { purchaseTokens } from "@/lib/launchpad/algorand"
+import { useWallet } from "@txnlab/use-wallet-react"
+import * as blockchain from "@/lib/launchpad/blockchain"
 import algosdk from "algosdk"
 
 interface Project {
@@ -39,6 +40,11 @@ interface Project {
   curveType: string
   createdAt: string
   launchRound?: number
+  appId?: string
+  asaId?: string
+  maxBuyPerTx?: string
+  maxBuyPerUser?: string
+  cooldownBlocks?: string
 }
 
 interface PriceQuote {
@@ -60,7 +66,18 @@ interface UserPoints {
 export default function ProjectDetailPage() {
   const params = useParams()
   const { activeAccount } = useWalletConnection()
+  const { signTransactions } = useWallet()
   const [project, setProject] = useState<Project | null>(null)
+
+  // Wallet transaction signer wrapper to filter out nulls
+  const walletSigner = async (
+    txnGroup: algosdk.Transaction[],
+    indexesToSign?: number[]
+  ): Promise<Uint8Array[]> => {
+    const signed = await signTransactions(txnGroup, indexesToSign)
+    // Filter out nulls - wallet always signs all requested transactions
+    return signed.filter((s): s is Uint8Array => s !== null)
+  }
   const [loading, setLoading] = useState(true)
   const [purchasing, setPurchasing] = useState(false)
 
@@ -162,6 +179,7 @@ export default function ProjectDetailPage() {
           userAddress: activeAccount.address,
           tokenAmount: buyAmount,
           algoAmount: priceQuote.algoAmount,
+          currentRound: await blockchain.getCurrentRound()
         })
       })
 
@@ -172,74 +190,35 @@ export default function ProjectDetailPage() {
         return
       }
 
-      // Step 2: Check if project has app_id (bonding curve contract)
-      if (!project.launchRound || project.launchRound === 0) {
-        alert('This project has not been launched on-chain yet. Using mock transaction.')
+      if (!validateData.data.valid) {
+        alert(validateData.data.reason || 'Purchase validation failed')
+        return
+      }
 
-        // Fallback to mock transaction
-        const recordRes = await fetch('/api/launchpad/purchase', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'record',
-            projectId: project.id,
-            userAddress: activeAccount.address,
-            tokenAmount: buyAmount,
-            algoAmount: priceQuote.algoAmount,
-            txHash: 'MOCK_TX_' + Date.now(),
-            blockNumber: 12345,
-          })
-        })
-
-        const recordData = await recordRes.json()
-
-        if (recordData.success) {
-          alert(`Purchase successful! Earned ${priceQuote.pointsEarned} points!`)
-          setBuyAmount("")
-          loadProject()
-          loadUserPoints()
-        }
-
+      // Step 2: Check if project has app_id
+      if (!project.appId || !project.asaId) {
+        alert('This project is not properly configured on-chain.')
         return
       }
 
       // Step 3: Execute real TestNet transaction
       console.log('🔗 Connecting to TestNet for purchase...')
 
-      // Get app_id from project (this would come from your DB)
-      // For now, using a placeholder - you'd fetch this from the project
-      const appId = project.launchRound // Temporarily using launchRound as appId placeholder
-      const asaId = 0 // Would come from project.asa_id
-
-      // Transaction signer using TxnLab wallet
-      const signer = async (txns: Uint8Array[]) => {
-        console.log('📝 Signing', txns.length, 'transactions...')
-
-        // Convert to algosdk transactions for signing
-        const txnObjects = txns.map(txn => algosdk.decodeUnsignedTransaction(txn))
-
-        // Sign with wallet (TxnLab provides signTransactions method)
-        const signedTxns = await (window as any).algorand?.signTransactions?.(
-          txnObjects.map(txn => ({ txn: Buffer.from(txn.toByte()).toString('base64') }))
-        )
-
-        if (!signedTxns) {
-          throw new Error('Transaction signing cancelled')
-        }
-
-        return signedTxns.map((signed: any) =>
-          new Uint8Array(Buffer.from(signed, 'base64'))
-        )
-      }
+      const appId = BigInt(project.appId)
+      const asaId = BigInt(project.asaId)
+      const tokensToBuy = BigInt(Number(buyAmount) * 1_000_000) // 6 decimals
+      const maxAlgoCost = BigInt(Math.ceil(Number(priceQuote.algoAmount) * 1_000_000)) // microALGO
 
       // Execute purchase transaction on TestNet
-      const txId = await purchaseTokens(
-        activeAccount.address,
-        appId,
-        asaId,
-        Number(buyAmount),
-        Number(priceQuote.algoAmount),
-        signer
+      const txId = await blockchain.buyTokens(
+        {
+          userAddress: activeAccount.address,
+          appId: appId,
+          asaId: asaId,
+          tokensToBuy: tokensToBuy,
+          estimatedCost: maxAlgoCost,
+        },
+        walletSigner
       )
 
       console.log('✅ Transaction confirmed:', txId)
@@ -254,8 +233,8 @@ export default function ProjectDetailPage() {
           userAddress: activeAccount.address,
           tokenAmount: buyAmount,
           algoAmount: priceQuote.algoAmount,
-          txHash: txId,
-          blockNumber: 0, // Would get from transaction confirmation
+          transactionId: txId,
+          blockRound: await blockchain.getCurrentRound(),
         })
       })
 
@@ -266,10 +245,25 @@ export default function ProjectDetailPage() {
         setBuyAmount("")
         loadProject()
         loadUserPoints()
+      } else {
+        // Transaction succeeded on chain but failed to record in DB
+        alert(`⚠️ Purchase confirmed on blockchain (Tx: ${txId}) but failed to update database. Please contact support.`)
       }
     } catch (error: any) {
       console.error('Purchase failed:', error)
-      alert(`❌ Purchase failed: ${error.message || 'Unknown error'}`)
+
+      let errorMessage = 'Purchase failed. '
+      if (error.message?.includes('rejected')) {
+        errorMessage += 'Transaction was rejected.'
+      } else if (error.message?.includes('overspend')) {
+        errorMessage += 'Insufficient funds.'
+      } else if (error.message?.includes('slippage')) {
+        errorMessage += 'Price slippage too high. Try again.'
+      } else {
+        errorMessage += error.message || 'Unknown error'
+      }
+
+      alert(errorMessage)
     } finally {
       setPurchasing(false)
     }
@@ -325,7 +319,7 @@ export default function ProjectDetailPage() {
   const target = formatAlgo(project.bondingTarget)
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-6" >
       <SearchBar />
 
       <div className="max-w-7xl mx-auto mt-6 space-y-6">
@@ -427,6 +421,13 @@ export default function ProjectDetailPage() {
                     <p className="text-xs text-muted-foreground mb-1">Participants</p>
                     <p className="text-lg font-bold">{project.participantCount}</p>
                   </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Platform Fee (1%)</p>
+                    <p className="text-lg font-bold text-blue-600">
+                      {formatAlgo((BigInt(project.algoRaised) / 100n).toString())}
+                    </p>
+                    <p className="text-xs text-muted-foreground">ALGO</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -462,7 +463,9 @@ export default function ProjectDetailPage() {
                     <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
                     <div>
                       <p className="font-semibold">Anti-Bot Protection</p>
-                      <p className="text-xs text-muted-foreground">10 block cooldown, 1% max per tx</p>
+                      <p className="text-xs text-muted-foreground">
+                        {project.cooldownBlocks || '10'} block cooldown, {project.maxBuyPerTx && project.tokensForSale ? ((Number(project.maxBuyPerTx) / Number(project.tokensForSale)) * 100).toFixed(1) : '1'}% max per tx
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
@@ -607,15 +610,15 @@ export default function ProjectDetailPage() {
                     <div className="text-xs text-muted-foreground space-y-1">
                       <p className="flex items-center gap-1">
                         <Shield className="h-3 w-3" />
-                        Max 1% of supply per transaction
+                        Max {project.maxBuyPerTx && project.tokensForSale ? ((Number(project.maxBuyPerTx) / Number(project.tokensForSale)) * 100).toFixed(1) : '1'}% of supply per transaction
                       </p>
                       <p className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        10 block cooldown between purchases
+                        {project.cooldownBlocks || '10'} block cooldown between purchases
                       </p>
                       <p className="flex items-center gap-1">
                         <Target className="h-3 w-3" />
-                        Max 5% of supply per address
+                        Max {project.maxBuyPerUser && project.tokensForSale ? ((Number(project.maxBuyPerUser) / Number(project.tokensForSale)) * 100).toFixed(1) : '5'}% of supply per address
                       </p>
                     </div>
                   </>
@@ -625,6 +628,6 @@ export default function ProjectDetailPage() {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   )
 }
