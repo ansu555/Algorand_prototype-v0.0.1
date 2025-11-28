@@ -85,6 +85,9 @@ export {
   // Purchase tracking
   recordPurchase,
   getPurchaseHistory,
+  getProjectHolders,
+  getGlobalPurchases,
+  getUserPortfolio,
   
   // Points system
   getUserPoints,

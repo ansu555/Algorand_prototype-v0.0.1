@@ -1199,6 +1199,6 @@ turso db list                  # List databases
 
 ---
 
-**Last Updated:** November 12, 2025  
-**Version:** 1.0.0  
+**Last Updated:** November 28, 2025  
+**Version:** 1.1.0  
 **Status:** Production Ready (Testnet)

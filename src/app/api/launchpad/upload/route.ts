@@ -37,10 +37,19 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(bytes)
     const base64Data = buffer.toString('base64')
 
+    // Store in separate media database
+    const { storeMedia } = await import('@/lib/launchpad/media-db')
+    const mediaId = await storeMedia(file.type, base64Data)
+
+    // Return the URL to serve the image
+    const logoUrl = `/api/launchpad/media/${mediaId}`
+
     return NextResponse.json({
       success: true,
-      logoData: base64Data,
-      logoMimeType: file.type
+      logoUrl,
+      // We no longer return raw data to keep payload small
+      // logoData: base64Data, 
+      // logoMimeType: file.type
     })
   } catch (error: any) {
     console.error('Error uploading logo:', error)

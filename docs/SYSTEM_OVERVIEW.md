@@ -1228,25 +1228,36 @@ CREATE TABLE reward_transactions (
 - **App ID:** `749360450`
 - **Purpose:** Main router for multi-hop swaps across DEXs
 - **Methods:** `execute_swap_2hop()`, `execute_swap_1hop()`
-- **Explorer:** [View on AlgoScan](https://testnet.algoscan.app/app/749360450)
+- **Explorer:** [View on Lora](https://lora.algokit.io/testnet/application/749360450)
 
 #### 2. TinymanPoolAdapter
 - **App ID:** `749360541`
 - **Purpose:** Adapter for Tinyman V2 pools
 - **Methods:** `swap()`, asset transfers
-- **Explorer:** [View on AlgoScan](https://testnet.algoscan.app/app/749360541)
+- **Explorer:** [View on Lora](https://lora.algokit.io/testnet/application/749360541)
 
 #### 3. PactPoolAdapter
 - **App ID:** `749341932`
 - **Purpose:** Adapter for Pact Finance pools
 - **Methods:** `swap_fixed_input()`, `swap_algo_to_asa()`, `swap_asa_to_algo()`
-- **Explorer:** [View on AlgoScan](https://testnet.algoscan.app/app/749341932)
+- **Explorer:** [View on Lora](https://lora.algokit.io/testnet/application/749341932)
 
 #### 4. AutoPilotRuleContract
-- **App ID:** `749361072`
+- **App ID:** `749509231`
 - **Purpose:** Automated trading rules and conditions
 - **Methods:** `create_rule()`, `execute_rule()`, `delete_rule()`
-- **Explorer:** [View on AlgoScan](https://testnet.algoscan.app/app/749361072)
+- **Explorer:** [View on Lora](https://lora.algokit.io/testnet/application/749509231)
+
+#### 5. LiquidityPoolContract
+- **Status:** Deploy per pool instance
+- **Purpose:** Custom constant product AMM liquidity pools
+- **Methods:** `create_pool()`, `add_liquidity()`, `swap()`
+
+#### 6. TokenLaunchpad
+- **App ID:** `750324113`
+- **Purpose:** WaveBreak token launchpad with bonding curves
+- **Methods:** `create_launch()`, `buy_tokens()`, `graduate()`
+- **Explorer:** [View on Lora](https://lora.algokit.io/testnet/application/750324113)
 
 ### Contract Architecture
 
@@ -1445,13 +1456,14 @@ Database ← Execution Log ← Transaction ← Swap Execution
 ```typescript
 const TESTNET_CONFIG = {
   network: 'testnet',
-  algodServer: 'https://testnet-api.algonode.cloud',
-  indexerServer: 'https://testnet-idx.algonode.cloud',
+  algodServer: 'https://testnet-api.4160.nodely.dev',
+  indexerServer: 'https://testnet-idx.4160.nodely.dev',
   contracts: {
     multihopRouter: 749360450,
     tinymanAdapter: 749360541,
     pactAdapter: 749341932,
-    autopilotRule: 749361072
+    autopilotRule: 749509231,
+    tokenLaunchpad: 750324113
   }
 }
 ```
@@ -1461,14 +1473,15 @@ const TESTNET_CONFIG = {
 ```typescript
 const MAINNET_CONFIG = {
   network: 'mainnet',
-  algodServer: 'https://mainnet-api.algonode.cloud',
-  indexerServer: 'https://mainnet-idx.algonode.cloud',
+  algodServer: 'https://mainnet-api.4160.nodely.dev',
+  indexerServer: 'https://mainnet-idx.4160.nodely.dev',
   contracts: {
     // Deploy contracts separately for mainnet
     multihopRouter: null,
     tinymanAdapter: null,
     pactAdapter: null,
-    autopilotRule: null
+    autopilotRule: null,
+    tokenLaunchpad: null
   }
 }
 ```
@@ -1503,9 +1516,10 @@ const MAINNET_CONFIG = {
 - **[AI Agent & MCP/NCP Spec](./AI_AGENT_AND_MCP_NCP_SPEC.md)** - AI agent capabilities
 - **[Token Launchpad](./TOKEN_LAUNCHPAD.md)** - WaveBreak launchpad guide
 - **[Token Economics](./TOKEN_ECONOMICS.md)** - X Token rewards and economics
+- **[Liquidity Pools](./LIQUIDITY_POOLS.md)** - Pool adapters and DEX integration
 
 ---
 
-**Last Updated:** 2025-11-15  
-**Version:** 2.0.0  
-**Status:** Production Ready (Testnet) + Launchpad & Rewards System
+**Last Updated:** 2025-11-28  
+**Version:** 2.1.0  
+**Status:** Production Ready (Testnet) + Launchpad, Rewards System & Custom Pools

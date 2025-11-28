@@ -14,14 +14,14 @@ export async function POST(req: Request) {
     
     if (!userAddress || !amount) {
       return NextResponse.json(
-        { success: false, error: 'Missing userAddress or amount' },
+        { success: false, message: 'Missing userAddress or amount' },
         { status: 400 }
       )
     }
     
     if (!algosdk.isValidAddress(userAddress)) {
       return NextResponse.json(
-        { success: false, error: 'Invalid user address' },
+        { success: false, message: 'Invalid user address' },
         { status: 400 }
       )
     }
@@ -29,9 +29,18 @@ export async function POST(req: Request) {
     const numAmount = parseFloat(amount)
     if (!(numAmount > 0)) {
       return NextResponse.json(
-        { success: false, error: 'Amount must be greater than 0' },
+        { success: false, message: 'Amount must be greater than 0' },
         { status: 400 }
       )
+    }
+    
+    // Check if database is configured
+    const dbUrl = process.env.TURSO_DATABASE_URL || process.env.LIBSQL_DB_URL
+    if (!dbUrl) {
+      return NextResponse.json({
+        success: false,
+        message: 'Database not configured. Please set TURSO_DATABASE_URL in environment variables.',
+      }, { status: 500 })
     }
     
     // Get or create agent wallet for this user
@@ -53,9 +62,24 @@ export async function POST(req: Request) {
       }
     })
   } catch (error: any) {
-    console.error('Agent wallet recharge error:', error)
+    console.error('Agent wallet recharge error:', error?.message || error)
+    console.error('Stack:', error?.stack)
+    
+    // Provide more helpful error messages
+    let errorMessage = error.message || 'Failed to process recharge'
+    
+    if (error.message?.includes('TURSO_DATABASE_URL')) {
+      errorMessage = 'Database not configured. Please set TURSO_DATABASE_URL in environment variables.'
+    } else if (error.message?.includes('no such table')) {
+      errorMessage = 'Database tables not initialized. Please run migrations: npm run migrate'
+    } else if (error.message?.includes('Failed to decrypt stored agent wallet mnemonic')) {
+      errorMessage = 'Failed to decrypt stored agent wallet mnemonic. Check AGENT_WALLET_ENCRYPTION_KEY and ensure migrations/DB is intact. If you rotated encryption keys, you may need to recreate agent wallets.'
+    } else if (error.message?.includes('SQLITE_ERROR')) {
+      errorMessage = 'Database error. Please check database configuration.'
+    }
+    
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to process recharge' },
+      { success: false, message: errorMessage },
       { status: 500 }
     )
   }

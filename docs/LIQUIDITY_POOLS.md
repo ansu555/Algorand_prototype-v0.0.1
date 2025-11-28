@@ -1077,7 +1077,7 @@ const { transactions } = await response.json();
 
 ---
 
-**Last Updated:** November 14, 2025  
-**Version:** 1.0.0  
+**Last Updated:** November 28, 2025  
+**Version:** 1.1.0  
 **Status:** ✅ Active  
 **Network:** Testnet + Mainnet
