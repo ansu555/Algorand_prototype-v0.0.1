@@ -399,6 +399,7 @@ Algorand_prototype-v0.0.1/
 ├── scripts/                  # Development & test scripts
 ├── public/                   # Static assets
 ├── docs/                     # Documentation
+│   ├── FEATURE_ARCHITECTURE_DIAGRAM.md  # 🗺️ Feature communication diagram
 │   ├── FILE_STRUCTURE.md     # 📁 Detailed structure guide
 │   ├── SYSTEM_OVERVIEW.md    # 🏗️ System design
 │   ├── TOKEN_ECONOMICS.md    # 🎮 X Token rewards guide
@@ -409,8 +410,9 @@ Algorand_prototype-v0.0.1/
 
 ### 📚 Documentation
 
-**Core Documentation** (10 canonical guides):
+**Core Documentation** (12 canonical guides):
 
+- **[🗺️ Feature Architecture Diagram](./docs/FEATURE_ARCHITECTURE_DIAGRAM.md)** - **NEW!** Complete diagram showing how all features communicate and work together
 - **[🏗️ System Overview](./docs/SYSTEM_OVERVIEW.md)** - Architecture, components, and data flows
 - **[👨‍💻 Developer Guide](./docs/DEVELOPER_GUIDE.md)** - Setup, installation, testing, and troubleshooting
 - **[📁 File Structure](./docs/FILE_STRUCTURE.md)** - Detailed codebase organization guide
