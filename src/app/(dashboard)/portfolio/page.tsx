@@ -13,7 +13,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { formatTrigger, type Rule, describeRule } from "@/lib/shared/rules"
 import { forceRunPoller, useAgentData } from "@/features/agent/hooks/useAgentData"
 import { deleteRule as apiDeleteRule, createRule } from "@/features/agent/api/client"
-import { ChevronDown, ChevronUp, Play, Trash2, Eye, RefreshCw, Zap, Activity, Clock, Target, TrendingUp, AlertCircle, CheckCircle2, XCircle, Pause, DollarSign, TrendingDown, BarChart3, Lock, Wallet, Plus } from "lucide-react"
+import { ChevronDown, ChevronUp, Play, Trash2, Eye, RefreshCw, Zap, Activity, Clock, Target, TrendingUp, AlertCircle, CheckCircle2, XCircle, Pause, DollarSign, TrendingDown, BarChart3, Lock, Wallet, Plus, Copy } from "lucide-react"
 import { useWalletConnection, useWalletActions } from '@/components/providers/txnlab-wallet-provider'
 import algosdk from 'algosdk'
 import RuleBuilderModal from "@/components/features/rules/rule-builder-modal"
@@ -72,32 +72,32 @@ export default function PortfolioPage() {
     if (missing.length === 0) return
 
     let alive = true
-    ;(async () => {
-      const found: Array<[string, string]> = []
-      await Promise.all(
-        missing.map(async (id) => {
-          try {
-            const res = await fetch(`/api/price?coin=${encodeURIComponent(id)}`, { cache: 'no-store' })
-            if (!res.ok) return
-            const data = await res.json()
-            const sym = data?.symbol || data?.data?.symbol
-            if (sym) found.push([id, String(sym)])
-          } catch {}
-        })
-      )
-      if (!alive || found.length === 0) return
-      setSymbolById((prev) => {
-        let changed = false
-        const next = { ...prev }
-        for (const [id, sym] of found) {
-          if (!next[id]) {
-            next[id] = sym
-            changed = true
+      ; (async () => {
+        const found: Array<[string, string]> = []
+        await Promise.all(
+          missing.map(async (id) => {
+            try {
+              const res = await fetch(`/api/price?coin=${encodeURIComponent(id)}`, { cache: 'no-store' })
+              if (!res.ok) return
+              const data = await res.json()
+              const sym = data?.symbol || data?.data?.symbol
+              if (sym) found.push([id, String(sym)])
+            } catch { }
+          })
+        )
+        if (!alive || found.length === 0) return
+        setSymbolById((prev) => {
+          let changed = false
+          const next = { ...prev }
+          for (const [id, sym] of found) {
+            if (!next[id]) {
+              next[id] = sym
+              changed = true
+            }
           }
-        }
-        return changed ? next : prev
-      })
-    })()
+          return changed ? next : prev
+        })
+      })()
     return () => {
       alive = false
     }
@@ -134,7 +134,7 @@ export default function PortfolioPage() {
   // Fetch complete agent wallet data
   useEffect(() => {
     if (!address) return
-    
+
     async function fetchAgentWallet() {
       setAgentWalletLoading(true)
       try {
@@ -154,14 +154,14 @@ export default function PortfolioPage() {
         setAgentWalletLoading(false)
       }
     }
-    
+
     fetchAgentWallet()
   }, [address])
 
   // Fetch agent wallet stats
   useEffect(() => {
     if (!address) return
-    
+
     async function fetchAgentStats() {
       try {
         const res = await fetch(`/api/agent/wallet/stats?userAddress=${address}`)
@@ -173,7 +173,7 @@ export default function PortfolioPage() {
         console.error('Failed to fetch agent wallet stats:', error)
       }
     }
-    
+
     fetchAgentStats()
   }, [address])
 
@@ -233,10 +233,10 @@ export default function PortfolioPage() {
       refresh()
     } catch (e) {
       console.error(e)
-      toast({ 
-        title: "Failed to save rule", 
-        description: "Please try again.", 
-        variant: "destructive" 
+      toast({
+        title: "Failed to save rule",
+        description: "Please try again.",
+        variant: "destructive"
       })
     }
   }
@@ -268,7 +268,7 @@ export default function PortfolioPage() {
       toast({ title: 'No wallet connected', variant: 'destructive' })
       return
     }
-    
+
     try {
       const ok = await apiDeleteRule(rule.id, address)
       if (ok) {
@@ -349,7 +349,7 @@ export default function PortfolioPage() {
       <div className="container mx-auto px-4 py-8 space-y-8">
         {/* Search Bar */}
         <SearchBar />
-        
+
         {/* Header Section */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
           <div>
@@ -363,7 +363,7 @@ export default function PortfolioPage() {
           <div className="flex flex-wrap gap-2 w-full lg:w-auto">
             <RuleBuilderModal
               trigger={
-                <Button 
+                <Button
                   size="lg"
                   className="group relative overflow-hidden transition-all duration-300 hover:scale-105 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg shadow-red-500/25"
                 >
@@ -383,19 +383,19 @@ export default function PortfolioPage() {
                 toast({ title: "Rule saved", description: describeRule(rule) })
               }}
             />
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="lg"
-              onClick={() => address && refresh()} 
+              onClick={() => address && refresh()}
               disabled={loading || !address}
               className="transition-all duration-200 hover:scale-105"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            <Button 
+            <Button
               size="lg"
-              onClick={forceRun} 
+              onClick={forceRun}
               disabled={!address}
               className="transition-all duration-200 hover:scale-105"
             >
@@ -407,26 +407,36 @@ export default function PortfolioPage() {
 
         {/* Agent Wallet Section */}
         {address && (
-          <Card className="shadow-xl border-border/50">
-            <CardHeader className="pb-3">
+          <Card className="relative overflow-hidden border-border/50 shadow-2xl bg-gradient-to-br from-card via-card/95 to-background">
+            <div className="absolute top-0 right-0 -mt-20 -mr-20 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
+            <div className="absolute bottom-0 left-0 -mb-20 -ml-20 h-64 w-64 rounded-full bg-red-500/5 blur-3xl" />
+
+            <CardHeader className="relative pb-6">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-10 w-10 rounded-full bg-red-500 flex items-center justify-center">
-                    <Wallet className="h-5 w-5 text-white" />
+                <div className="flex items-center gap-4">
+                  <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-red-500/25 ring-1 ring-white/10">
+                    <Wallet className="h-7 w-7 text-white" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg">Agent Wallet</CardTitle>
-                    <p className="text-xs text-muted-foreground">Automated trading balance</p>
+                    <CardTitle className="text-xl font-bold tracking-tight">Agent Wallet</CardTitle>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-sm text-muted-foreground">Automated Trading</p>
+                      {agentWalletData?.network && (
+                        <Badge variant="outline" className="h-5 px-2 text-[10px] uppercase tracking-wider bg-background/50 backdrop-blur">
+                          {agentWalletData.network}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <Dialog open={rechargeDialogOpen} onOpenChange={setRechargeDialogOpen}>
                   <DialogTrigger asChild>
                     <Button
-                      size="sm"
-                      className="gap-2 bg-red-500 hover:bg-red-600 text-white shadow-lg"
+                      size="lg"
+                      className="gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg shadow-red-500/20 transition-all duration-300 hover:scale-105"
                     >
-                      <Plus className="h-4 w-4" />
-                      Recharge
+                      <Plus className="h-5 w-5" />
+                      <span className="font-semibold">Recharge</span>
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-md">
@@ -447,21 +457,22 @@ export default function PortfolioPage() {
                           onChange={(e) => setRechargeAmount(e.target.value)}
                           min="0"
                           step="0.1"
+                          className="text-lg"
                         />
                       </div>
-                      <div className="rounded-lg bg-muted p-3 space-y-1">
+                      <div className="rounded-lg bg-muted/50 p-4 space-y-2 border border-border/50">
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Current Balance:</span>
-                          <span className="font-semibold">{agentWalletData?.accountInfo?.algoBalance?.toFixed(2) || '0.00'} ALGO</span>
+                          <span className="font-mono font-medium">{agentWalletData?.accountInfo?.algoBalance?.toFixed(2) || '0.00'} ALGO</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">After Recharge:</span>
-                          <span className="font-semibold text-red-500">
+                          <span className="font-mono font-bold text-red-500">
                             {((agentWalletData?.accountInfo?.algoBalance || 0) + (parseFloat(rechargeAmount) || 0)).toFixed(2)} ALGO
                           </span>
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-3 pt-2">
                         <Button
                           variant="outline"
                           className="flex-1"
@@ -501,7 +512,7 @@ export default function PortfolioPage() {
                                 body: JSON.stringify({ userAddress: address, amount })
                               })
                               const data = await res.json()
-                              
+
                               if (!data.success || !data.data?.agentAddress) {
                                 throw new Error(data.message || 'Failed to get agent wallet address')
                               }
@@ -528,7 +539,7 @@ export default function PortfolioPage() {
 
                               // Sign transaction with connected wallet
                               const signedTxns = await signTransactions([txn])
-                              
+
                               if (!signedTxns || signedTxns.length === 0) {
                                 throw new Error('Transaction signing cancelled')
                               }
@@ -536,7 +547,7 @@ export default function PortfolioPage() {
                               // Submit to network
                               const result = await algodClient.sendRawTransaction(signedTxns[0] as Uint8Array).do()
                               const txId = result.txid
-                              
+
                               // Wait for confirmation
                               await algosdk.waitForConfirmation(algodClient, txId, 4)
 
@@ -589,63 +600,108 @@ export default function PortfolioPage() {
                 </Dialog>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Agent Wallet Address */}
-                {agentWalletData?.agentAddress && (
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground">Agent Wallet Address</label>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 rounded-md bg-muted px-3 py-2 text-xs font-mono break-all">
-                        {agentWalletData.agentAddress}
-                      </code>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          navigator.clipboard.writeText(agentWalletData.agentAddress)
-                          toast({ title: "Address copied" })
-                        }}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                      </Button>
+            <CardContent className="relative space-y-8">
+              {/* Main Stats Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Balance Card */}
+                <div className="rounded-2xl bg-gradient-to-br from-background/80 to-background/40 p-5 border border-border/50 backdrop-blur-sm shadow-sm">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Total Balance</p>
+                      <h3 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent mt-1">
+                        {agentWalletData?.accountInfo?.algoBalance?.toFixed(4) || '0.0000'} <span className="text-lg text-muted-foreground font-normal">ALGO</span>
+                      </h3>
+                    </div>
+                    <div className="p-2 rounded-full bg-primary/10">
+                      <Wallet className="h-5 w-5 text-primary" />
                     </div>
                   </div>
-                )}
 
-                {/* Balance Display */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-lg bg-card/50 p-4 border border-border/50">
-                    <p className="text-xs text-muted-foreground mb-1">Total Balance</p>
-                    <p className="text-2xl font-bold text-red-500">
-                      {agentWalletData?.accountInfo?.algoBalance?.toFixed(6) || '0.000000'} ALGO
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-card/50 p-4 border border-border/50">
-                    <p className="text-xs text-muted-foreground mb-1">Available Balance</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {agentWalletData?.accountInfo?.availableBalance?.toFixed(6) || '0.000000'} ALGO
-                    </p>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm p-2 rounded-lg bg-muted/30">
+                      <span className="text-muted-foreground">Available</span>
+                      <span className="font-mono font-medium text-green-600 dark:text-green-400">
+                        {agentWalletData?.accountInfo?.availableBalance?.toFixed(4) || '0.0000'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm p-2 rounded-lg bg-muted/30">
+                      <span className="text-muted-foreground">Reserved</span>
+                      <span className="font-mono font-medium text-orange-600 dark:text-orange-400">
+                        {agentWalletData?.accountInfo?.minBalance?.toFixed(4) || '0.0000'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Min Balance Info */}
-                {agentWalletData?.accountInfo && (
-                  <div className="text-xs text-muted-foreground">
-                    Minimum balance reserved: {agentWalletData.accountInfo.minBalance.toFixed(6)} ALGO
+                {/* Performance Stats */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2 rounded-xl bg-muted/30 p-4 border border-border/50 flex items-center justify-between group hover:bg-muted/50 transition-colors">
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Total Spent</p>
+                      <p className="text-xl font-bold">${agentWalletStats?.totalSpendUSD?.toFixed(2) || '0.00'}</p>
+                    </div>
+                    <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                      <DollarSign className="h-5 w-5 text-blue-500" />
+                    </div>
+                  </div>
+                  <div className="rounded-xl bg-muted/30 p-4 border border-border/50 flex flex-col justify-between group hover:bg-muted/50 transition-colors">
+                    <div className="h-8 w-8 rounded-full bg-purple-500/10 flex items-center justify-center mb-2 group-hover:bg-purple-500/20 transition-colors">
+                      <Activity className="h-4 w-4 text-purple-500" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Trades</p>
+                      <p className="text-lg font-bold">{agentWalletStats?.totalTrades || 0}</p>
+                    </div>
+                  </div>
+                  <div className="rounded-xl bg-muted/30 p-4 border border-border/50 flex flex-col justify-between group hover:bg-muted/50 transition-colors">
+                    <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center mb-2 group-hover:bg-emerald-500/20 transition-colors">
+                      <TrendingUp className="h-4 w-4 text-emerald-500" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Success</p>
+                      <p className="text-lg font-bold">{agentWalletStats?.successRate?.toFixed(0) || 0}%</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Address & Warnings */}
+              <div className="space-y-4">
+                {agentWalletData?.agentAddress && (
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 border border-border/50">
+                    <div className="h-8 w-8 rounded-lg bg-background flex items-center justify-center border border-border/50">
+                      <Target className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-muted-foreground mb-0.5">Agent Address</p>
+                      <code className="text-xs font-mono block truncate">
+                        {agentWalletData.agentAddress}
+                      </code>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 hover:bg-background hover:shadow-sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(agentWalletData.agentAddress)
+                        toast({ title: "Address copied" })
+                      }}
+                    >
+                      <Copy className="h-4 w-4 text-muted-foreground" />
+                    </Button>
                   </div>
                 )}
 
                 {/* Low Balance Warning */}
                 {agentWalletData?.accountInfo && agentWalletData.accountInfo.algoBalance < 0.3 && (
-                  <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 p-3">
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
+                  <div className="rounded-xl bg-yellow-500/10 border border-yellow-500/20 p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-yellow-900 dark:text-yellow-100">
                           Low ALGO Balance
                         </p>
-                        <p className="text-xs text-yellow-800 dark:text-yellow-200 mt-1">
+                        <p className="text-xs text-yellow-800 dark:text-yellow-200/80 mt-1 leading-relaxed">
                           {agentWalletData.accountInfo.algoBalance === 0
                             ? "Your agent wallet needs ALGO to opt-in to assets and pay transaction fees. Please recharge with at least 0.5 ALGO."
                             : "Your agent wallet is low on ALGO. Recharge to ensure smooth trading and asset opt-ins."}
@@ -654,52 +710,42 @@ export default function PortfolioPage() {
                     </div>
                   </div>
                 )}
+              </div>
 
-                {/* Asset Holdings */}
-                {agentWalletData?.accountInfo?.assets && agentWalletData.accountInfo.assets.length > 0 && (
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-muted-foreground">
-                      Asset Holdings ({agentWalletData.accountInfo.totalAssets})
+              {/* Asset Holdings */}
+              {agentWalletData?.accountInfo?.assets && agentWalletData.accountInfo.assets.length > 0 && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-semibold text-foreground">
+                      Asset Holdings
                     </label>
-                    <div className="space-y-2">
-                      {agentWalletData.accountInfo.assets.map((asset) => (
-                        <div
-                          key={asset.assetId}
-                          className="flex items-center justify-between rounded-md border p-3"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Badge variant="secondary">{asset.symbol}</Badge>
-                            <span className="text-xs text-muted-foreground">
-                              ID: {asset.assetId}
-                            </span>
+                    <Badge variant="secondary" className="rounded-full px-2.5">
+                      {agentWalletData.accountInfo.totalAssets}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {agentWalletData.accountInfo.assets.map((asset) => (
+                      <div
+                        key={asset.assetId}
+                        className="flex items-center justify-between rounded-xl border border-border/50 bg-card/50 p-3 hover:bg-card hover:shadow-md transition-all duration-200"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                            {asset.symbol.slice(0, 2)}
                           </div>
-                          <span className="text-sm font-medium">
-                            {parseFloat(asset.balance).toFixed(asset.decimals)} {asset.symbol}
-                          </span>
+                          <div>
+                            <p className="text-sm font-bold">{asset.symbol}</p>
+                            <p className="text-[10px] text-muted-foreground">ID: {asset.assetId}</p>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Quick Stats */}
-                <div className="grid grid-cols-3 gap-3 pt-2">
-                  <div className="rounded-lg bg-card/50 p-3 border border-border/50 text-center">
-                    <p className="text-xs text-muted-foreground mb-1">Total Spent</p>
-                    <p className="text-lg font-semibold">${agentWalletStats?.totalSpendUSD?.toFixed(2) || '0.00'}</p>
-                  </div>
-                  <div className="rounded-lg bg-card/50 p-3 border border-border/50 text-center">
-                    <p className="text-xs text-muted-foreground mb-1">Trades</p>
-                    <p className="text-lg font-semibold">{agentWalletStats?.totalTrades || 0}</p>
-                  </div>
-                  <div className="rounded-lg bg-card/50 p-3 border border-border/50 text-center">
-                    <p className="text-xs text-muted-foreground mb-1">Success Rate</p>
-                    <p className="text-lg font-semibold">
-                      {agentWalletStats?.successRate?.toFixed(0) || 0}%
-                    </p>
+                        <span className="text-sm font-mono font-medium">
+                          {parseFloat(asset.balance).toFixed(asset.decimals)}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -733,7 +779,7 @@ export default function PortfolioPage() {
                       <span className="text-[10px] text-muted-foreground">Amount</span>
                     </div>
                   </div>
-                  
+
                   {/* Token Holdings */}
                   <div className="flex items-center justify-between pb-2.5 border-b border-border/40">
                     <div className="flex items-center gap-2">
@@ -780,9 +826,9 @@ export default function PortfolioPage() {
                   <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full hover:bg-muted/50">
                     <Activity className="h-3.5 w-3.5" />
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="h-6 px-2 rounded-full bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border border-emerald-500/20 text-[10px]"
                   >
                     <BarChart3 className="h-3 w-3 mr-1" />
@@ -804,27 +850,27 @@ export default function PortfolioPage() {
                     <AreaChart data={profitOverTime}>
                       <defs>
                         <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#6b7280" stopOpacity={0.2}/>
-                          <stop offset="95%" stopColor="#6b7280" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#6b7280" stopOpacity={0.2} />
+                          <stop offset="95%" stopColor="#6b7280" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                      <XAxis 
-                        dataKey="date" 
+                      <XAxis
+                        dataKey="date"
                         stroke="#6b7280"
                         fontSize={11}
                         tickLine={false}
                         axisLine={false}
                       />
-                      <YAxis 
+                      <YAxis
                         stroke="#6b7280"
                         fontSize={11}
                         tickLine={false}
                         axisLine={false}
                         tickFormatter={(value) => `$${value.toFixed(0)}`}
                       />
-                      <Tooltip 
-                        contentStyle={{ 
+                      <Tooltip
+                        contentStyle={{
                           backgroundColor: '#1a1a1a',
                           border: '1px solid #374151',
                           borderRadius: '8px',
@@ -832,12 +878,12 @@ export default function PortfolioPage() {
                         }}
                         formatter={(value: any) => [`$${value.toFixed(2)}`, 'Value']}
                       />
-                      <Area 
-                        type="monotone" 
-                        dataKey="cumulativeProfit" 
-                        stroke="#6b7280" 
+                      <Area
+                        type="monotone"
+                        dataKey="cumulativeProfit"
+                        stroke="#6b7280"
                         strokeWidth={1.5}
-                        fill="url(#chartGradient)" 
+                        fill="url(#chartGradient)"
                       />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -867,11 +913,11 @@ export default function PortfolioPage() {
                         { date: '2025-10-27', value: 35 },
                         { date: '2025-11-14', value: 45 }
                       ]}>
-                        <Area 
-                          type="monotone" 
-                          dataKey="value" 
-                          stroke="#6b7280" 
-                          fill="#374151" 
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#6b7280"
+                          fill="#374151"
                         />
                       </AreaChart>
                     </ResponsiveContainer>
@@ -963,7 +1009,7 @@ export default function PortfolioPage() {
                       {rules.map((rule) => {
                         const isPaused = rule.status === "paused"
                         return (
-                          <TableRow 
+                          <TableRow
                             key={rule.id}
                             className="group hover:bg-muted/50 transition-colors duration-150"
                           >
@@ -997,7 +1043,7 @@ export default function PortfolioPage() {
                               {nextCheck(rule)}
                             </TableCell>
                             <TableCell className="align-middle">
-                              <Badge 
+                              <Badge
                                 variant={isPaused ? "secondary" : "default"}
                                 className={isPaused ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20" : "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20"}
                               >
@@ -1006,8 +1052,8 @@ export default function PortfolioPage() {
                             </TableCell>
                             <TableCell className="text-center align-middle">
                               <div className="flex items-center justify-center gap-1.5">
-                                <Button 
-                                  size="sm" 
+                                <Button
+                                  size="sm"
                                   onClick={() => executeNow(rule)}
                                   className="h-9 px-3 bg-primary hover:bg-primary/90"
                                 >
@@ -1015,20 +1061,20 @@ export default function PortfolioPage() {
                                   Execute
                                 </Button>
                                 {isPaused ? (
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline" 
-                                    onClick={() => pauseResume(rule, "active")} 
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => pauseResume(rule, "active")}
                                     className="h-9 px-3 hover:bg-green-500/10 hover:text-green-600 hover:border-green-500/20"
                                   >
                                     <Play className="h-3 w-3 mr-1.5" />
                                     Resume
                                   </Button>
                                 ) : (
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline" 
-                                    onClick={() => pauseResume(rule, "paused")} 
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => pauseResume(rule, "paused")}
                                     className="h-9 px-3 hover:bg-yellow-500/10 hover:text-yellow-600 hover:border-yellow-500/20"
                                   >
                                     <Pause className="h-3 w-3 mr-1.5" />
@@ -1037,9 +1083,9 @@ export default function PortfolioPage() {
                                 )}
                                 <Dialog>
                                   <DialogTrigger asChild>
-                                    <Button 
-                                      size="sm" 
-                                      variant="ghost" 
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
                                       className="h-9 px-3 hover:bg-primary/10"
                                     >
                                       <Eye className="h-3 w-3 mr-1.5" />
@@ -1053,7 +1099,7 @@ export default function PortfolioPage() {
                                         Rule Details
                                       </DialogTitle>
                                     </DialogHeader>
-                                    
+
                                     {/* Compact 2-column layout */}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                                       {/* Left Column */}
@@ -1156,18 +1202,18 @@ export default function PortfolioPage() {
 
                                     {/* Action Buttons */}
                                     <div className="flex gap-2 pt-6 border-t mt-4">
-                                      <Button 
-                                        size="default" 
-                                        onClick={() => executeNow(rule)} 
+                                      <Button
+                                        size="default"
+                                        onClick={() => executeNow(rule)}
                                         className="flex-1 bg-primary hover:bg-primary/90"
                                       >
                                         <Play className="h-4 w-4 mr-2" />
                                         Execute Now
                                       </Button>
-                                      <Button 
-                                        size="default" 
-                                        variant="destructive" 
-                                        onClick={() => onDelete(rule)} 
+                                      <Button
+                                        size="default"
+                                        variant="destructive"
+                                        onClick={() => onDelete(rule)}
                                         className="flex-1"
                                       >
                                         <Trash2 className="h-4 w-4 mr-2" />
@@ -1176,9 +1222,9 @@ export default function PortfolioPage() {
                                     </div>
                                   </DialogContent>
                                 </Dialog>
-                                <Button 
-                                  size="sm" 
-                                  variant="ghost" 
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
                                   onClick={() => onDelete(rule)}
                                   className="h-9 px-2 hover:bg-destructive/10 hover:text-destructive"
                                 >
@@ -1252,15 +1298,14 @@ export default function PortfolioPage() {
                     const isSuccess = log.status === "success"
                     const isFailed = log.status === "failed"
                     return (
-                      <div 
-                        key={log.id} 
+                      <div
+                        key={log.id}
                         className="group relative overflow-hidden rounded-lg border bg-gradient-to-r from-card to-card/50 p-4 hover:shadow-md transition-all duration-200"
                       >
                         <div className="flex items-start gap-4">
                           {/* Status Icon */}
-                          <div className={`h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                            isSuccess ? 'bg-green-500/10' : isFailed ? 'bg-red-500/10' : 'bg-blue-500/10'
-                          }`}>
+                          <div className={`h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 ${isSuccess ? 'bg-green-500/10' : isFailed ? 'bg-red-500/10' : 'bg-blue-500/10'
+                            }`}>
                             {isSuccess ? (
                               <CheckCircle2 className="h-5 w-5 text-green-500" />
                             ) : isFailed ? (
@@ -1276,18 +1321,17 @@ export default function PortfolioPage() {
                               <span className="text-sm font-semibold capitalize">
                                 {log.action.replace(/_/g, ' ')}
                               </span>
-                              <Badge 
-                                variant={isFailed ? "destructive" : "default"} 
-                                className={`text-xs ${
-                                  isSuccess ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' :
+                              <Badge
+                                variant={isFailed ? "destructive" : "default"}
+                                className={`text-xs ${isSuccess ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20' :
                                   isFailed ? 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20' :
-                                  'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
-                                }`}
+                                    'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
+                                  }`}
                               >
                                 {log.status}
                               </Badge>
                             </div>
-                            
+
                             <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
                               <Clock className="h-3 w-3" />
                               {new Date(log.createdAt).toLocaleString()}
@@ -1304,7 +1348,7 @@ export default function PortfolioPage() {
                                   {/* Parse and display key information */}
                                   {(() => {
                                     const details = log.details
-                                    
+
                                     // If it's a rule deletion log
                                     if (log.action === 'rule_deleted' && details.id) {
                                       return (
@@ -1318,7 +1362,7 @@ export default function PortfolioPage() {
                                         </div>
                                       )
                                     }
-                                    
+
                                     // If it's a rule update log
                                     if ((log.action === 'rule_updated' || log.action === 'rule_paused' || log.action === 'rule_resumed') && details.before) {
                                       return (
@@ -1329,12 +1373,12 @@ export default function PortfolioPage() {
                                               {details.before?.id || details.after?.id || details.id}
                                             </code>
                                           </div>
-                                          
+
                                           {/* Show what changed */}
                                           {details.before && details.after && (
                                             <div className="space-y-2">
                                               <span className="text-xs font-semibold text-muted-foreground block">Changes</span>
-                                              
+
                                               {/* Status change */}
                                               {details.before.status !== details.after.status && (
                                                 <div className="flex items-center gap-2 text-xs bg-background px-3 py-2 rounded border">
@@ -1348,7 +1392,7 @@ export default function PortfolioPage() {
                                                   </Badge>
                                                 </div>
                                               )}
-                                              
+
                                               {/* Other changes */}
                                               {Object.keys(details.after || {}).map((key) => {
                                                 if (key === 'status' || key === 'id' || key === 'createdAt' || key === 'ownerAddress') return null
@@ -1370,7 +1414,7 @@ export default function PortfolioPage() {
                                               })}
                                             </div>
                                           )}
-                                          
+
                                           {/* Show raw JSON in collapsed state */}
                                           <details className="mt-3">
                                             <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground font-medium">
@@ -1383,7 +1427,7 @@ export default function PortfolioPage() {
                                         </div>
                                       )
                                     }
-                                    
+
                                     // If it's a rule creation log
                                     if (log.action === 'rule_created' && details.id) {
                                       return (
@@ -1402,7 +1446,7 @@ export default function PortfolioPage() {
                                               </Badge>
                                             </div>
                                           </div>
-                                          
+
                                           {details.targets && details.targets.length > 0 && (
                                             <div className="flex flex-col gap-1">
                                               <span className="text-xs font-semibold text-muted-foreground">Target Assets</span>
@@ -1415,7 +1459,7 @@ export default function PortfolioPage() {
                                               </div>
                                             </div>
                                           )}
-                                          
+
                                           {details.trigger && (
                                             <div className="flex flex-col gap-1">
                                               <span className="text-xs font-semibold text-muted-foreground">Trigger Condition</span>
@@ -1424,7 +1468,7 @@ export default function PortfolioPage() {
                                               </div>
                                             </div>
                                           )}
-                                          
+
                                           <div className="grid grid-cols-3 gap-3">
                                             {details.maxSpendUSD && (
                                               <div className="flex flex-col gap-1">
@@ -1451,7 +1495,7 @@ export default function PortfolioPage() {
                                               </div>
                                             )}
                                           </div>
-                                          
+
                                           {details.id && (
                                             <div className="flex flex-col gap-1">
                                               <span className="text-xs font-semibold text-muted-foreground">Rule ID</span>
@@ -1460,7 +1504,7 @@ export default function PortfolioPage() {
                                               </code>
                                             </div>
                                           )}
-                                          
+
                                           {/* Show raw JSON in collapsed state */}
                                           <details className="mt-3">
                                             <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground font-medium">
@@ -1473,7 +1517,7 @@ export default function PortfolioPage() {
                                         </div>
                                       )
                                     }
-                                    
+
                                     // If it's a rule execution/preview log
                                     if ((log.action === 'execute_rule' || log.action === 'preview_trade') && details.result) {
                                       return (
@@ -1486,7 +1530,7 @@ export default function PortfolioPage() {
                                               </code>
                                             </div>
                                           )}
-                                          
+
                                           {details.result?.txHash && (
                                             <div className="flex flex-col gap-1">
                                               <span className="text-xs font-semibold text-muted-foreground">Transaction Hash</span>
@@ -1505,7 +1549,7 @@ export default function PortfolioPage() {
                                               </div>
                                             </div>
                                           )}
-                                          
+
                                           {details.result?.fromAsset && details.result?.toAsset && (
                                             <div className="grid grid-cols-2 gap-3">
                                               <div className="flex flex-col gap-1">
@@ -1522,7 +1566,7 @@ export default function PortfolioPage() {
                                               </div>
                                             </div>
                                           )}
-                                          
+
                                           {/* Show raw JSON in collapsed state */}
                                           <details className="mt-3">
                                             <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground font-medium">
@@ -1535,7 +1579,7 @@ export default function PortfolioPage() {
                                         </div>
                                       )
                                     }
-                                    
+
                                     // If it's a swap/transaction with structured data
                                     if (details.txId || details.txHash) {
                                       return (
@@ -1558,7 +1602,7 @@ export default function PortfolioPage() {
                                               </div>
                                             </div>
                                           )}
-                                          
+
                                           {details.fromAssetName && details.toAssetName && (
                                             <div className="grid grid-cols-2 gap-3">
                                               <div className="flex flex-col gap-1">
@@ -1575,7 +1619,7 @@ export default function PortfolioPage() {
                                               </div>
                                             </div>
                                           )}
-                                          
+
                                           {details.confirmedRound && (
                                             <div className="flex flex-col gap-1">
                                               <span className="text-xs font-semibold text-muted-foreground">Confirmed Round</span>
@@ -1584,7 +1628,7 @@ export default function PortfolioPage() {
                                               </div>
                                             </div>
                                           )}
-                                          
+
                                           {/* Show raw JSON in collapsed state */}
                                           <details className="mt-3">
                                             <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground font-medium">
@@ -1597,7 +1641,7 @@ export default function PortfolioPage() {
                                         </div>
                                       )
                                     }
-                                    
+
                                     // If it's an error
                                     if (details.error) {
                                       return (
@@ -1608,7 +1652,7 @@ export default function PortfolioPage() {
                                               {details.error}
                                             </div>
                                           </div>
-                                          
+
                                           {/* Show full details if available */}
                                           {Object.keys(details).length > 1 && (
                                             <details className="mt-3">
@@ -1623,7 +1667,7 @@ export default function PortfolioPage() {
                                         </div>
                                       )
                                     }
-                                    
+
                                     // Default: show formatted JSON
                                     return (
                                       <pre className="text-xs whitespace-pre-wrap break-all overflow-x-auto max-h-48 overflow-y-auto scrollbar-hide">
