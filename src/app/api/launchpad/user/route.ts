@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserPoints, getPurchaseHistory } from '@/lib/launchpad/db'
+import { getUserPoints, getPurchaseHistory, getUserPortfolio } from '@/lib/launchpad/db'
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,14 +8,20 @@ export async function GET(request: NextRequest) {
     const projectId = searchParams.get('projectId')
     const action = searchParams.get('action')
 
-    if (!userAddress || !projectId) {
+    if (!userAddress) {
       return NextResponse.json({
         success: false,
-        error: 'Missing userAddress or projectId'
+        error: 'Missing userAddress'
       }, { status: 400 })
     }
 
     if (action === 'points') {
+      if (!projectId) {
+        return NextResponse.json({
+          success: false,
+          error: 'Missing projectId'
+        }, { status: 400 })
+      }
       // Get user points
       const points = await getUserPoints(userAddress, projectId)
 
@@ -35,6 +41,12 @@ export async function GET(request: NextRequest) {
     }
 
     if (action === 'purchases') {
+      if (!projectId) {
+        return NextResponse.json({
+          success: false,
+          error: 'Missing projectId'
+        }, { status: 400 })
+      }
       // Get purchase history
       const purchases = await getPurchaseHistory(projectId, userAddress)
 
@@ -51,6 +63,26 @@ export async function GET(request: NextRequest) {
           transactionId: p.transactionId,
           blockRound: p.blockRound.toString(),
           timestamp: p.timestamp
+        }))
+      })
+    }
+
+    if (action === 'portfolio') {
+      const positions = await getUserPortfolio(userAddress)
+
+      return NextResponse.json({
+        success: true,
+        data: positions.map(position => ({
+          projectId: position.projectId,
+          tokenName: position.tokenName,
+          tokenSymbol: position.tokenSymbol,
+          tokenDecimals: position.tokenDecimals,
+          logoUrl: position.logoUrl ?? undefined,
+          tokensHeld: position.tokensHeld.toString(),
+          algoSpent: position.algoSpent.toString(),
+          averagePrice: position.averagePrice.toString(),
+          purchaseCount: position.purchaseCount,
+          lastPurchaseAt: position.lastPurchaseAt,
         }))
       })
     }

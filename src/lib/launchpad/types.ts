@@ -69,6 +69,34 @@ export interface TokenPurchase {
   timestamp: string
 }
 
+export interface ProjectHolder {
+  buyerAddress: string
+  totalTokens: bigint
+  totalAlgo: bigint
+  purchaseCount: number
+  lastPurchaseAt: string | null
+}
+
+export interface LaunchpadPurchaseRecord extends TokenPurchase {
+  tokenName: string
+  tokenSymbol: string
+  tokenDecimals: number
+  logoUrl?: string | null
+}
+
+export interface UserPortfolioPosition {
+  projectId: string
+  tokenName: string
+  tokenSymbol: string
+  tokenDecimals: number
+  logoUrl?: string | null
+  tokensHeld: bigint
+  algoSpent: bigint
+  averagePrice: bigint
+  purchaseCount: number
+  lastPurchaseAt: string | null
+}
+
 export interface LaunchpadPoints {
   userAddress: string
   projectId: string

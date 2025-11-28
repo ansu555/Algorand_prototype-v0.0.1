@@ -202,12 +202,18 @@ export async function initializeProject(
     })
 
     // 2. Payment for MBR (Minimum Balance Requirement)
-    const mbrPaymentTxn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
-        sender: params.userAddress,
-        receiver: appAddress,
-        amount: 200_000, // 0.2 ALGO for ASA opt-in
-        suggestedParams,
-    })
+        const mbrPaymentTxnParams = {
+            ...suggestedParams,
+            fee: Number(suggestedParams.minFee),
+            flatFee: true,
+        }
+
+        const mbrPaymentTxn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+            sender: params.userAddress,
+            receiver: appAddress,
+            amount: 200_000, // 0.2 ALGO for ASA opt-in
+            suggestedParams: mbrPaymentTxnParams,
+        })
     atc.addTransaction({ txn: mbrPaymentTxn, signer: signer })
 
     // 3. Bootstrap Method (ASA opt-in)
@@ -220,7 +226,11 @@ export async function initializeProject(
     console.log('📝 Bootstrap method selector:', Buffer.from(bootstrapMethod.getSelector()).toString('hex'))
 
     // Increase fee to cover inner transaction (ASA opt-in)
-    const bootstrapParams = { ...suggestedParams, fee: 2000, flatFee: true }
+        const bootstrapParams = {
+            ...suggestedParams,
+            fee: Number(suggestedParams.minFee) * 2,
+            flatFee: true,
+        }
 
     atc.addMethodCall({
         appID: params.appId,
@@ -298,13 +308,27 @@ export async function buyTokens(
     const atc = new AtomicTransactionComposer()
 
     // 1. Payment transaction (MUST be gtxn[0])
-    const paymentTxn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
-        sender: params.userAddress,
-        receiver: contractAddress,
-        amount: params.estimatedCost,
-        suggestedParams,
-    })
+        const paymentTxnParams = {
+            ...suggestedParams,
+            fee: Number(suggestedParams.minFee),
+            flatFee: true,
+        }
+
+        const paymentTxn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+            sender: params.userAddress,
+            receiver: contractAddress,
+            amount: params.estimatedCost,
+            suggestedParams: paymentTxnParams,
+        })
     atc.addTransaction({ txn: paymentTxn, signer: signer })
+
+    // Create params with extra fee for inner transaction (asset transfer)
+    // The smart contract does an inner txn to transfer ASA to buyer, so we need to cover that fee
+        const paramsWithExtraFee = {
+            ...suggestedParams,
+            fee: Number(suggestedParams.minFee) * 3, // app call + ASA transfer + change refund
+            flatFee: true,
+        }
 
     // 2. Buy method call (will be gtxn[1])
     const buyMethod = new algosdk.ABIMethod({
@@ -321,7 +345,9 @@ export async function buyTokens(
         methodArgs: [params.tokensToBuy],
         sender: params.userAddress,
         signer: signer,
-        suggestedParams: suggestedParams,
+        suggestedParams: paramsWithExtraFee, // Use params with extra fee to cover inner transaction
+        // Need to add the ASA as a foreign asset so the contract can transfer it
+        appForeignAssets: [Number(params.asaId)],
         // Need to add boxes for user record
         boxes: [
             {
