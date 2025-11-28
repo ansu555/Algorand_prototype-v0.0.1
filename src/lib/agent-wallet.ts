@@ -67,7 +67,14 @@ export async function getOrCreateAgentWallet(userAddress: string): Promise<{
   
   if (existing) {
     // Decrypt and return existing wallet
-    const mnemonic = decryptMnemonic(existing.encryptedMnemonic)
+    let mnemonic: string
+    try {
+      mnemonic = decryptMnemonic(existing.encryptedMnemonic)
+    } catch (e: any) {
+      // Most likely cause: encryption key changed or stored data corrupted
+      const hint = process.env.AGENT_WALLET_ENCRYPTION_KEY ? 'The configured AGENT_WALLET_ENCRYPTION_KEY may be incorrect.' : 'No AGENT_WALLET_ENCRYPTION_KEY configured; a different key may have been used when the wallet was created.'
+      throw new Error(`Failed to decrypt stored agent wallet mnemonic. ${hint} If you recently rotated keys, you may need to re-create agent wallets or restore the original key.`)
+    }
     return {
       agentAddress: existing.agentAddress,
       agentMnemonic: mnemonic,
