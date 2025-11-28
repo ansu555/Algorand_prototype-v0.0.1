@@ -16,18 +16,21 @@ export interface LaunchProject {
   websiteUrl?: string
   twitterUrl?: string
   telegramUrl?: string
-  
+
   // ASA Information
   asaId?: bigint
   appId?: bigint
-  
+  configTxId?: string
+  bootstrapTxId?: string
+  fundingTxId?: string
+
   // Bonding Curve Config
   curveType: CurveType
   basePrice: bigint // microALGO
   maxPrice: bigint // microALGO
   bondingTarget: bigint // microALGO to raise
   tokensForSale: bigint
-  
+
   // Sale State
   status: ProjectStatus
   tokensSold: bigint
@@ -35,12 +38,17 @@ export interface LaunchProject {
   participantCount: number
   launchRound?: bigint
   graduationRound?: bigint
-  
+
   // Liquidity Config
   liquidityPercentage: number // 0-100
   lpLockDuration: bigint // blocks
   dexPlatform: DexPlatform
-  
+
+  // Security Config
+  maxBuyPerTx?: bigint
+  maxBuyPerUser?: bigint
+  cooldownBlocks?: bigint
+
   // Timestamps
   createdAt: string
   launchedAt?: string

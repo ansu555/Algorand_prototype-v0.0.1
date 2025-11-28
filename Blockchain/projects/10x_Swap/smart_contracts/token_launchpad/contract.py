@@ -23,7 +23,7 @@ class TokenLaunchpad(ARC4Contract):
     """
 
     def __init__(self) -> None:
-        # Global State
+        # Global State (Native UInt64 storage)
         self.creator = Account()
         self.asa_id = UInt64()
         self.total_supply = UInt64()
@@ -39,6 +39,8 @@ class TokenLaunchpad(ARC4Contract):
         self.liquidity_percent = UInt64()
         self.liquidity_lock_days = UInt64()
         self.launch_status = UInt64()  # 0=Prelaunch, 1=Live, 2=Completed, 3=Finalized
+        self.platform_address = Account()
+        self.platform_fee_percent = UInt64()
 
     # -----------------------
     @arc4.baremethod(allow_actions=["NoOp"], create="require")
@@ -46,6 +48,8 @@ class TokenLaunchpad(ARC4Contract):
         """Initialize the contract"""
         self.creator = Txn.sender
         self.launch_status = UInt64(0)
+        # default platform fee 1% (stored as integer percentage)
+        self.platform_fee_percent = UInt64(1)
 
     # -----------------------
     @arc4.abimethod
@@ -61,11 +65,12 @@ class TokenLaunchpad(ARC4Contract):
         max_buy_per_tx: arc4.UInt64,
         max_buy_per_user: arc4.UInt64,
         liquidity_percent: arc4.UInt64,
-        liquidity_lock_days: arc4.UInt64
+        liquidity_lock_days: arc4.UInt64,
+        platform_address: Account
     ) -> None:
         """Configure sale parameters (creator only, pre-launch)"""
         assert Txn.sender == self.creator, "Only creator"
-        assert self.launch_status.native == 0, "Already configured"
+        assert self.launch_status == 0, "Already configured"
 
         # Basic sanity checks
         assert total_supply.native > 0, "total_supply must be > 0"
@@ -73,21 +78,21 @@ class TokenLaunchpad(ARC4Contract):
         assert start_price.native < target_price.native, "start_price must be < target_price"
         assert tokens_for_sale.native <= total_supply.native, "tokens_for_sale <= total_supply"
 
-        # Set params (store as UInt64 wrappers)
-        self.asa_id = UInt64(asa.id)
-        self.total_supply = arc4.UInt64(total_supply.native)
-        self.tokens_for_sale = arc4.UInt64(tokens_for_sale.native)
-        self.start_price = arc4.UInt64(start_price.native)
-        self.target_price = arc4.UInt64(target_price.native)
-        self.bonding_target = arc4.UInt64(bonding_target.native)
-        self.curve_type = arc4.UInt64(curve_type.native)
-        self.max_buy_per_tx = arc4.UInt64(max_buy_per_tx.native)
-        self.max_buy_per_user = arc4.UInt64(max_buy_per_user.native)
-        self.liquidity_percent = arc4.UInt64(liquidity_percent.native)
-        self.liquidity_lock_days = arc4.UInt64(liquidity_lock_days.native)
-
+        # Store params (native values)
+        self.asa_id = asa.id
+        self.total_supply = total_supply.native
+        self.tokens_for_sale = tokens_for_sale.native
+        self.start_price = start_price.native
+        self.target_price = target_price.native
+        self.bonding_target = bonding_target.native
+        self.curve_type = curve_type.native
+        self.max_buy_per_tx = max_buy_per_tx.native
+        self.max_buy_per_user = max_buy_per_user.native
+        self.liquidity_percent = liquidity_percent.native
+        self.liquidity_lock_days = liquidity_lock_days.native
+        self.platform_address = platform_address
         # Set to Live
-        self.launch_status = arc4.UInt64(1)
+        self.launch_status = UInt64(1)
 
     # -----------------------
     @arc4.abimethod
@@ -106,25 +111,28 @@ class TokenLaunchpad(ARC4Contract):
     def buy(self, quantity: arc4.UInt64) -> None:
         """
         Buy tokens via bonding curve.
-        Expect group:
-          gtxn[0] = Payment (buyer -> app address)
-          gtxn[1] = ApplicationCall (this method)
+
+        IMPORTANT: this is an ABI method — callers must invoke via ABI (app client) so
+        the application call carries the encoded ABI args. Also a grouped Payment txn
+        (gtxn[0]) must send ALGO to the app address prior to this AppCall (gtxn[1]).
         """
         # Basic state checks
-        assert self.launch_status.native == 1, "Sale not live"
+        assert self.launch_status == 1, "Sale not live"
 
         n = quantity.native
         assert n > 0, "Quantity must be positive"
 
-        tokens_for_sale = self.tokens_for_sale.native
-        assert tokens_for_sale > 0, "tokens_for_sale not set"
+        # Read from state
+        tokens_for_sale = self.tokens_for_sale
+        tokens_sold = self.tokens_sold
+        start_price = self.start_price
+        target_price = self.target_price
 
-        tokens_sold = self.tokens_sold.native
+        assert tokens_for_sale > 0, "tokens_for_sale not set"
         assert tokens_sold + n <= tokens_for_sale, "Not enough tokens"
 
-        # Payment is expected as group txn 0
-        pay = gtxn[0]
-        assert pay.type_enum == Txn.PaymentType, "First grouped txn must be Payment"
+        # Payment is expected as group txn 0 (buyer -> app)
+        pay = gtxn.PaymentTransaction(0)
         assert pay.receiver == Global.current_application_address, "Payment must go to app address"
         assert pay.sender == Txn.sender, "Payment sender must equal caller"
 
@@ -133,49 +141,44 @@ class TokenLaunchpad(ARC4Contract):
         user_key = buyer.bytes
         user_data_bytes, exists = op.Box.get(user_key)
 
-        bought_before = 0
-        last_buy_round = 0
+        bought_before = UInt64(0)
         if exists:
             rec = UserRecord.from_bytes(user_data_bytes)
             bought_before = rec.total_bought.native
-            last_buy_round = rec.last_buy_round.native
 
         # Enforce caps
-        assert bought_before + n <= self.max_buy_per_user.native, "Exceeds max per user"
-        assert n <= self.max_buy_per_tx.native, "Exceeds max per tx"
-
-        # Ensure no divide-by-zero
-        assert tokens_for_sale > 0, "tokens_for_sale must be > 0"
+        assert bought_before + n <= self.max_buy_per_user, "Exceeds max per user"
+        assert n <= self.max_buy_per_tx, "Exceeds max per tx"
 
         # Linear price calculation (integer-safe)
-        p0 = self.start_price.native
-        p1 = self.target_price.native
+        p0 = start_price
+        p1 = target_price
         delta_p = p1 - p0
 
         # cost = p0*n + delta_p * n * (2*s + n) / (2 * tokens_for_sale)
         numerator = delta_p * n * ((tokens_sold * 2) + n)
         denominator = tokens_for_sale * 2
         curve_add = numerator // denominator
-        cost = p0 * n + curve_add
+        cost = p0 * n + curve_add  # cost in microAlgos
 
-        # Verify payment amount
+        # Verify payment amount (paid is native int microAlgos)
         paid = pay.amount
         assert paid >= cost, "Insufficient payment provided"
 
-        # Update global state (wrap with arc4.UInt64)
-        self.tokens_sold = arc4.UInt64(tokens_sold + n)
-        self.algo_raised = arc4.UInt64(self.algo_raised.native + cost)
+        # Update global state
+        self.tokens_sold = tokens_sold + n
+        self.algo_raised = self.algo_raised + cost
 
-        # Write user record back to box
+        # Update user record in box storage
         new_user = UserRecord(
             total_bought=arc4.UInt64(bought_before + n),
-            last_buy_round=arc4.UInt64(Global.round.native)
+            last_buy_round=arc4.UInt64(Global.round)
         )
         op.Box.put(user_key, new_user.bytes)
 
         # Transfer ASA tokens (contract must hold sufficient tokens)
         itxn.AssetTransfer(
-            xfer_asset=self.asa_id.native,
+            xfer_asset=self.asa_id,
             asset_receiver=buyer,
             asset_amount=n,
         ).submit()
@@ -189,20 +192,34 @@ class TokenLaunchpad(ARC4Contract):
             ).submit()
 
         # Check completion
-        if self.tokens_sold.native >= tokens_for_sale or self.algo_raised.native >= self.bonding_target.native:
-            self.launch_status = arc4.UInt64(2)
+        if self.tokens_sold >= tokens_for_sale or self.algo_raised >= self.bonding_target:
+            self.launch_status = UInt64(2)
 
     # -----------------------
     @arc4.abimethod
     def finalize(self) -> None:
-        """Finalize sale and distribute liquidity (creator only)"""
+        """Finalize sale and distribute funds (creator only)"""
         assert Txn.sender == self.creator, "Only creator"
-        assert self.launch_status.native == 2, "Sale not completed"
+        assert self.launch_status == 2, "Sale not completed"
 
-        # Transfer raised ALGO to creator (simple prototype)
-        itxn.Payment(
-            receiver=self.creator,
-            amount=self.algo_raised.native
-        ).submit()
+        total_raised = self.algo_raised
+        fee_pct = self.platform_fee_percent
+        platform_fee = (total_raised * fee_pct) // 100
 
-        self.launch_status = arc4.UInt64(3)
+        creator_amount = total_raised - platform_fee
+
+        # 1. Pay Platform Fee
+        if platform_fee > 0:
+            itxn.Payment(
+                receiver=self.platform_address,
+                amount=platform_fee
+            ).submit()
+
+        # 2. Pay Creator (Revenue + Liquidity Capital)
+        if creator_amount > 0:
+            itxn.Payment(
+                receiver=self.creator,
+                amount=creator_amount
+            ).submit()
+
+        self.launch_status = UInt64(3)
