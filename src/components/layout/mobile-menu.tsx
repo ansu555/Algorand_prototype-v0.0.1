@@ -46,7 +46,6 @@ export const MobileMenu = () => {
         { name: "Stake", href: "/stake" },
         { name: "Launchpad", href: "/launchpad" },
         { name: "Portfolio", href: "/portfolio" },
-        { name: "Rewards", href: "/rewards" },
     ];
 
     const exploreItems = [

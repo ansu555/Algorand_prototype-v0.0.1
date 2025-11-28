@@ -9,6 +9,7 @@ import { TxnLabWalletProvider } from '@/components/providers/txnlab-wallet-provi
 import { Header } from '@/components/layout/header'
 import { Toaster } from '@/components/ui/toaster'
 import ChatBubble from '@/components/features/chat/chat-bubble'
+import { RewardsProvider } from '@/components/providers/rewards-provider'
 
 const fontSans = FontSans({ subsets: ['latin'], variable: '--font-sans' })
 const fontMono = FontMono({ subsets: ['latin'], weight: ['400'], variable: '--font-mono' })
@@ -32,12 +33,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ReduxProvider>
           <ExistingProviders>
             <TxnLabWalletProvider>
-              <Header />
-              <main className="pt-24 min-h-screen">
-                {children}
-              </main>
-              {/* Floating chat bubble on bottom-right */}
-              <ChatBubble variant="floating" align="right" />
+              <RewardsProvider>
+                <Header />
+                <main className="pt-24 min-h-screen">
+                  {children}
+                </main>
+                {/* Floating chat bubble on bottom-right */}
+                <ChatBubble variant="floating" align="right" />
+              </RewardsProvider>
             </TxnLabWalletProvider>
           </ExistingProviders>
         </ReduxProvider>
