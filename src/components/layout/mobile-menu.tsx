@@ -125,9 +125,9 @@ export const MobileMenu = () => {
                         <div className="w-full">
                             <AlgorandWalletConnect variant="button" className="w-full" />
                         </div>
-                        <div className="flex justify-center">
+                        {/* <div className="flex justify-center">
                             <ModeToggle />
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             )}

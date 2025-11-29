@@ -9,7 +9,7 @@ import BackgroundPaths from '@/components/shared/animated-background'
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <Web3Providers>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
         <BackgroundPaths />
         {children}
       </ThemeProvider>
