@@ -566,16 +566,25 @@ artifacts/
 │   ├── AutoPilotRuleContract.approval.puya.map # Source map
 │   ├── AutoPilotRuleContract.clear.puya.map
 │   └── deployed_autopilot.json                # Deployment info
-└── multihop_swap/
-    ├── MultihopSwapRouter.approval.teal
-    ├── MultihopSwapRouter.clear.teal
-    ├── MultihopSwapRouter.arc56.json
-    ├── TinymanPoolAdapter.approval.teal
-    ├── TinymanPoolAdapter.clear.teal
-    ├── TinymanPoolAdapter.arc56.json
-    ├── PactPoolAdapter.approval.teal
-    ├── PactPoolAdapter.clear.teal
-    └── PactPoolAdapter.arc56.json
+├── liquidity_pool/
+│   ├── LiquidityPoolContract.approval.teal
+│   ├── LiquidityPoolContract.clear.teal
+│   └── LiquidityPoolContract.arc56.json
+├── multihop_swap/
+│   ├── MultihopSwapRouter.approval.teal
+│   ├── MultihopSwapRouter.clear.teal
+│   ├── MultihopSwapRouter.arc56.json
+│   ├── TinymanPoolAdapter.approval.teal
+│   ├── TinymanPoolAdapter.clear.teal
+│   ├── TinymanPoolAdapter.arc56.json
+│   ├── PactPoolAdapter.approval.teal
+│   ├── PactPoolAdapter.clear.teal
+│   └── PactPoolAdapter.arc56.json
+└── token_launchpad/
+    ├── TokenLaunchpad.approval.teal
+    ├── TokenLaunchpad.clear.teal
+    ├── TokenLaunchpad.arc56.json
+    └── deployment_testnet.json                # Deployment info
 ```
 
 **File Types:**
@@ -752,7 +761,7 @@ From `.gitignore`:
 - **API Routes:** Serverless functions in `src/app/api/`
 - **Components:** Feature-based organization
 - **Smart Contracts:** Python/AlgoPy → TEAL compilation
-- **Documentation:** 8 canonical guides (no duplicates)
+- **Documentation:** Comprehensive guides in `/docs` (no duplicates)
 
 **Next Steps:**
 - See [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) for setup
@@ -761,7 +770,7 @@ From `.gitignore`:
 
 ---
 
-**Last Updated:** November 14, 2025  
-**Version:** 1.0.0  
+**Last Updated:** November 28, 2025  
+**Version:** 1.1.0  
 **Total Files:** ~500+ source files  
-**Documentation:** 8 canonical guides
+**Documentation:** See `/docs` folder for all guides

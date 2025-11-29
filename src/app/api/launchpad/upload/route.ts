@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'crypto'
+import { supabaseAdmin, getPublicUrl } from '@/lib/supabase'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml', 'image/webp']
+
+const SUPABASE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'launchpad-logos'
+
+const mimeExtensions: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/webp': 'webp',
+  'image/svg+xml': 'svg'
+}
 
 // POST /api/launchpad/upload - Upload token logo and return base64 data
 export async function POST(req: NextRequest) {
@@ -32,24 +44,44 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Convert file to base64
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    const base64Data = buffer.toString('base64')
+    // Upload to Supabase Storage
+    const extension = mimeExtensions[file.type] || file.name?.split('.').pop()?.toLowerCase() || 'bin'
+    const fileName = `${Date.now()}-${randomUUID()}.${extension}`
+    const filePath = `logos/${new Date().toISOString().split('T')[0]}/${fileName}`
 
-    // Store in separate media database
-    const { storeMedia } = await import('@/lib/launchpad/media-db')
-    const mediaId = await storeMedia(file.type, base64Data)
+    // Convert File to ArrayBuffer for Supabase
+    const arrayBuffer = await file.arrayBuffer()
 
-    // Return the URL to serve the image
-    const logoUrl = `/api/launchpad/media/${mediaId}`
+    const { data, error } = await supabaseAdmin.storage
+      .from(SUPABASE_BUCKET)
+      .upload(filePath, arrayBuffer, {
+        contentType: file.type,
+        cacheControl: '3600',
+        upsert: false
+      })
+
+    if (error) {
+      console.error('❌ Supabase upload error:', error)
+      return NextResponse.json(
+        { success: false, error: `Failed to upload to cloud storage: ${error.message}` },
+        { status: 500 }
+      )
+    }
+
+    console.log('✅ File uploaded successfully:', {
+      bucket: SUPABASE_BUCKET,
+      path: filePath,
+      uploadData: data
+    })
+
+    // Get public URL
+    const publicUrl = getPublicUrl(SUPABASE_BUCKET, filePath)
+    
+    console.log('📸 Public URL generated:', publicUrl)
 
     return NextResponse.json({
       success: true,
-      logoUrl,
-      // We no longer return raw data to keep payload small
-      // logoData: base64Data, 
-      // logoMimeType: file.type
+      logoUrl: publicUrl,
     })
   } catch (error: any) {
     console.error('Error uploading logo:', error)

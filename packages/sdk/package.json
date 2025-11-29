@@ -1,0 +1,65 @@
+{
+  "name": "@10xswap/sdk",
+  "version": "1.0.0",
+  "description": "Official TypeScript SDK for 10xSwap - Algorand DeFi Platform",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "lint": "eslint src --ext .ts",
+    "test": "jest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "algorand",
+    "defi",
+    "dex",
+    "swap",
+    "liquidity",
+    "automated-trading",
+    "sdk",
+    "typescript",
+    "10xswap",
+    "amm",
+    "blockchain"
+  ],
+  "author": "10xSwap Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/10xswap/sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/10xswap/sdk/issues"
+  },
+  "homepage": "https://10xswap.com/developers",
+  "peerDependencies": {
+    "algosdk": "^2.0.0 || ^3.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "algosdk": "^3.4.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
