@@ -27,9 +27,9 @@ export const viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="dark">
       <head />
-      <body suppressHydrationWarning className={`${fontSans.variable} ${fontMono.variable} font-sans relative scroll-smooth`}>
+      <body suppressHydrationWarning className={`${fontSans.variable} ${fontMono.variable} font-sans relative scroll-smooth dark`}>
         <ReduxProvider>
           <ExistingProviders>
             <TxnLabWalletProvider>
