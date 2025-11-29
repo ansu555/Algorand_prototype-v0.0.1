@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
+import { supabaseAdmin, getPublicUrl } from '@/lib/supabase'
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml', 'image/webp']
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const SUPABASE_BUCKET = process.env.SUPABASE_STORAGE_BUCKET || 'launchpad-logos'
 
 const mimeExtensions: Record<string, string> = {
@@ -45,61 +44,44 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (SUPABASE_URL && SUPABASE_KEY) {
-      try {
-        const extension = mimeExtensions[file.type] || file.name?.split('.').pop()?.toLowerCase() || 'bin'
-        const objectName = `logos/${new Date().toISOString().split('T')[0]}/${randomUUID()}.${extension}`
-        const encodedObjectPath = objectName
-          .split('/')
-          .map((segment) => encodeURIComponent(segment))
-          .join('/')
-        const uploadUrl = `${SUPABASE_URL.replace(/\/$/, '')}/storage/v1/object/${encodeURIComponent(SUPABASE_BUCKET)}/${encodedObjectPath}`
+    // Upload to Supabase Storage
+    const extension = mimeExtensions[file.type] || file.name?.split('.').pop()?.toLowerCase() || 'bin'
+    const fileName = `${Date.now()}-${randomUUID()}.${extension}`
+    const filePath = `logos/${new Date().toISOString().split('T')[0]}/${fileName}`
 
-        const uploadResponse = await fetch(uploadUrl, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-            'Content-Type': file.type,
-            'x-upsert': 'false',
-          },
-          body: file,
-        })
+    // Convert File to ArrayBuffer for Supabase
+    const arrayBuffer = await file.arrayBuffer()
 
-        if (!uploadResponse.ok) {
-          const errorBody = await uploadResponse.text().catch(() => 'Unknown error')
-          throw new Error(`Supabase upload failed (${uploadResponse.status}): ${errorBody}`)
-        }
+    const { data, error } = await supabaseAdmin.storage
+      .from(SUPABASE_BUCKET)
+      .upload(filePath, arrayBuffer, {
+        contentType: file.type,
+        cacheControl: '3600',
+        upsert: false
+      })
 
-        const publicUrl = `${SUPABASE_URL.replace(/\/$/, '')}/storage/v1/object/public/${encodeURIComponent(SUPABASE_BUCKET)}/${encodedObjectPath}`
-
-        return NextResponse.json({
-          success: true,
-          logoUrl: publicUrl,
-        })
-      } catch (cloudError: any) {
-        console.error('Supabase upload error, falling back to local storage:', cloudError)
-        // Continue to local fallback
-      }
+    if (error) {
+      console.error('❌ Supabase upload error:', error)
+      return NextResponse.json(
+        { success: false, error: `Failed to upload to cloud storage: ${error.message}` },
+        { status: 500 }
+      )
     }
 
-    // Convert file to base64
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    const base64Data = buffer.toString('base64')
+    console.log('✅ File uploaded successfully:', {
+      bucket: SUPABASE_BUCKET,
+      path: filePath,
+      uploadData: data
+    })
 
-    // Store in separate media database
-    const { storeMedia } = await import('@/lib/launchpad/media-db')
-    const mediaId = await storeMedia(file.type, base64Data)
-
-    // Return the URL to serve the image
-    const logoUrl = `/api/launchpad/media/${mediaId}`
+    // Get public URL
+    const publicUrl = getPublicUrl(SUPABASE_BUCKET, filePath)
+    
+    console.log('📸 Public URL generated:', publicUrl)
 
     return NextResponse.json({
       success: true,
-      logoUrl,
-      // We no longer return raw data to keep payload small
-      // logoData: base64Data, 
-      // logoMimeType: file.type
+      logoUrl: publicUrl,
     })
   } catch (error: any) {
     console.error('Error uploading logo:', error)
