@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPurchaseHistory, getProjectHolders } from '@/lib/launchpad/db'
 
-export async function GET(request: NextRequest, context: { params: { projectId: string } }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ projectId: string }> }) {
   try {
-    const { projectId } = context.params
+    const { projectId } = await context.params
     if (!projectId) {
       return NextResponse.json({ success: false, error: 'Missing projectId' }, { status: 400 })
     }

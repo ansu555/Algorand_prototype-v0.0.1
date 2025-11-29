@@ -53,9 +53,39 @@ export default function DevelopersPage() {
         <h1 className="text-4xl md:text-5xl font-bold mb-4">
           Build on <span className="text-primary dark:text-[#F3C623]">10xSwap</span>
         </h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
           Comprehensive tools, APIs, and SDKs to integrate DeFi functionality into your Algorand applications
         </p>
+
+        {/* Quick Install Banner */}
+        <div className="max-w-3xl mx-auto">
+          <Card className="border-2 border-primary/20 dark:border-[#F3C623]/20 bg-gradient-to-r from-primary/5 to-transparent dark:from-[#F3C623]/5">
+            <CardContent className="pt-6">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="text-center md:text-left">
+                  <h3 className="font-semibold mb-1">Get Started in Seconds</h3>
+                  <code className="text-sm bg-background/50 px-3 py-1 rounded">
+                    npm install @10xswap/sdk algosdk
+                  </code>
+                </div>
+                <div className="flex gap-3">
+                  <Button asChild variant="default" size="sm">
+                    <a href="https://www.npmjs.com/package/@10xswap/sdk" target="_blank" rel="noopener noreferrer">
+                      <Package className="h-4 w-4 mr-2" />
+                      View on NPM
+                    </a>
+                  </Button>
+                  <Button asChild variant="outline" size="sm">
+                    <a href="https://github.com/10xswap" target="_blank" rel="noopener noreferrer">
+                      <Github className="h-4 w-4 mr-2" />
+                      GitHub
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Quick Stats */}
@@ -192,6 +222,9 @@ export default function DevelopersPage() {
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary dark:text-[#F3C623] text-sm">1</span>
                   Installation
                 </h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Install the official 10xSwap SDK from npm:
+                </p>
                 <CodeBlock
                   id="install"
                   code={`# Using npm
@@ -204,26 +237,58 @@ yarn add @10xswap/sdk algosdk
 pnpm add @10xswap/sdk algosdk`}
                   language="bash"
                 />
+                <div className="mt-3 p-3 bg-blue-500/10 border-l-4 border-blue-500 rounded text-sm">
+                  <p className="font-semibold mb-1">📦 Package Published</p>
+                  <p className="text-muted-foreground">
+                    View on NPM: <a href="https://www.npmjs.com/package/@10xswap/sdk" target="_blank" rel="noopener noreferrer" className="text-primary dark:text-[#F3C623] underline">@10xswap/sdk</a>
+                  </p>
+                </div>
               </div>
 
               <div>
                 <h3 className="font-semibold mb-3 flex items-center gap-2">
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary dark:text-[#F3C623] text-sm">2</span>
-                  Initialize SDK
+                  Setup & Configuration
                 </h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Import the SDK and initialize with your preferred network:
+                </p>
                 <CodeBlock
                   id="init"
-                  code={`import { SwapRouter, AgentWallet } from '@10xswap/sdk'
+                  code={`import { SwapRouter, AgentWallet, AutoPilot, MarketAnalysis } from '@10xswap/sdk'
 import algosdk from 'algosdk'
 
-// Initialize on testnet
+// Option 1: Quick setup with default configuration (testnet)
 const router = new SwapRouter('testnet')
 await router.initialize()
 
-// Or use custom algod client
-const algodClient = new algosdk.Algodv2('', 'https://testnet-api.4160.nodely.io', '')
-const router = new SwapRouter('testnet', algodClient)`}
+// Option 2: Use mainnet
+const mainnetRouter = new SwapRouter('mainnet')
+await mainnetRouter.initialize()
+
+// Option 3: Custom configuration with your own Algod client
+const algodClient = new algosdk.Algodv2(
+  '', // token
+  'https://testnet-api.4160.nodely.io', // server
+  '' // port
+)
+
+const customRouter = new SwapRouter({
+  network: 'testnet',
+  algodUrl: 'https://testnet-api.4160.nodely.io',
+  algodToken: '',
+  apiBaseUrl: 'http://localhost:3000/api' // Optional: custom API endpoint
+})`}
                 />
+                <div className="mt-3 p-3 bg-amber-500/10 border-l-4 border-amber-500 rounded text-sm">
+                  <p className="font-semibold mb-1">⚙️ Configuration Options</p>
+                  <ul className="text-muted-foreground space-y-1 ml-4 list-disc">
+                    <li><strong>network</strong>: 'testnet' or 'mainnet'</li>
+                    <li><strong>algodUrl</strong>: Custom Algod node URL (optional)</li>
+                    <li><strong>algodToken</strong>: API token for your node (optional)</li>
+                    <li><strong>apiBaseUrl</strong>: 10xSwap API endpoint (optional)</li>
+                  </ul>
+                </div>
               </div>
 
               <div>
@@ -871,9 +936,22 @@ network?: string     // 'testnet' | 'mainnet'`}
       <Card className="mt-8">
         <CardHeader>
           <CardTitle>Additional Resources</CardTitle>
+          <CardDescription>Essential links and documentation for developers</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-3 gap-4">
+            <a
+              href="https://www.npmjs.com/package/@10xswap/sdk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 p-4 border rounded-lg hover:bg-accent transition-colors"
+            >
+              <Package className="h-8 w-8 text-primary dark:text-[#F3C623]" />
+              <div>
+                <h3 className="font-semibold">NPM Package</h3>
+                <p className="text-sm text-muted-foreground">@10xswap/sdk on npm</p>
+              </div>
+            </a>
             <a
               href="https://github.com/10xswap"
               target="_blank"
@@ -883,7 +961,7 @@ network?: string     // 'testnet' | 'mainnet'`}
               <Github className="h-8 w-8 text-primary dark:text-[#F3C623]" />
               <div>
                 <h3 className="font-semibold">GitHub Repository</h3>
-                <p className="text-sm text-muted-foreground">View source code and examples</p>
+                <p className="text-sm text-muted-foreground">Source code and examples</p>
               </div>
             </a>
             <a
@@ -892,10 +970,28 @@ network?: string     // 'testnet' | 'mainnet'`}
             >
               <Book className="h-8 w-8 text-primary dark:text-[#F3C623]" />
               <div>
-                <h3 className="font-semibold">Interactive API Docs</h3>
-                <p className="text-sm text-muted-foreground">Explore and test endpoints</p>
+                <h3 className="font-semibold">API Documentation</h3>
+                <p className="text-sm text-muted-foreground">REST API reference</p>
               </div>
             </a>
+          </div>
+
+          <div className="mt-6 p-4 bg-gradient-to-r from-primary/10 to-primary/5 dark:from-[#F3C623]/10 dark:to-[#F3C623]/5 rounded-lg border border-primary/20 dark:border-[#F3C623]/20">
+            <h4 className="font-semibold mb-2">🚀 Quick Start Commands</h4>
+            <div className="space-y-2 text-sm font-mono">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Install:</span>
+                <code className="px-2 py-1 bg-background rounded">npm install @10xswap/sdk algosdk</code>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Import:</span>
+                <code className="px-2 py-1 bg-background rounded">import &#123; SwapRouter &#125; from '@10xswap/sdk'</code>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Version:</span>
+                <code className="px-2 py-1 bg-background rounded">v1.0.0</code>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

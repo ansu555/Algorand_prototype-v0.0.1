@@ -21,15 +21,20 @@ export function RewardsSlidingPanel({ isOpen, onClose }: RewardsSlidingPanelProp
   const [quests, setQuests] = useState<Quest[]>([])
   const [loading, setLoading] = useState(true)
   const [claiming, setClaiming] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    if (!activeAccount?.address || !isOpen) return
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!activeAccount?.address || !isOpen || !mounted) return
 
     ;(async () => {
       await loadRewards()
       await loadQuests()
     })()
-  }, [activeAccount, isOpen])
+  }, [activeAccount, isOpen, mounted])
 
   const loadRewards = async () => {
     if (!activeAccount?.address) return
@@ -147,7 +152,11 @@ export function RewardsSlidingPanel({ isOpen, onClose }: RewardsSlidingPanelProp
 
         {/* Content */}
         <div className="h-[calc(100%-80px)] overflow-y-auto px-4 pb-6 space-y-4 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-          {!activeAccount ? (
+          {!mounted ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : !activeAccount ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
                 <Gift className="h-8 w-8 text-muted-foreground" />
