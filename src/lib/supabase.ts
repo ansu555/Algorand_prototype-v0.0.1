@@ -18,5 +18,13 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 // Get public URL for uploaded file
 export function getPublicUrl(bucket: string, path: string): string {
   const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(path)
+  
+  // Log for debugging
+  console.log('📸 Generated public URL:', {
+    bucket,
+    path,
+    url: data.publicUrl
+  })
+  
   return data.publicUrl
 }

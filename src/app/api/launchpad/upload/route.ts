@@ -45,57 +45,43 @@ export async function POST(req: NextRequest) {
     }
 
     // Upload to Supabase Storage
-    try {
-      const extension = mimeExtensions[file.type] || file.name?.split('.').pop()?.toLowerCase() || 'bin'
-      const fileName = `${Date.now()}-${randomUUID()}.${extension}`
-      const filePath = `${new Date().toISOString().split('T')[0]}/${fileName}`
+    const extension = mimeExtensions[file.type] || file.name?.split('.').pop()?.toLowerCase() || 'bin'
+    const fileName = `${Date.now()}-${randomUUID()}.${extension}`
+    const filePath = `logos/${new Date().toISOString().split('T')[0]}/${fileName}`
 
-      // Convert File to ArrayBuffer for Supabase
-      const arrayBuffer = await file.arrayBuffer()
+    // Convert File to ArrayBuffer for Supabase
+    const arrayBuffer = await file.arrayBuffer()
 
-      const { data, error } = await supabaseAdmin.storage
-        .from(SUPABASE_BUCKET)
-        .upload(filePath, arrayBuffer, {
-          contentType: file.type,
-          cacheControl: '3600',
-          upsert: false
-        })
-
-      if (error) {
-        console.error('Supabase upload error:', error)
-        throw error
-      }
-
-      // Get public URL
-      const publicUrl = getPublicUrl(SUPABASE_BUCKET, filePath)
-
-      return NextResponse.json({
-        success: true,
-        logoUrl: publicUrl,
+    const { data, error } = await supabaseAdmin.storage
+      .from(SUPABASE_BUCKET)
+      .upload(filePath, arrayBuffer, {
+        contentType: file.type,
+        cacheControl: '3600',
+        upsert: false
       })
-    } catch (cloudError: any) {
-      console.error('Supabase upload failed, falling back to local storage:', cloudError)
-      // Continue to local fallback
+
+    if (error) {
+      console.error('❌ Supabase upload error:', error)
+      return NextResponse.json(
+        { success: false, error: `Failed to upload to cloud storage: ${error.message}` },
+        { status: 500 }
+      )
     }
 
-    // Convert file to base64
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    const base64Data = buffer.toString('base64')
+    console.log('✅ File uploaded successfully:', {
+      bucket: SUPABASE_BUCKET,
+      path: filePath,
+      uploadData: data
+    })
 
-    // Store in separate media database
-    const { storeMedia } = await import('@/lib/launchpad/media-db')
-    const mediaId = await storeMedia(file.type, base64Data)
-
-    // Return the URL to serve the image
-    const logoUrl = `/api/launchpad/media/${mediaId}`
+    // Get public URL
+    const publicUrl = getPublicUrl(SUPABASE_BUCKET, filePath)
+    
+    console.log('📸 Public URL generated:', publicUrl)
 
     return NextResponse.json({
       success: true,
-      logoUrl,
-      // We no longer return raw data to keep payload small
-      // logoData: base64Data, 
-      // logoMimeType: file.type
+      logoUrl: publicUrl,
     })
   } catch (error: any) {
     console.error('Error uploading logo:', error)
