@@ -22,8 +22,14 @@ export function AlgorandWalletConnect({ variant = 'button', className = '' }: Wa
   const { connect, disconnect, setActiveAccount } = useWalletActions()
   const [isConnecting, setIsConnecting] = useState(false)
   const [selectedWallet, setSelectedWallet] = useState<WalletId | null>(null)
+  const [mounted, setMounted] = useState(false)
 
   const supportedWallets = getSupportedWallets()
+
+  // Only render wallet UI after client-side hydration
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
   
   // Log wallets info for debugging
   React.useEffect(() => {
@@ -85,6 +91,61 @@ export function AlgorandWalletConnect({ variant = 'button', className = '' }: Wa
 
   const getWalletInfo = (walletId: WalletId) => {
     return supportedWallets.find(w => w.id === walletId)
+  }
+
+  // Show loading state during hydration to prevent mismatch
+  if (!mounted) {
+    if (variant === 'dropdown') {
+      return (
+        <Button variant="outline" className={className} disabled>
+          <Wallet className="w-4 h-4 mr-2" />
+          Connect Wallet
+          <ChevronDown className="w-4 h-4 ml-2" />
+        </Button>
+      )
+    }
+
+    if (variant === 'card') {
+      return (
+        <Card className={className}>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Wallet className="w-5 h-5" />
+              <span>Connect Your Wallet</span>
+            </CardTitle>
+            <CardDescription>
+              Connect your Algorand wallet to start trading and managing your assets
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {supportedWallets.map((wallet) => (
+                <Button
+                  key={wallet.id}
+                  variant="outline"
+                  disabled
+                  className="h-auto p-4 flex flex-col items-center space-y-2"
+                >
+                  <span className="text-2xl">{wallet.icon}</span>
+                  <div className="text-center">
+                    <div className="font-medium">{wallet.name}</div>
+                    <div className="text-xs text-muted-foreground">{wallet.description}</div>
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )
+    }
+
+    // Default button variant
+    return (
+      <Button className={className} disabled>
+        <Wallet className="w-4 h-4 mr-2" />
+        Connect Wallet
+      </Button>
+    )
   }
 
   if (variant === 'dropdown') {

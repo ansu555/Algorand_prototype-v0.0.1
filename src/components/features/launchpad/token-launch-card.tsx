@@ -39,12 +39,25 @@ export function TokenLaunchCard({
                     {/* Left: Large Image */}
                     <div className="w-[160px] h-[160px] flex-shrink-0 relative rounded-md overflow-hidden bg-muted/20 border border-border/20">
                         {logoUrl ? (
-                            <img src={logoUrl} alt={name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                        ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
-                                <span className="text-4xl font-bold text-foreground/40">{symbol.charAt(0)}</span>
-                            </div>
-                        )}
+                            <img
+                                src={logoUrl}
+                                alt={name}
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                onError={(e) => {
+                                    // Fallback to gradient if image fails to load
+                                    const target = e.target as HTMLImageElement
+                                    target.style.display = 'none'
+                                    const fallback = target.nextElementSibling as HTMLElement
+                                    if (fallback) fallback.style.display = 'flex'
+                                }}
+                            />
+                        ) : null}
+                        <div
+                            className="w-full h-full bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center"
+                            style={{ display: logoUrl ? 'none' : 'flex' }}
+                        >
+                            <span className="text-4xl font-bold text-foreground/40">{symbol.charAt(0)}</span>
+                        </div>
                     </div>
 
                     {/* Right: Content */}
