@@ -35,7 +35,7 @@ export async function getClient() {
       const effectiveUrl = url || 'file:./data/launchpad.sqlite'
       
       if (!url) {
-        console.warn('⚠️ TURSO_DATABASE_URL not set. Using local SQLite database at ./data/launchpad.sqlite')
+        console.warn('⚠ TURSO_DATABASE_URL not set. Using local SQLite database at ./data/launchpad.sqlite')
       }
       
       const mod: any = await import('@libsql/client')

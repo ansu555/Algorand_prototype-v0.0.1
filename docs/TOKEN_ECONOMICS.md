@@ -45,9 +45,11 @@ X Token is the native utility token of the 10xSwap ecosystem, designed to reward
 | **Symbol** | X |
 | **Blockchain** | Algorand (ASA) |
 | **Decimals** | 6 |
+| **Initial Supply** | 1,000,000,000 (1 billion) |
 | **Max Supply** | No hard cap (inflationary with burn mechanisms) |
 | **Initial Distribution** | 100% via rewards (no pre-mine) |
-| **Smart Contract** | TBA (testnet deployment) |
+| **TestNet ASA ID** | [750589647](https://testnet.algoexplorer.io/asset/750589647) |
+| **Treasury Address** | 5IZJEVVOAVXOVCN35JQ5PBDBDAPEBUTKST7GDGUGEBP5QNY7S5YWDYSME4 |
 
 ### Token Standard
 
@@ -57,6 +59,31 @@ X Token is an **Algorand Standard Asset (ASA)** with the following features:
 - Carbon-neutral blockchain
 - Native clawback protection disabled (decentralized)
 - Freeze functionality disabled (fully transferable)
+
+### Deployment
+
+To deploy the X Token on Algorand TestNet:
+
+```bash
+# Ensure DEPLOYER_MNEMONIC is set in .env.local
+npx ts-node scripts/deploy-x-token.ts
+```
+
+After deployment, update `.env.local` with:
+```bash
+NEXT_PUBLIC_X_TOKEN_ASA_ID=<deployed_asa_id>
+X_TOKEN_TREASURY_ADDRESS=<deployer_address>
+ENABLE_X_TOKEN_DISTRIBUTION=true
+```
+
+### Treasury Allocation
+
+| Pool | Percentage | Tokens | Purpose |
+|------|------------|--------|---------|
+| Rewards Pool | 70% | 700,000,000 | User quest rewards |
+| Liquidity Mining | 15% | 150,000,000 | LP incentives |
+| Development | 10% | 100,000,000 | Platform operations |
+| Reserve | 5% | 50,000,000 | Future use |
 
 ---
 

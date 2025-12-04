@@ -161,21 +161,21 @@ export default function CreateProjectPage() {
       return {
         isValid: false,
         expectedTarget,
-        message: `Bonding target is too high. Based on your curve, you'll only raise ~${expectedTarget.toFixed(2)} ALGO when all tokens are sold.`,
+        message: `Bonding target is too high. Based on your curve, you'll only raise ~$${expectedTarget.toFixed(2)} ALGO when all tokens are sold.`,
         severity: 'error'
       }
     } else if (bondingTarget < expectedTarget * 0.3) {
       return {
         isValid: false,
         expectedTarget,
-        message: `Bonding target is very low. You could raise up to ~${expectedTarget.toFixed(2)} ALGO with your current settings.`,
+        message: `Bonding target is very low. You could raise up to ~$${expectedTarget.toFixed(2)} ALGO with your current settings.`,
         severity: 'warning'
       }
     } else if (percentDiff > 20) {
       return {
         isValid: true,
         expectedTarget,
-        message: `Suggested: ~${expectedTarget.toFixed(2)} ALGO based on your pricing curve.`,
+        message: `Suggested: ~$${expectedTarget.toFixed(2)} ALGO based on your pricing curve.`,
         severity: 'info'
       }
     }
@@ -183,7 +183,7 @@ export default function CreateProjectPage() {
     return {
       isValid: true,
       expectedTarget,
-      message: `Looks good! Expected range: ${(expectedTarget * 0.7).toFixed(2)} - ${(expectedTarget * 1.2).toFixed(2)} ALGO`,
+      message: `Looks good! Expected range: $${(expectedTarget * 0.7).toFixed(2)} - $${(expectedTarget * 1.2).toFixed(2)} ALGO`,
       severity: 'info'
     }
   }
