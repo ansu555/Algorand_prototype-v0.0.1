@@ -79,11 +79,13 @@ This SDK is a feature-complete, developer-ready module. It manages the entire la
 - **Token Rotation**: Automated pair trading strategies
 - **Rule Scheduling**: Time-based and condition-based execution
 
-### 💰 Staking (Coming Soon)
-- **15% Base APY**: Earn passive rewards on staked X tokens
-- **VIP Tiers**: Unlock fee discounts and exclusive features
-- **Flexible Terms**: Choose lock periods for higher APY multipliers
-- **Governance Rights**: Stakers can vote on protocol changes
+### 💰 Staking System
+- **Stake X Tokens**: Earn XR tokens (governance tokens) through staking
+- **Flexible Staking**: No lock periods - stake and unstake anytime
+- **Real-Time Rewards**: XR tokens accumulate every second based on your stake
+- **Compound Growth**: Claim and restake rewards for compound effects
+- **Governance Rights**: XR token holders gain voting power (coming soon)
+- **VIP Benefits**: Fee discounts and priority access to new features
 
 ---
 
@@ -294,16 +296,22 @@ Invite friends and earn lifetime rewards:
 - **Platform Currency**: Foundation for future features
 - **Leaderboard Status**: Show off your X holdings
 
-#### 🔜 Coming Soon (entirely conseptual)
-- **Trading Fee Discounts**: Up to 75% off (Diamond tier: 50,000+ X)
-- **Staking Rewards**: 15% base APY, up to 40% with lock periods
-- **VIP Benefits**:
+#### 🔜 Coming Soon (Future Features)
+- **Trading Fee Discounts**: Up to 90% off with XR tokens
+- **Enhanced VIP Benefits**:
   - Early launchpad access (6 hours for Diamond tier)
   - Priority customer support
   - Exclusive governance proposals
   - Higher referral commissions (15% vs 10%)
-- **Governance Voting**: 1 X = 1 vote on protocol decisions
+- **Governance Voting**: XR token holders vote on protocol decisions
 - **Prediction Markets**: Stake X on token launch outcomes
+
+#### 🎮 Active Features
+- **Quest-Based Rewards**: Earn X tokens through activities
+- **Staking System**: Stake X tokens to earn XR tokens (governance tokens)
+- **Leaderboards**: Compete on volume, swaps, and quest completion
+- **Streak Multipliers**: Up to 3x rewards for daily login streaks
+- **Badge Collection**: Common, Rare, Epic, and Legendary badges
 
 #### 🔮 Future Vision
 - **DAO Treasury**: Community-controlled fund allocation
@@ -314,7 +322,7 @@ Invite friends and earn lifetime rewards:
 ### Rewards Pages
 
 - **`/rewards`** - Quest dashboard, streak tracking, badge collection
-- **`/stake`** - Staking portal (coming soon with 15% APY)
+- **`/stake`** - Staking portal for earning XR tokens (contract ready for deployment)
 
 ### Documentation
 
@@ -756,9 +764,11 @@ All API routes are located in `src/app/api/`:
 
 ## 📜 Smart Contracts
 
-10xSwap uses six main smart contracts deployed on Algorand Testnet for multi-DEX aggregation, automated trading, liquidity pools, and token launchpad.
+10xSwap uses nine smart contracts and tokens deployed on Algorand Testnet for multi-DEX aggregation, automated trading, liquidity pools, token launchpad, and staking rewards.
 
 ### Testnet Deployments
+
+#### Smart Contracts
 
 | Contract | App ID | Address | Explorer Links |
 |----------|--------|---------|----------------|
@@ -768,6 +778,14 @@ All API routes are located in `src/app/api/`:
 | **AutoPilotRuleContract** | `749509231` | `KO5JO5GWYY5TIY3NQJ3VHNKF6DZSVWGWHBJI55LSFPA5PYQXMGSGWIEGS4` | [Application](https://lora.algokit.io/testnet/application/749509231) |
 | **LiquidityPoolContract** | *Per pool* | Deploy separately per pool | See deployment guide |
 | **TokenLaunchpad** | `750324113` | *See explorer* | [Application](https://lora.algokit.io/testnet/application/750324113) |
+| **StakingContract** | *To be deployed* | Stake X tokens to earn XR tokens | Ready for deployment |
+
+#### Platform Tokens (ASAs)
+
+| Token | ASA ID | Supply | Purpose | Explorer |
+|-------|--------|--------|---------|----------|
+| **X Token** | `750589647` | 1 billion | Reward token from quests | [Asset](https://testnet.algoexplorer.io/asset/750589647) |
+| **XR Token** | `751369844` | 1 million | Governance token from staking | [Asset](https://testnet.algoexplorer.io/asset/751369844) |
 
 ### Contract Purposes
 
@@ -777,6 +795,9 @@ All API routes are located in `src/app/api/`:
 - **AutoPilotRuleContract**: Smart contract for automated trading rules (DCA, rebalancing, rotation)
 - **LiquidityPoolContract**: Custom constant product AMM for creating decentralized liquidity pools
 - **TokenLaunchpad**: WaveBreak token launchpad with bonding curves and anti-bot protection
+- **X Token**: Platform reward token earned through quests, swaps, and activities
+- **XR Token**: Governance token earned by staking X tokens in the StakingContract
+- **StakingContract**: Flexible staking system for earning XR token rewards
 
 ### Source Files
 
