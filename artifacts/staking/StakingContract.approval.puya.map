@@ -1,0 +1,7011 @@
+{
+  "version": 3,
+  "sources": [
+    "contract.py"
+  ],
+  "mappings": ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;AA+BQ;AAAuB;AAAvB;AACA;;AAAuB;AAAvB;AACA;;AAAmB;AAAnB;AACA;AAAwB;AAAxB;AACA;AAAyB;AAAzB;AACA;AAAoB;AAApB;AACA;;AAAa;;AAAb;AAbR;;AAAA;;;AAAA;;AAAA;AAAA;AAAA;;AAAA;AAAA;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;AAAA;;;AAAA;;;;;;;;;;;;;;AAAA;;;;;;;;;;;AAkBK;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAGU;;AAAc;AAAA;;AAAA;AAAA;AAAd;AAAP;AACO;AAAA;AAAA;AAAA;AAAA;AAAP;AAEA;AAAA;;AAAA;AACA;;AAAA;;AAAA;AACA;;AAAA;AAAA;AACA;AAAwB;;AAAxB;AAGA;AAEmB;;AACF;;;;;;;;AAHjB;;;;AAAA;;;AAAA;AAMA;AAEmB;;AACF;;;;;;;AAHjB;;;;AAAA;;;AAAA;AAlBH;AAAA;AAwBA;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAGU;;AAAc;AAAA;;AAAA;AAAA;AAAd;AAAP;AACA;;;AACA;;AAAA;AAAA;AALH;AAAA;;;AAuBA;;AAAA;AAAA;AAAA;AAAA;;AAAA;;AAAA;AAAA;AAGG;;;AAEO;AAAA;;AAAqB;AAAA;AAAA;AAAA;AAArB;AAAP;AACO;AAAA;;AAAsB;;AAAtB;AAAP;AAES;AAAA;;AAAA;AACA;;AAAA;AAGO;;;;;;;;;;;;;;;;;;AAAA;AACH;;AAAV;AAAA;AAAA;AAAA;AAAA;;AAAX;;;AAC4B;AAAA;AAAA;AAAA;AAAA;;AAAA;;AAAA;AAGL;AAAA;AAAA;AAA8B;AAAA;AAAA;AAAA;AAA9B;AAAwD;AAAxD;AAA6E;AAAA;AAAA;AAA9E;AAAA;AAAA;;AACtB;;;AACgB;AACe;AAAA;;AAAA;AAAA;;;;;;;;;;;AADf;;;;AAAA;;;AAAA;AAOK;;AAAA;AAAA;AAAA;;AAAA;AAAA;;AAAA;AACY;AAAA;AAAA;AAAA;AAAb;;AAAA;AAAwC;AAAzC;AAGA;AAAA;AACK;AAAA;AAFW;AAA3B;;AAAA;AAAA;AAKA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAlCH;AAAA;;;;AAoCA;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAGG;;;AAES;;AAAA;AAAA;;AACQ;;AAAV;AAAA;AAAA;AAAA;;AAAA;AAAA;AAAA;;AAAP;AAEgB;AAAA;AACT;AAAA;AAAA;AAAA;AAAA;;AAAA;AAAA;;AAAA;AAAP;AAGyC;AAAA;AAAA;AAAA;AAA9B;AAAwD;AAAxD;AAA6E;AAAA;AAAA;AAA9E;AAAA;AAGlB;;;AACY;AACe;AAAA;;AAAA;AAAA;;;;;;;;;;;AADf;;;;AAAA;;;AAAA;AAOJ;AACe;AAAA;AAAA;AAAA;;;;;;;;;;;;;;AADf;;;;AAAA;;;AAAA;AAOa;;AAAA;AAAA;AAAA;AAAA;;AACY;AAAA;AAAA;AAAA;AAAb;;AAAA;AAAwC;AAAzC;AAAA;;AAEnB;;;AACY;;AAAA;;AAOJ;AAAA;AAAA;AAAA;AAAA;;AAAA;AAAA;AAAA;AAAA;AAzCH;AAAA;AAqCkB;;AAAA;AACK;;AAAA;AAFW;AAA3B;;AAAA;AAAA;;;;AAUJ;;;AAES;;AACQ;;AADR;;AACF;AAAA;;AAAA;AAAA;;AAAP;AAEgB;AAAA;AAEL;AAAA;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;;AAA8B;AAAA;AAAA;AAAA;AAA9B;AAAwD;AAAxD;AAA6E;AAAA;AAAA;AAA9E;AAAA;AAElB;;;AACY;AACe;AAAA;;AAAA;AAAA;;;;;;;;;;;AADf;;;;AAAA;;;AAAA;AAOsC;AAAA;AAAA;AAAA;AAA9B;;AAAA;AAAyD;AAA1D;AAIK;AAFW;;AAAA;AAAA;AAA3B;;AAAA;AAAA;AAtBH;AAAA;;;;AA2BA;;;AAAA;AAAA;AAAA;;AAAA;AAAA;AAGkB;;AAAZ;AAAA;AAAA;AAAA;AAAA;;AAAA;;;AACQ;AAJd;AAAA;;;;;;AAAA;AAAA;AAAA;AAAA;AAAA;AAMmB;AAAA;AAAA;AAAA;;AAAA;AAGQ;AAAA;AAAA;AAAA;AAAA;;AAAA;AACrB;AAAA;AAAA;AAAA;AAAA;;;AAA0B;;AAA0B;AAAA;AAAA;AAAA;AAA1B;AAA1B;;;AACa;;AAA0B;AAAA;AAAA;AAAA;AAA1B;AACa;AAAA;;AAAA;AAAA;AAAZ;AAC0B;AAAb;AAAmC;AAAA;AAAA;AAAA;AAApC;AAAzB;;AAAA;AAAA;;AAEa;;AAAA;AAAA;AAAA;AACF;AAAA;AAAA;AACS;AAAA;;AAAA;AAAmC;AAApC;AAEhB;AAAA;AAnBV;;;AAxHM;;AAA2B;AAAA;AAAA;AAAA;AAA3B;AAAX;;;AACY;AAED;AAAA;AAAA;AAAA;AAAX;;;AACY;AAAwB;;AAAxB;AACA;AAEQ;;AAA0B;AAAA;AAAA;AAAA;AAA1B;AACa;AAAA;;AAAA;AAAA;AAAZ;AAGb;AAAA;AAAA;AAAA;AAA2B;AAAa;AAAb;AAAmC;AAAA;AAAA;AAAA;AAApC;AAA1B;AAAA;AAAA;AAAA;AACA;AAAwB;;AAAxB;",
+  "op_pc_offset": 0,
+  "pc_events": {
+    "1": {
+      "subroutine": "algopy.arc4.ARC4Contract.approval_program",
+      "params": {},
+      "block": "main",
+      "stack_in": [],
+      "op": "intcblock 0 8 1000000000000 1"
+    },
+    "12": {
+      "op": "bytecblock \"rewards_per_share\" \"total_staked\" \"last_update_time\" \"staked_asset_id\" \"reward_asset_id\" \"reward_rate\" \"user_stakes\" \"admin\""
+    },
+    "124": {
+      "op": "txn ApplicationID",
+      "defined_out": [
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "tmp%0#0"
+      ]
+    },
+    "126": {
+      "op": "bnz main_after_if_else@2",
+      "stack_out": []
+    },
+    "129": {
+      "op": "bytec_3 // \"staked_asset_id\"",
+      "defined_out": [
+        "\"staked_asset_id\""
+      ],
+      "stack_out": [
+        "\"staked_asset_id\""
+      ]
+    },
+    "130": {
+      "op": "intc_0 // 0",
+      "defined_out": [
+        "\"staked_asset_id\"",
+        "0"
+      ],
+      "stack_out": [
+        "\"staked_asset_id\"",
+        "0"
+      ]
+    },
+    "131": {
+      "op": "app_global_put",
+      "stack_out": []
+    },
+    "132": {
+      "op": "bytec 4 // \"reward_asset_id\"",
+      "defined_out": [
+        "\"reward_asset_id\""
+      ],
+      "stack_out": [
+        "\"reward_asset_id\""
+      ]
+    },
+    "134": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "\"reward_asset_id\"",
+        "0"
+      ]
+    },
+    "135": {
+      "op": "app_global_put",
+      "stack_out": []
+    },
+    "136": {
+      "op": "bytec 5 // \"reward_rate\"",
+      "defined_out": [
+        "\"reward_rate\""
+      ],
+      "stack_out": [
+        "\"reward_rate\""
+      ]
+    },
+    "138": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "\"reward_rate\"",
+        "0"
+      ]
+    },
+    "139": {
+      "op": "app_global_put",
+      "stack_out": []
+    },
+    "140": {
+      "op": "bytec_2 // \"last_update_time\"",
+      "defined_out": [
+        "\"last_update_time\""
+      ],
+      "stack_out": [
+        "\"last_update_time\""
+      ]
+    },
+    "141": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "\"last_update_time\"",
+        "0"
+      ]
+    },
+    "142": {
+      "op": "app_global_put",
+      "stack_out": []
+    },
+    "143": {
+      "op": "bytec_0 // \"rewards_per_share\"",
+      "defined_out": [
+        "\"rewards_per_share\""
+      ],
+      "stack_out": [
+        "\"rewards_per_share\""
+      ]
+    },
+    "144": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "\"rewards_per_share\"",
+        "0"
+      ]
+    },
+    "145": {
+      "op": "app_global_put",
+      "stack_out": []
+    },
+    "146": {
+      "op": "bytec_1 // \"total_staked\"",
+      "defined_out": [
+        "\"total_staked\""
+      ],
+      "stack_out": [
+        "\"total_staked\""
+      ]
+    },
+    "147": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "\"total_staked\"",
+        "0"
+      ]
+    },
+    "148": {
+      "op": "app_global_put",
+      "stack_out": []
+    },
+    "149": {
+      "op": "bytec 7 // \"admin\"",
+      "defined_out": [
+        "\"admin\""
+      ],
+      "stack_out": [
+        "\"admin\""
+      ]
+    },
+    "151": {
+      "op": "global CreatorAddress",
+      "defined_out": [
+        "\"admin\"",
+        "tmp%0#2"
+      ],
+      "stack_out": [
+        "\"admin\"",
+        "tmp%0#2"
+      ]
+    },
+    "153": {
+      "op": "app_global_put",
+      "stack_out": []
+    },
+    "154": {
+      "block": "main_after_if_else@2",
+      "stack_in": [],
+      "op": "txn NumAppArgs",
+      "defined_out": [
+        "tmp%0#1"
+      ],
+      "stack_out": [
+        "tmp%0#1"
+      ]
+    },
+    "156": {
+      "op": "bz main___algopy_default_create@15",
+      "stack_out": []
+    },
+    "159": {
+      "op": "txn OnCompletion",
+      "defined_out": [
+        "tmp%2#0"
+      ],
+      "stack_out": [
+        "tmp%2#0"
+      ]
+    },
+    "161": {
+      "op": "!",
+      "defined_out": [
+        "tmp%3#0"
+      ],
+      "stack_out": [
+        "tmp%3#0"
+      ]
+    },
+    "162": {
+      "error": "OnCompletion must be NoOp",
+      "op": "assert // OnCompletion must be NoOp",
+      "stack_out": []
+    },
+    "163": {
+      "op": "txn ApplicationID",
+      "defined_out": [
+        "tmp%4#0"
+      ],
+      "stack_out": [
+        "tmp%4#0"
+      ]
+    },
+    "165": {
+      "op": "assert",
+      "stack_out": []
+    },
+    "166": {
+      "op": "pushbytess 0x352d0f12 0x2bd26222 0x72ca15ad 0x813ce89a 0xf1577726 0xf08dccc3 // method \"configure(uint64,uint64,uint64)void\", method \"set_reward_rate(uint64)void\", method \"stake(axfer)void\", method \"unstake(uint64)void\", method \"claim()void\", method \"get_pending_rewards(address)uint64\"",
+      "defined_out": [
+        "Method(claim()void)",
+        "Method(configure(uint64,uint64,uint64)void)",
+        "Method(get_pending_rewards(address)uint64)",
+        "Method(set_reward_rate(uint64)void)",
+        "Method(stake(axfer)void)",
+        "Method(unstake(uint64)void)"
+      ],
+      "stack_out": [
+        "Method(configure(uint64,uint64,uint64)void)",
+        "Method(set_reward_rate(uint64)void)",
+        "Method(stake(axfer)void)",
+        "Method(unstake(uint64)void)",
+        "Method(claim()void)",
+        "Method(get_pending_rewards(address)uint64)"
+      ]
+    },
+    "198": {
+      "op": "txna ApplicationArgs 0",
+      "defined_out": [
+        "Method(claim()void)",
+        "Method(configure(uint64,uint64,uint64)void)",
+        "Method(get_pending_rewards(address)uint64)",
+        "Method(set_reward_rate(uint64)void)",
+        "Method(stake(axfer)void)",
+        "Method(unstake(uint64)void)",
+        "tmp%6#0"
+      ],
+      "stack_out": [
+        "Method(configure(uint64,uint64,uint64)void)",
+        "Method(set_reward_rate(uint64)void)",
+        "Method(stake(axfer)void)",
+        "Method(unstake(uint64)void)",
+        "Method(claim()void)",
+        "Method(get_pending_rewards(address)uint64)",
+        "tmp%6#0"
+      ]
+    },
+    "201": {
+      "op": "match configure set_reward_rate stake unstake claim get_pending_rewards",
+      "stack_out": []
+    },
+    "215": {
+      "op": "err"
+    },
+    "216": {
+      "block": "main___algopy_default_create@15",
+      "stack_in": [],
+      "op": "txn OnCompletion",
+      "defined_out": [
+        "tmp%7#0"
+      ],
+      "stack_out": [
+        "tmp%7#0"
+      ]
+    },
+    "218": {
+      "op": "!",
+      "defined_out": [
+        "tmp%8#0"
+      ],
+      "stack_out": [
+        "tmp%8#0"
+      ]
+    },
+    "219": {
+      "op": "txn ApplicationID",
+      "defined_out": [
+        "tmp%8#0",
+        "tmp%9#0"
+      ],
+      "stack_out": [
+        "tmp%8#0",
+        "tmp%9#0"
+      ]
+    },
+    "221": {
+      "op": "!",
+      "defined_out": [
+        "tmp%10#0",
+        "tmp%8#0"
+      ],
+      "stack_out": [
+        "tmp%8#0",
+        "tmp%10#0"
+      ]
+    },
+    "222": {
+      "op": "&&",
+      "defined_out": [
+        "tmp%11#0"
+      ],
+      "stack_out": [
+        "tmp%11#0"
+      ]
+    },
+    "223": {
+      "error": "OnCompletion must be NoOp && can only call when creating",
+      "op": "assert // OnCompletion must be NoOp && can only call when creating",
+      "stack_out": []
+    },
+    "224": {
+      "op": "intc_3 // 1",
+      "defined_out": [
+        "1"
+      ],
+      "stack_out": [
+        "1"
+      ]
+    },
+    "225": {
+      "op": "return",
+      "stack_out": []
+    },
+    "226": {
+      "subroutine": "contract.StakingContract.configure[routing]",
+      "params": {},
+      "block": "configure",
+      "stack_in": [],
+      "op": "txna ApplicationArgs 1",
+      "defined_out": [
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "tmp%0#0"
+      ]
+    },
+    "229": {
+      "op": "dup",
+      "defined_out": [
+        "tmp%0#0",
+        "tmp%0#0 (copy)"
+      ],
+      "stack_out": [
+        "tmp%0#0",
+        "tmp%0#0 (copy)"
+      ]
+    },
+    "230": {
+      "op": "len",
+      "defined_out": [
+        "len%0#0",
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "tmp%0#0",
+        "len%0#0"
+      ]
+    },
+    "231": {
+      "op": "intc_1 // 8",
+      "defined_out": [
+        "8",
+        "len%0#0",
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "tmp%0#0",
+        "len%0#0",
+        "8"
+      ]
+    },
+    "232": {
+      "op": "==",
+      "defined_out": [
+        "eq%0#0",
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "tmp%0#0",
+        "eq%0#0"
+      ]
+    },
+    "233": {
+      "error": "invalid number of bytes for arc4.uint64",
+      "op": "assert // invalid number of bytes for arc4.uint64",
+      "stack_out": [
+        "tmp%0#0"
+      ]
+    },
+    "234": {
+      "op": "btoi",
+      "defined_out": [
+        "staked_asset#0"
+      ],
+      "stack_out": [
+        "staked_asset#0"
+      ]
+    },
+    "235": {
+      "op": "txna ApplicationArgs 2",
+      "defined_out": [
+        "staked_asset#0",
+        "tmp%2#0"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "tmp%2#0"
+      ]
+    },
+    "238": {
+      "op": "dup",
+      "defined_out": [
+        "staked_asset#0",
+        "tmp%2#0",
+        "tmp%2#0 (copy)"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "tmp%2#0",
+        "tmp%2#0 (copy)"
+      ]
+    },
+    "239": {
+      "op": "len",
+      "defined_out": [
+        "len%1#0",
+        "staked_asset#0",
+        "tmp%2#0"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "tmp%2#0",
+        "len%1#0"
+      ]
+    },
+    "240": {
+      "op": "intc_1 // 8",
+      "stack_out": [
+        "staked_asset#0",
+        "tmp%2#0",
+        "len%1#0",
+        "8"
+      ]
+    },
+    "241": {
+      "op": "==",
+      "defined_out": [
+        "eq%1#0",
+        "staked_asset#0",
+        "tmp%2#0"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "tmp%2#0",
+        "eq%1#0"
+      ]
+    },
+    "242": {
+      "error": "invalid number of bytes for arc4.uint64",
+      "op": "assert // invalid number of bytes for arc4.uint64",
+      "stack_out": [
+        "staked_asset#0",
+        "tmp%2#0"
+      ]
+    },
+    "243": {
+      "op": "btoi",
+      "defined_out": [
+        "reward_asset#0",
+        "staked_asset#0"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0"
+      ]
+    },
+    "244": {
+      "op": "txna ApplicationArgs 3",
+      "defined_out": [
+        "reward_asset#0",
+        "staked_asset#0",
+        "tmp%4#0"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "tmp%4#0"
+      ]
+    },
+    "247": {
+      "op": "dup",
+      "defined_out": [
+        "reward_asset#0",
+        "staked_asset#0",
+        "tmp%4#0",
+        "tmp%4#0 (copy)"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "tmp%4#0",
+        "tmp%4#0 (copy)"
+      ]
+    },
+    "248": {
+      "op": "len",
+      "defined_out": [
+        "len%2#0",
+        "reward_asset#0",
+        "staked_asset#0",
+        "tmp%4#0"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "tmp%4#0",
+        "len%2#0"
+      ]
+    },
+    "249": {
+      "op": "intc_1 // 8",
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "tmp%4#0",
+        "len%2#0",
+        "8"
+      ]
+    },
+    "250": {
+      "op": "==",
+      "defined_out": [
+        "eq%2#0",
+        "reward_asset#0",
+        "staked_asset#0",
+        "tmp%4#0"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "tmp%4#0",
+        "eq%2#0"
+      ]
+    },
+    "251": {
+      "error": "invalid number of bytes for arc4.uint64",
+      "op": "assert // invalid number of bytes for arc4.uint64",
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "tmp%4#0"
+      ]
+    },
+    "252": {
+      "op": "btoi",
+      "defined_out": [
+        "reward_asset#0",
+        "reward_rate#0",
+        "staked_asset#0"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0"
+      ]
+    },
+    "253": {
+      "op": "txn Sender",
+      "defined_out": [
+        "reward_asset#0",
+        "reward_rate#0",
+        "staked_asset#0",
+        "tmp%0#1"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "tmp%0#1"
+      ]
+    },
+    "255": {
+      "op": "intc_0 // 0",
+      "defined_out": [
+        "0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "staked_asset#0",
+        "tmp%0#1"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "tmp%0#1",
+        "0"
+      ]
+    },
+    "256": {
+      "op": "bytec 7 // \"admin\"",
+      "defined_out": [
+        "\"admin\"",
+        "0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "staked_asset#0",
+        "tmp%0#1"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "tmp%0#1",
+        "0",
+        "\"admin\""
+      ]
+    },
+    "258": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "maybe_exists%0#0",
+        "maybe_value%0#0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "staked_asset#0",
+        "tmp%0#1"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "tmp%0#1",
+        "maybe_value%0#0",
+        "maybe_exists%0#0"
+      ]
+    },
+    "259": {
+      "error": "check self.admin exists",
+      "op": "assert // check self.admin exists",
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "tmp%0#1",
+        "maybe_value%0#0"
+      ]
+    },
+    "260": {
+      "op": "==",
+      "defined_out": [
+        "reward_asset#0",
+        "reward_rate#0",
+        "staked_asset#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "tmp%1#1"
+      ]
+    },
+    "261": {
+      "error": "Only admin",
+      "op": "assert // Only admin",
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0"
+      ]
+    },
+    "262": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "0"
+      ]
+    },
+    "263": {
+      "op": "bytec_3 // \"staked_asset_id\"",
+      "defined_out": [
+        "\"staked_asset_id\"",
+        "0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "staked_asset#0"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "0",
+        "\"staked_asset_id\""
+      ]
+    },
+    "264": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "maybe_exists%1#0",
+        "maybe_value%1#0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "staked_asset#0"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "maybe_value%1#0",
+        "maybe_exists%1#0"
+      ]
+    },
+    "265": {
+      "error": "check self.staked_asset_id exists",
+      "op": "assert // check self.staked_asset_id exists",
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "maybe_value%1#0"
+      ]
+    },
+    "266": {
+      "op": "!",
+      "defined_out": [
+        "reward_asset#0",
+        "reward_rate#0",
+        "staked_asset#0",
+        "tmp%2#1"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "tmp%2#1"
+      ]
+    },
+    "267": {
+      "error": "Already configured",
+      "op": "assert // Already configured",
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0"
+      ]
+    },
+    "268": {
+      "op": "bytec_3 // \"staked_asset_id\"",
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "\"staked_asset_id\""
+      ]
+    },
+    "269": {
+      "op": "dig 3",
+      "defined_out": [
+        "\"staked_asset_id\"",
+        "reward_asset#0",
+        "reward_rate#0",
+        "staked_asset#0",
+        "staked_asset#0 (copy)"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "\"staked_asset_id\"",
+        "staked_asset#0 (copy)"
+      ]
+    },
+    "271": {
+      "op": "app_global_put",
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0"
+      ]
+    },
+    "272": {
+      "op": "bytec 4 // \"reward_asset_id\"",
+      "defined_out": [
+        "\"reward_asset_id\"",
+        "reward_asset#0",
+        "reward_rate#0",
+        "staked_asset#0"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "\"reward_asset_id\""
+      ]
+    },
+    "274": {
+      "op": "dig 2",
+      "defined_out": [
+        "\"reward_asset_id\"",
+        "reward_asset#0",
+        "reward_asset#0 (copy)",
+        "reward_rate#0",
+        "staked_asset#0"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "\"reward_asset_id\"",
+        "reward_asset#0 (copy)"
+      ]
+    },
+    "276": {
+      "op": "app_global_put",
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0"
+      ]
+    },
+    "277": {
+      "op": "bytec 5 // \"reward_rate\"",
+      "defined_out": [
+        "\"reward_rate\"",
+        "reward_asset#0",
+        "reward_rate#0",
+        "staked_asset#0"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "reward_rate#0",
+        "\"reward_rate\""
+      ]
+    },
+    "279": {
+      "op": "swap",
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "\"reward_rate\"",
+        "reward_rate#0"
+      ]
+    },
+    "280": {
+      "op": "app_global_put",
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0"
+      ]
+    },
+    "281": {
+      "op": "bytec_2 // \"last_update_time\"",
+      "defined_out": [
+        "\"last_update_time\"",
+        "reward_asset#0",
+        "staked_asset#0"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "\"last_update_time\""
+      ]
+    },
+    "282": {
+      "op": "global LatestTimestamp",
+      "defined_out": [
+        "\"last_update_time\"",
+        "reward_asset#0",
+        "staked_asset#0",
+        "tmp%3#1"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "\"last_update_time\"",
+        "tmp%3#1"
+      ]
+    },
+    "284": {
+      "op": "app_global_put",
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0"
+      ]
+    },
+    "285": {
+      "op": "itxn_begin"
+    },
+    "286": {
+      "op": "global CurrentApplicationAddress",
+      "defined_out": [
+        "inner_txn_params%0%%param_AssetReceiver_idx_0#0",
+        "reward_asset#0",
+        "staked_asset#0"
+      ],
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "inner_txn_params%0%%param_AssetReceiver_idx_0#0"
+      ]
+    },
+    "288": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "inner_txn_params%0%%param_AssetReceiver_idx_0#0",
+        "0"
+      ]
+    },
+    "289": {
+      "op": "itxn_field AssetAmount",
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0",
+        "inner_txn_params%0%%param_AssetReceiver_idx_0#0"
+      ]
+    },
+    "291": {
+      "op": "itxn_field AssetReceiver",
+      "stack_out": [
+        "staked_asset#0",
+        "reward_asset#0"
+      ]
+    },
+    "293": {
+      "op": "swap",
+      "stack_out": [
+        "reward_asset#0",
+        "staked_asset#0"
+      ]
+    },
+    "294": {
+      "op": "itxn_field XferAsset",
+      "stack_out": [
+        "reward_asset#0"
+      ]
+    },
+    "296": {
+      "op": "pushint 4 // axfer",
+      "defined_out": [
+        "axfer",
+        "reward_asset#0"
+      ],
+      "stack_out": [
+        "reward_asset#0",
+        "axfer"
+      ]
+    },
+    "298": {
+      "op": "itxn_field TypeEnum",
+      "stack_out": [
+        "reward_asset#0"
+      ]
+    },
+    "300": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "reward_asset#0",
+        "0"
+      ]
+    },
+    "301": {
+      "op": "itxn_field Fee",
+      "stack_out": [
+        "reward_asset#0"
+      ]
+    },
+    "303": {
+      "op": "itxn_submit"
+    },
+    "304": {
+      "op": "itxn_begin"
+    },
+    "305": {
+      "op": "global CurrentApplicationAddress",
+      "defined_out": [
+        "inner_txn_params%1%%param_AssetReceiver_idx_0#0",
+        "reward_asset#0"
+      ],
+      "stack_out": [
+        "reward_asset#0",
+        "inner_txn_params%1%%param_AssetReceiver_idx_0#0"
+      ]
+    },
+    "307": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "reward_asset#0",
+        "inner_txn_params%1%%param_AssetReceiver_idx_0#0",
+        "0"
+      ]
+    },
+    "308": {
+      "op": "itxn_field AssetAmount",
+      "stack_out": [
+        "reward_asset#0",
+        "inner_txn_params%1%%param_AssetReceiver_idx_0#0"
+      ]
+    },
+    "310": {
+      "op": "itxn_field AssetReceiver",
+      "stack_out": [
+        "reward_asset#0"
+      ]
+    },
+    "312": {
+      "op": "itxn_field XferAsset",
+      "stack_out": []
+    },
+    "314": {
+      "op": "pushint 4 // axfer",
+      "stack_out": [
+        "axfer"
+      ]
+    },
+    "316": {
+      "op": "itxn_field TypeEnum",
+      "stack_out": []
+    },
+    "318": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "0"
+      ]
+    },
+    "319": {
+      "op": "itxn_field Fee",
+      "stack_out": []
+    },
+    "321": {
+      "op": "itxn_submit"
+    },
+    "322": {
+      "op": "intc_3 // 1",
+      "defined_out": [
+        "1"
+      ],
+      "stack_out": [
+        "1"
+      ]
+    },
+    "323": {
+      "op": "return",
+      "stack_out": []
+    },
+    "324": {
+      "subroutine": "contract.StakingContract.set_reward_rate[routing]",
+      "params": {},
+      "block": "set_reward_rate",
+      "stack_in": [],
+      "op": "txna ApplicationArgs 1",
+      "defined_out": [
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "tmp%0#0"
+      ]
+    },
+    "327": {
+      "op": "dup",
+      "defined_out": [
+        "tmp%0#0",
+        "tmp%0#0 (copy)"
+      ],
+      "stack_out": [
+        "tmp%0#0",
+        "tmp%0#0 (copy)"
+      ]
+    },
+    "328": {
+      "op": "len",
+      "defined_out": [
+        "len%0#0",
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "tmp%0#0",
+        "len%0#0"
+      ]
+    },
+    "329": {
+      "op": "intc_1 // 8",
+      "defined_out": [
+        "8",
+        "len%0#0",
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "tmp%0#0",
+        "len%0#0",
+        "8"
+      ]
+    },
+    "330": {
+      "op": "==",
+      "defined_out": [
+        "eq%0#0",
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "tmp%0#0",
+        "eq%0#0"
+      ]
+    },
+    "331": {
+      "error": "invalid number of bytes for arc4.uint64",
+      "op": "assert // invalid number of bytes for arc4.uint64",
+      "stack_out": [
+        "tmp%0#0"
+      ]
+    },
+    "332": {
+      "op": "btoi",
+      "defined_out": [
+        "new_rate#0"
+      ],
+      "stack_out": [
+        "new_rate#0"
+      ]
+    },
+    "333": {
+      "op": "txn Sender",
+      "defined_out": [
+        "new_rate#0",
+        "tmp%0#1"
+      ],
+      "stack_out": [
+        "new_rate#0",
+        "tmp%0#1"
+      ]
+    },
+    "335": {
+      "op": "intc_0 // 0",
+      "defined_out": [
+        "0",
+        "new_rate#0",
+        "tmp%0#1"
+      ],
+      "stack_out": [
+        "new_rate#0",
+        "tmp%0#1",
+        "0"
+      ]
+    },
+    "336": {
+      "op": "bytec 7 // \"admin\"",
+      "defined_out": [
+        "\"admin\"",
+        "0",
+        "new_rate#0",
+        "tmp%0#1"
+      ],
+      "stack_out": [
+        "new_rate#0",
+        "tmp%0#1",
+        "0",
+        "\"admin\""
+      ]
+    },
+    "338": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "maybe_exists%0#0",
+        "maybe_value%0#0",
+        "new_rate#0",
+        "tmp%0#1"
+      ],
+      "stack_out": [
+        "new_rate#0",
+        "tmp%0#1",
+        "maybe_value%0#0",
+        "maybe_exists%0#0"
+      ]
+    },
+    "339": {
+      "error": "check self.admin exists",
+      "op": "assert // check self.admin exists",
+      "stack_out": [
+        "new_rate#0",
+        "tmp%0#1",
+        "maybe_value%0#0"
+      ]
+    },
+    "340": {
+      "op": "==",
+      "defined_out": [
+        "new_rate#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_rate#0",
+        "tmp%1#1"
+      ]
+    },
+    "341": {
+      "error": "Only admin",
+      "op": "assert // Only admin",
+      "stack_out": [
+        "new_rate#0"
+      ]
+    },
+    "342": {
+      "callsub": "contract.StakingContract._update_pool",
+      "op": "callsub _update_pool"
+    },
+    "345": {
+      "op": "bytec 5 // \"reward_rate\"",
+      "defined_out": [
+        "\"reward_rate\"",
+        "new_rate#0"
+      ],
+      "stack_out": [
+        "new_rate#0",
+        "\"reward_rate\""
+      ]
+    },
+    "347": {
+      "op": "swap",
+      "stack_out": [
+        "\"reward_rate\"",
+        "new_rate#0"
+      ]
+    },
+    "348": {
+      "op": "app_global_put",
+      "stack_out": []
+    },
+    "349": {
+      "op": "intc_3 // 1",
+      "defined_out": [
+        "1"
+      ],
+      "stack_out": [
+        "1"
+      ]
+    },
+    "350": {
+      "op": "return",
+      "stack_out": []
+    },
+    "351": {
+      "subroutine": "contract.StakingContract.stake[routing]",
+      "params": {},
+      "block": "stake",
+      "stack_in": [],
+      "op": "pushbytes \"\"",
+      "stack_out": [
+        "pending#0"
+      ]
+    },
+    "353": {
+      "op": "txn GroupIndex",
+      "defined_out": [
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "tmp%0#0"
+      ]
+    },
+    "355": {
+      "op": "intc_3 // 1",
+      "defined_out": [
+        "1",
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "tmp%0#0",
+        "1"
+      ]
+    },
+    "356": {
+      "op": "-",
+      "defined_out": [
+        "txn#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "txn#0"
+      ]
+    },
+    "357": {
+      "op": "dup",
+      "defined_out": [
+        "txn#0",
+        "txn#0 (copy)"
+      ],
+      "stack_out": [
+        "pending#0",
+        "txn#0",
+        "txn#0 (copy)"
+      ]
+    },
+    "358": {
+      "op": "gtxns TypeEnum",
+      "defined_out": [
+        "gtxn_type%0#0",
+        "txn#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "txn#0",
+        "gtxn_type%0#0"
+      ]
+    },
+    "360": {
+      "op": "pushint 4 // axfer",
+      "defined_out": [
+        "axfer",
+        "gtxn_type%0#0",
+        "txn#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "txn#0",
+        "gtxn_type%0#0",
+        "axfer"
+      ]
+    },
+    "362": {
+      "op": "==",
+      "defined_out": [
+        "gtxn_type_matches%0#0",
+        "txn#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "txn#0",
+        "gtxn_type_matches%0#0"
+      ]
+    },
+    "363": {
+      "error": "transaction type is axfer",
+      "op": "assert // transaction type is axfer",
+      "stack_out": [
+        "pending#0",
+        "txn#0"
+      ]
+    },
+    "364": {
+      "callsub": "contract.StakingContract._update_pool",
+      "op": "callsub _update_pool"
+    },
+    "367": {
+      "op": "dup",
+      "stack_out": [
+        "pending#0",
+        "txn#0",
+        "txn#0 (copy)"
+      ]
+    },
+    "368": {
+      "op": "gtxns XferAsset",
+      "stack_out": [
+        "pending#0",
+        "txn#0",
+        "tmp%0#0"
+      ]
+    },
+    "370": {
+      "op": "intc_0 // 0",
+      "defined_out": [
+        "0",
+        "tmp%0#0",
+        "txn#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "txn#0",
+        "tmp%0#0",
+        "0"
+      ]
+    },
+    "371": {
+      "op": "bytec_3 // \"staked_asset_id\"",
+      "defined_out": [
+        "\"staked_asset_id\"",
+        "0",
+        "tmp%0#0",
+        "txn#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "txn#0",
+        "tmp%0#0",
+        "0",
+        "\"staked_asset_id\""
+      ]
+    },
+    "372": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "maybe_exists%0#0",
+        "maybe_value%0#0",
+        "tmp%0#0",
+        "txn#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "txn#0",
+        "tmp%0#0",
+        "maybe_value%0#0",
+        "maybe_exists%0#0"
+      ]
+    },
+    "373": {
+      "error": "check self.staked_asset_id exists",
+      "op": "assert // check self.staked_asset_id exists",
+      "stack_out": [
+        "pending#0",
+        "txn#0",
+        "tmp%0#0",
+        "maybe_value%0#0"
+      ]
+    },
+    "374": {
+      "op": "==",
+      "defined_out": [
+        "tmp%1#0",
+        "txn#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "txn#0",
+        "tmp%1#0"
+      ]
+    },
+    "375": {
+      "error": "Wrong asset",
+      "op": "assert // Wrong asset",
+      "stack_out": [
+        "pending#0",
+        "txn#0"
+      ]
+    },
+    "376": {
+      "op": "dup",
+      "stack_out": [
+        "pending#0",
+        "txn#0",
+        "txn#0 (copy)"
+      ]
+    },
+    "377": {
+      "op": "gtxns AssetReceiver",
+      "defined_out": [
+        "tmp%2#0",
+        "txn#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "txn#0",
+        "tmp%2#0"
+      ]
+    },
+    "379": {
+      "op": "global CurrentApplicationAddress",
+      "defined_out": [
+        "tmp%2#0",
+        "tmp%3#0",
+        "txn#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "txn#0",
+        "tmp%2#0",
+        "tmp%3#0"
+      ]
+    },
+    "381": {
+      "op": "==",
+      "defined_out": [
+        "tmp%4#0",
+        "txn#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "txn#0",
+        "tmp%4#0"
+      ]
+    },
+    "382": {
+      "error": "Wrong receiver",
+      "op": "assert // Wrong receiver",
+      "stack_out": [
+        "pending#0",
+        "txn#0"
+      ]
+    },
+    "383": {
+      "op": "dup",
+      "stack_out": [
+        "pending#0",
+        "txn#0",
+        "txn#0 (copy)"
+      ]
+    },
+    "384": {
+      "op": "gtxns AssetAmount",
+      "defined_out": [
+        "amount#0",
+        "txn#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "txn#0",
+        "amount#0"
+      ]
+    },
+    "386": {
+      "op": "swap",
+      "defined_out": [
+        "amount#0",
+        "txn#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "txn#0"
+      ]
+    },
+    "387": {
+      "op": "gtxns Sender",
+      "defined_out": [
+        "amount#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0"
+      ]
+    },
+    "389": {
+      "op": "dup",
+      "defined_out": [
+        "amount#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "sender#0"
+      ]
+    },
+    "390": {
+      "op": "pushbytes 0x00000000000000000000000000000000",
+      "defined_out": [
+        "amount#0",
+        "current_stake#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "sender#0",
+        "current_stake#0"
+      ]
+    },
+    "408": {
+      "op": "swap",
+      "defined_out": [
+        "amount#0",
+        "current_stake#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "sender#0"
+      ]
+    },
+    "409": {
+      "op": "bytec 6 // \"user_stakes\"",
+      "defined_out": [
+        "\"user_stakes\"",
+        "amount#0",
+        "current_stake#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "sender#0",
+        "\"user_stakes\""
+      ]
+    },
+    "411": {
+      "op": "swap",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "\"user_stakes\"",
+        "sender#0"
+      ]
+    },
+    "412": {
+      "op": "concat",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "413": {
+      "op": "dup",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "414": {
+      "op": "box_len",
+      "defined_out": [
+        "_%0#0",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "maybe_exists%1#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "_%0#0",
+        "maybe_exists%1#0"
+      ]
+    },
+    "415": {
+      "op": "bury 1",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "maybe_exists%1#0"
+      ]
+    },
+    "417": {
+      "op": "bz stake_after_if_else@6",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "420": {
+      "op": "dup",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "421": {
+      "op": "box_get",
+      "defined_out": [
+        "aggregate%box_get%1#0",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "aggregate%box_get%1#0"
+      ]
+    },
+    "422": {
+      "op": "swap",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "aggregate%box_get%1#0",
+        "current_stake#0"
+      ]
+    },
+    "423": {
+      "op": "dup",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "aggregate%box_get%1#0",
+        "current_stake#0",
+        "current_stake#0 (copy)"
+      ]
+    },
+    "424": {
+      "op": "cover 2",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "aggregate%box_get%1#0",
+        "current_stake#0"
+      ]
+    },
+    "426": {
+      "op": "bury 4",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "aggregate%box_get%1#0"
+      ]
+    },
+    "428": {
+      "error": "check self.user_stakes entry exists",
+      "op": "assert // check self.user_stakes entry exists",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0"
+      ]
+    },
+    "429": {
+      "op": "dup",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "current_stake#0 (copy)",
+        "sender#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "current_stake#0 (copy)"
+      ]
+    },
+    "430": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "current_stake#0 (copy)",
+        "0"
+      ]
+    },
+    "431": {
+      "op": "extract_uint64",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%8#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "tmp%8#0"
+      ]
+    },
+    "432": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "tmp%8#0",
+        "0"
+      ]
+    },
+    "433": {
+      "op": "bytec_0 // \"rewards_per_share\"",
+      "defined_out": [
+        "\"rewards_per_share\"",
+        "0",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%8#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "tmp%8#0",
+        "0",
+        "\"rewards_per_share\""
+      ]
+    },
+    "434": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "maybe_exists%2#0",
+        "maybe_value%1#0",
+        "sender#0",
+        "tmp%8#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "tmp%8#0",
+        "maybe_value%1#0",
+        "maybe_exists%2#0"
+      ]
+    },
+    "435": {
+      "error": "check self.rewards_per_share exists",
+      "op": "assert // check self.rewards_per_share exists",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "tmp%8#0",
+        "maybe_value%1#0"
+      ]
+    },
+    "436": {
+      "op": "*",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%9#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "tmp%9#0"
+      ]
+    },
+    "437": {
+      "op": "intc_2 // 1000000000000",
+      "defined_out": [
+        "1000000000000",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%9#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "tmp%9#0",
+        "1000000000000"
+      ]
+    },
+    "438": {
+      "op": "/",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%10#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "tmp%10#0"
+      ]
+    },
+    "439": {
+      "op": "swap",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "tmp%10#0",
+        "current_stake#0"
+      ]
+    },
+    "440": {
+      "op": "intc_1 // 8",
+      "defined_out": [
+        "8",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%10#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "tmp%10#0",
+        "current_stake#0",
+        "8"
+      ]
+    },
+    "441": {
+      "op": "extract_uint64",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%10#0",
+        "tmp%11#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "tmp%10#0",
+        "tmp%11#0"
+      ]
+    },
+    "442": {
+      "op": "-",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "pending#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "pending#0"
+      ]
+    },
+    "443": {
+      "op": "dup",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "pending#0",
+        "pending#0"
+      ]
+    },
+    "444": {
+      "op": "bury 6",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "pending#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "pending#0"
+      ]
+    },
+    "446": {
+      "op": "bz stake_after_if_else@6",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "449": {
+      "op": "itxn_begin"
+    },
+    "450": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "0"
+      ]
+    },
+    "451": {
+      "op": "bytec 4 // \"reward_asset_id\"",
+      "defined_out": [
+        "\"reward_asset_id\"",
+        "0",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "pending#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "0",
+        "\"reward_asset_id\""
+      ]
+    },
+    "453": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "maybe_exists%3#0",
+        "maybe_value%2#0",
+        "pending#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "maybe_value%2#0",
+        "maybe_exists%3#0"
+      ]
+    },
+    "454": {
+      "error": "check self.reward_asset_id exists",
+      "op": "assert // check self.reward_asset_id exists",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "maybe_value%2#0"
+      ]
+    },
+    "455": {
+      "op": "dig 5",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "maybe_value%2#0",
+        "pending#0"
+      ]
+    },
+    "457": {
+      "op": "itxn_field AssetAmount",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "maybe_value%2#0"
+      ]
+    },
+    "459": {
+      "op": "dig 3",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "maybe_value%2#0",
+        "sender#0"
+      ]
+    },
+    "461": {
+      "op": "itxn_field AssetReceiver",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "maybe_value%2#0"
+      ]
+    },
+    "463": {
+      "op": "itxn_field XferAsset",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "465": {
+      "op": "pushint 4 // axfer",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "axfer"
+      ]
+    },
+    "467": {
+      "op": "itxn_field TypeEnum",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "469": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "0"
+      ]
+    },
+    "470": {
+      "op": "itxn_field Fee",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "472": {
+      "op": "itxn_submit"
+    },
+    "473": {
+      "block": "stake_after_if_else@6",
+      "stack_in": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0"
+      ],
+      "op": "dig 1",
+      "defined_out": [
+        "current_stake#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0"
+      ]
+    },
+    "475": {
+      "op": "intc_0 // 0",
+      "defined_out": [
+        "0",
+        "current_stake#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "0"
+      ]
+    },
+    "476": {
+      "op": "extract_uint64",
+      "defined_out": [
+        "current_stake#0",
+        "tmp%14#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "tmp%14#0"
+      ]
+    },
+    "477": {
+      "op": "dig 4",
+      "defined_out": [
+        "amount#0",
+        "current_stake#0",
+        "tmp%14#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "tmp%14#0",
+        "amount#0"
+      ]
+    },
+    "479": {
+      "op": "dup",
+      "defined_out": [
+        "amount#0",
+        "amount#0 (copy)",
+        "current_stake#0",
+        "tmp%14#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "tmp%14#0",
+        "amount#0 (copy)",
+        "amount#0 (copy)"
+      ]
+    },
+    "480": {
+      "op": "cover 2",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "tmp%14#0",
+        "amount#0 (copy)"
+      ]
+    },
+    "482": {
+      "op": "+",
+      "defined_out": [
+        "amount#0",
+        "current_stake#0",
+        "new_amount#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "new_amount#0"
+      ]
+    },
+    "483": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "new_amount#0",
+        "0"
+      ]
+    },
+    "484": {
+      "op": "bytec_0 // \"rewards_per_share\"",
+      "defined_out": [
+        "\"rewards_per_share\"",
+        "0",
+        "amount#0",
+        "current_stake#0",
+        "new_amount#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "new_amount#0",
+        "0",
+        "\"rewards_per_share\""
+      ]
+    },
+    "485": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "amount#0",
+        "current_stake#0",
+        "maybe_exists%4#0",
+        "maybe_value%3#0",
+        "new_amount#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "new_amount#0",
+        "maybe_value%3#0",
+        "maybe_exists%4#0"
+      ]
+    },
+    "486": {
+      "error": "check self.rewards_per_share exists",
+      "op": "assert // check self.rewards_per_share exists",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "new_amount#0",
+        "maybe_value%3#0"
+      ]
+    },
+    "487": {
+      "op": "dig 1",
+      "defined_out": [
+        "amount#0",
+        "current_stake#0",
+        "maybe_value%3#0",
+        "new_amount#0",
+        "new_amount#0 (copy)"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "new_amount#0",
+        "maybe_value%3#0",
+        "new_amount#0 (copy)"
+      ]
+    },
+    "489": {
+      "op": "*",
+      "defined_out": [
+        "amount#0",
+        "current_stake#0",
+        "new_amount#0",
+        "tmp%16#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "new_amount#0",
+        "tmp%16#0"
+      ]
+    },
+    "490": {
+      "op": "intc_2 // 1000000000000",
+      "defined_out": [
+        "1000000000000",
+        "amount#0",
+        "current_stake#0",
+        "new_amount#0",
+        "tmp%16#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "new_amount#0",
+        "tmp%16#0",
+        "1000000000000"
+      ]
+    },
+    "491": {
+      "op": "/",
+      "defined_out": [
+        "amount#0",
+        "current_stake#0",
+        "new_amount#0",
+        "new_debt#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "new_amount#0",
+        "new_debt#0"
+      ]
+    },
+    "492": {
+      "op": "swap",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "new_debt#0",
+        "new_amount#0"
+      ]
+    },
+    "493": {
+      "op": "itob",
+      "defined_out": [
+        "aggregate%val_as_bytes%0#0",
+        "amount#0",
+        "current_stake#0",
+        "new_debt#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "new_debt#0",
+        "aggregate%val_as_bytes%0#0"
+      ]
+    },
+    "494": {
+      "op": "swap",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "aggregate%val_as_bytes%0#0",
+        "new_debt#0"
+      ]
+    },
+    "495": {
+      "op": "itob",
+      "defined_out": [
+        "aggregate%val_as_bytes%0#0",
+        "aggregate%val_as_bytes%1#0",
+        "amount#0",
+        "current_stake#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "aggregate%val_as_bytes%0#0",
+        "aggregate%val_as_bytes%1#0"
+      ]
+    },
+    "496": {
+      "op": "concat",
+      "defined_out": [
+        "aggregate%head%3#0",
+        "amount#0",
+        "current_stake#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "aggregate%head%3#0"
+      ]
+    },
+    "497": {
+      "op": "dig 2",
+      "defined_out": [
+        "aggregate%head%3#0",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "aggregate%head%3#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "499": {
+      "op": "swap",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "aggregate%head%3#0"
+      ]
+    },
+    "500": {
+      "op": "box_put",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0"
+      ]
+    },
+    "501": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "0"
+      ]
+    },
+    "502": {
+      "op": "bytec_1 // \"total_staked\"",
+      "defined_out": [
+        "\"total_staked\"",
+        "0",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "0",
+        "\"total_staked\""
+      ]
+    },
+    "503": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "maybe_exists%5#0",
+        "maybe_value%4#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "maybe_value%4#0",
+        "maybe_exists%5#0"
+      ]
+    },
+    "504": {
+      "error": "check self.total_staked exists",
+      "op": "assert // check self.total_staked exists",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "maybe_value%4#0"
+      ]
+    },
+    "505": {
+      "op": "+",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "tmp%21#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "tmp%21#0"
+      ]
+    },
+    "506": {
+      "op": "bytec_1 // \"total_staked\"",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "tmp%21#0",
+        "\"total_staked\""
+      ]
+    },
+    "507": {
+      "op": "swap",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "\"total_staked\"",
+        "tmp%21#0"
+      ]
+    },
+    "508": {
+      "op": "app_global_put",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "509": {
+      "op": "intc_3 // 1",
+      "defined_out": [
+        "1",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0"
+      ],
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0",
+        "1"
+      ]
+    },
+    "510": {
+      "op": "return",
+      "stack_out": [
+        "pending#0",
+        "amount#0",
+        "sender#0",
+        "current_stake#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "511": {
+      "subroutine": "contract.StakingContract.unstake[routing]",
+      "params": {},
+      "block": "unstake",
+      "stack_in": [],
+      "op": "pushbytes \"\"",
+      "stack_out": [
+        "new_amount#0"
+      ]
+    },
+    "513": {
+      "op": "dup",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0"
+      ]
+    },
+    "514": {
+      "op": "txna ApplicationArgs 1",
+      "defined_out": [
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "tmp%0#0"
+      ]
+    },
+    "517": {
+      "op": "dup",
+      "defined_out": [
+        "tmp%0#0",
+        "tmp%0#0 (copy)"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "tmp%0#0",
+        "tmp%0#0 (copy)"
+      ]
+    },
+    "518": {
+      "op": "len",
+      "defined_out": [
+        "len%0#0",
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "tmp%0#0",
+        "len%0#0"
+      ]
+    },
+    "519": {
+      "op": "intc_1 // 8",
+      "defined_out": [
+        "8",
+        "len%0#0",
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "tmp%0#0",
+        "len%0#0",
+        "8"
+      ]
+    },
+    "520": {
+      "op": "==",
+      "defined_out": [
+        "eq%0#0",
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "tmp%0#0",
+        "eq%0#0"
+      ]
+    },
+    "521": {
+      "error": "invalid number of bytes for arc4.uint64",
+      "op": "assert // invalid number of bytes for arc4.uint64",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "tmp%0#0"
+      ]
+    },
+    "522": {
+      "op": "btoi",
+      "defined_out": [
+        "amount#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0"
+      ]
+    },
+    "523": {
+      "op": "dup",
+      "defined_out": [
+        "amount#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "amount#0"
+      ]
+    },
+    "524": {
+      "callsub": "contract.StakingContract._update_pool",
+      "op": "callsub _update_pool"
+    },
+    "527": {
+      "op": "txn Sender"
+    },
+    "529": {
+      "op": "dup",
+      "defined_out": [
+        "amount#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "amount#0",
+        "sender#0",
+        "sender#0"
+      ]
+    },
+    "530": {
+      "op": "cover 2",
+      "defined_out": [
+        "amount#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "amount#0",
+        "sender#0"
+      ]
+    },
+    "532": {
+      "op": "bytec 6 // \"user_stakes\"",
+      "defined_out": [
+        "\"user_stakes\"",
+        "amount#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "amount#0",
+        "sender#0",
+        "\"user_stakes\""
+      ]
+    },
+    "534": {
+      "op": "swap",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "amount#0",
+        "\"user_stakes\"",
+        "sender#0"
+      ]
+    },
+    "535": {
+      "op": "concat",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "amount#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "536": {
+      "op": "dup",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "537": {
+      "op": "cover 2",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "539": {
+      "op": "dup",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "box_prefixed_key%0#0 (copy)",
+        "sender#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "box_prefixed_key%0#0 (copy)"
+      ]
+    },
+    "540": {
+      "op": "box_len",
+      "defined_out": [
+        "_%0#0",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "maybe_exists%0#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "_%0#0",
+        "maybe_exists%0#0"
+      ]
+    },
+    "541": {
+      "op": "bury 1",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "maybe_exists%0#0"
+      ]
+    },
+    "543": {
+      "error": "No stake found",
+      "op": "assert // No stake found",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "544": {
+      "op": "box_get",
+      "defined_out": [
+        "aggregate%box_get%1#0",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "current_stake#0",
+        "aggregate%box_get%1#0"
+      ]
+    },
+    "545": {
+      "op": "pop",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "current_stake#0"
+      ]
+    },
+    "546": {
+      "op": "dup",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "current_stake#0 (copy)",
+        "sender#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "current_stake#0",
+        "current_stake#0 (copy)"
+      ]
+    },
+    "547": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "current_stake#0",
+        "current_stake#0 (copy)",
+        "0"
+      ]
+    },
+    "548": {
+      "op": "extract_uint64",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "current_stake#0",
+        "tmp%1#1"
+      ]
+    },
+    "549": {
+      "op": "dup",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "current_stake#0",
+        "tmp%1#1",
+        "tmp%1#1"
+      ]
+    },
+    "550": {
+      "op": "cover 3",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "amount#0",
+        "current_stake#0",
+        "tmp%1#1"
+      ]
+    },
+    "552": {
+      "op": "dup",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%1#1",
+        "tmp%1#1 (copy)"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "amount#0",
+        "current_stake#0",
+        "tmp%1#1",
+        "tmp%1#1 (copy)"
+      ]
+    },
+    "553": {
+      "op": "uncover 3",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "current_stake#0",
+        "tmp%1#1",
+        "tmp%1#1 (copy)",
+        "amount#0"
+      ]
+    },
+    "555": {
+      "op": ">=",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%1#1",
+        "tmp%2#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "current_stake#0",
+        "tmp%1#1",
+        "tmp%2#0"
+      ]
+    },
+    "556": {
+      "error": "Insufficient stake",
+      "op": "assert // Insufficient stake",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "current_stake#0",
+        "tmp%1#1"
+      ]
+    },
+    "557": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "current_stake#0",
+        "tmp%1#1",
+        "0"
+      ]
+    },
+    "558": {
+      "op": "bytec_0 // \"rewards_per_share\"",
+      "defined_out": [
+        "\"rewards_per_share\"",
+        "0",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "current_stake#0",
+        "tmp%1#1",
+        "0",
+        "\"rewards_per_share\""
+      ]
+    },
+    "559": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "maybe_exists%1#0",
+        "maybe_value%0#0",
+        "sender#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "current_stake#0",
+        "tmp%1#1",
+        "maybe_value%0#0",
+        "maybe_exists%1#0"
+      ]
+    },
+    "560": {
+      "error": "check self.rewards_per_share exists",
+      "op": "assert // check self.rewards_per_share exists",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "current_stake#0",
+        "tmp%1#1",
+        "maybe_value%0#0"
+      ]
+    },
+    "561": {
+      "op": "*",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%1#1",
+        "tmp%4#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "current_stake#0",
+        "tmp%4#0"
+      ]
+    },
+    "562": {
+      "op": "intc_2 // 1000000000000",
+      "defined_out": [
+        "1000000000000",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%1#1",
+        "tmp%4#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "current_stake#0",
+        "tmp%4#0",
+        "1000000000000"
+      ]
+    },
+    "563": {
+      "op": "/",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%1#1",
+        "tmp%5#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "current_stake#0",
+        "tmp%5#0"
+      ]
+    },
+    "564": {
+      "op": "swap",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "tmp%5#0",
+        "current_stake#0"
+      ]
+    },
+    "565": {
+      "op": "intc_1 // 8",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "tmp%5#0",
+        "current_stake#0",
+        "8"
+      ]
+    },
+    "566": {
+      "op": "extract_uint64",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "sender#0",
+        "tmp%1#1",
+        "tmp%5#0",
+        "tmp%6#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "tmp%5#0",
+        "tmp%6#0"
+      ]
+    },
+    "567": {
+      "op": "-",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "pending#0",
+        "sender#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0"
+      ]
+    },
+    "568": {
+      "op": "dup",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "pending#0",
+        "sender#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "pending#0"
+      ]
+    },
+    "569": {
+      "op": "bz unstake_after_if_else@4",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0"
+      ]
+    },
+    "572": {
+      "op": "itxn_begin"
+    },
+    "573": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "0"
+      ]
+    },
+    "574": {
+      "op": "bytec 4 // \"reward_asset_id\"",
+      "defined_out": [
+        "\"reward_asset_id\"",
+        "0",
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "pending#0",
+        "sender#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "0",
+        "\"reward_asset_id\""
+      ]
+    },
+    "576": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "maybe_exists%2#0",
+        "maybe_value%1#0",
+        "pending#0",
+        "sender#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "maybe_value%1#0",
+        "maybe_exists%2#0"
+      ]
+    },
+    "577": {
+      "error": "check self.reward_asset_id exists",
+      "op": "assert // check self.reward_asset_id exists",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "maybe_value%1#0"
+      ]
+    },
+    "578": {
+      "op": "dig 1",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "maybe_value%1#0",
+        "pending#0"
+      ]
+    },
+    "580": {
+      "op": "itxn_field AssetAmount",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "maybe_value%1#0"
+      ]
+    },
+    "582": {
+      "op": "dig 4",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "maybe_value%1#0",
+        "sender#0"
+      ]
+    },
+    "584": {
+      "op": "itxn_field AssetReceiver",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "maybe_value%1#0"
+      ]
+    },
+    "586": {
+      "op": "itxn_field XferAsset",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0"
+      ]
+    },
+    "588": {
+      "op": "pushint 4 // axfer",
+      "defined_out": [
+        "amount#0",
+        "axfer",
+        "box_prefixed_key%0#0",
+        "pending#0",
+        "sender#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "axfer"
+      ]
+    },
+    "590": {
+      "op": "itxn_field TypeEnum",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0"
+      ]
+    },
+    "592": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "0"
+      ]
+    },
+    "593": {
+      "op": "itxn_field Fee",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0"
+      ]
+    },
+    "595": {
+      "op": "itxn_submit"
+    },
+    "596": {
+      "block": "unstake_after_if_else@4",
+      "stack_in": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0"
+      ],
+      "op": "itxn_begin"
+    },
+    "597": {
+      "op": "intc_0 // 0",
+      "defined_out": [
+        "0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "0"
+      ]
+    },
+    "598": {
+      "op": "bytec_3 // \"staked_asset_id\"",
+      "defined_out": [
+        "\"staked_asset_id\"",
+        "0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "0",
+        "\"staked_asset_id\""
+      ]
+    },
+    "599": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "maybe_exists%3#0",
+        "maybe_value%2#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "maybe_value%2#0",
+        "maybe_exists%3#0"
+      ]
+    },
+    "600": {
+      "error": "check self.staked_asset_id exists",
+      "op": "assert // check self.staked_asset_id exists",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "maybe_value%2#0"
+      ]
+    },
+    "601": {
+      "op": "dig 5",
+      "defined_out": [
+        "amount#0",
+        "maybe_value%2#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "maybe_value%2#0",
+        "amount#0"
+      ]
+    },
+    "603": {
+      "op": "dup",
+      "defined_out": [
+        "amount#0",
+        "amount#0 (copy)",
+        "maybe_value%2#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "maybe_value%2#0",
+        "amount#0 (copy)",
+        "amount#0 (copy)"
+      ]
+    },
+    "604": {
+      "op": "cover 2",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "amount#0",
+        "maybe_value%2#0",
+        "amount#0 (copy)"
+      ]
+    },
+    "606": {
+      "op": "itxn_field AssetAmount",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "amount#0",
+        "maybe_value%2#0"
+      ]
+    },
+    "608": {
+      "op": "dig 5",
+      "defined_out": [
+        "amount#0",
+        "maybe_value%2#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "amount#0",
+        "maybe_value%2#0",
+        "sender#0"
+      ]
+    },
+    "610": {
+      "op": "itxn_field AssetReceiver",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "amount#0",
+        "maybe_value%2#0"
+      ]
+    },
+    "612": {
+      "op": "itxn_field XferAsset",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "amount#0"
+      ]
+    },
+    "614": {
+      "op": "pushint 4 // axfer",
+      "defined_out": [
+        "amount#0",
+        "axfer",
+        "sender#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "amount#0",
+        "axfer"
+      ]
+    },
+    "616": {
+      "op": "itxn_field TypeEnum",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "amount#0"
+      ]
+    },
+    "618": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "amount#0",
+        "0"
+      ]
+    },
+    "619": {
+      "op": "itxn_field Fee",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "amount#0"
+      ]
+    },
+    "621": {
+      "op": "itxn_submit"
+    },
+    "622": {
+      "op": "dig 2",
+      "defined_out": [
+        "amount#0",
+        "sender#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "amount#0",
+        "tmp%1#1"
+      ]
+    },
+    "624": {
+      "op": "swap",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "tmp%1#1",
+        "amount#0"
+      ]
+    },
+    "625": {
+      "op": "-",
+      "defined_out": [
+        "amount#0",
+        "new_amount#0",
+        "sender#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "new_amount#0"
+      ]
+    },
+    "626": {
+      "op": "dup",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "new_amount#0",
+        "new_amount#0"
+      ]
+    },
+    "627": {
+      "op": "bury 8",
+      "defined_out": [
+        "amount#0",
+        "new_amount#0",
+        "sender#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "new_amount#0"
+      ]
+    },
+    "629": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "new_amount#0",
+        "0"
+      ]
+    },
+    "630": {
+      "op": "bytec_0 // \"rewards_per_share\"",
+      "defined_out": [
+        "\"rewards_per_share\"",
+        "0",
+        "amount#0",
+        "new_amount#0",
+        "sender#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "new_amount#0",
+        "0",
+        "\"rewards_per_share\""
+      ]
+    },
+    "631": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "amount#0",
+        "maybe_exists%4#0",
+        "maybe_value%3#0",
+        "new_amount#0",
+        "sender#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "new_amount#0",
+        "maybe_value%3#0",
+        "maybe_exists%4#0"
+      ]
+    },
+    "632": {
+      "error": "check self.rewards_per_share exists",
+      "op": "assert // check self.rewards_per_share exists",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "new_amount#0",
+        "maybe_value%3#0"
+      ]
+    },
+    "633": {
+      "op": "dig 1",
+      "defined_out": [
+        "amount#0",
+        "maybe_value%3#0",
+        "new_amount#0",
+        "new_amount#0 (copy)",
+        "sender#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "new_amount#0",
+        "maybe_value%3#0",
+        "new_amount#0 (copy)"
+      ]
+    },
+    "635": {
+      "op": "*",
+      "defined_out": [
+        "amount#0",
+        "new_amount#0",
+        "sender#0",
+        "tmp%1#1",
+        "tmp%11#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "new_amount#0",
+        "tmp%11#0"
+      ]
+    },
+    "636": {
+      "op": "intc_2 // 1000000000000",
+      "defined_out": [
+        "1000000000000",
+        "amount#0",
+        "new_amount#0",
+        "sender#0",
+        "tmp%1#1",
+        "tmp%11#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "new_amount#0",
+        "tmp%11#0",
+        "1000000000000"
+      ]
+    },
+    "637": {
+      "op": "/",
+      "defined_out": [
+        "amount#0",
+        "new_amount#0",
+        "new_debt#0",
+        "sender#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "new_amount#0",
+        "new_debt#0"
+      ]
+    },
+    "638": {
+      "op": "bury 7",
+      "defined_out": [
+        "amount#0",
+        "new_amount#0",
+        "new_debt#0",
+        "sender#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "new_amount#0"
+      ]
+    },
+    "640": {
+      "op": "bnz unstake_else_body@7",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0"
+      ]
+    },
+    "643": {
+      "op": "dig 2",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "new_amount#0",
+        "new_debt#0",
+        "sender#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "645": {
+      "op": "box_del",
+      "defined_out": [
+        "amount#0",
+        "box_prefixed_key%0#0",
+        "new_amount#0",
+        "new_debt#0",
+        "sender#0",
+        "tmp%1#1",
+        "{box_del}"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "{box_del}"
+      ]
+    },
+    "646": {
+      "op": "pop",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0"
+      ]
+    },
+    "647": {
+      "block": "unstake_after_if_else@8",
+      "stack_in": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0"
+      ],
+      "op": "intc_0 // 0",
+      "defined_out": [
+        "0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "0"
+      ]
+    },
+    "648": {
+      "op": "bytec_1 // \"total_staked\"",
+      "defined_out": [
+        "\"total_staked\"",
+        "0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "0",
+        "\"total_staked\""
+      ]
+    },
+    "649": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "maybe_exists%5#0",
+        "maybe_value%4#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "maybe_value%4#0",
+        "maybe_exists%5#0"
+      ]
+    },
+    "650": {
+      "error": "check self.total_staked exists",
+      "op": "assert // check self.total_staked exists",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "maybe_value%4#0"
+      ]
+    },
+    "651": {
+      "op": "dig 5",
+      "defined_out": [
+        "amount#0",
+        "maybe_value%4#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "maybe_value%4#0",
+        "amount#0"
+      ]
+    },
+    "653": {
+      "op": "-",
+      "defined_out": [
+        "amount#0",
+        "tmp%17#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "tmp%17#0"
+      ]
+    },
+    "654": {
+      "op": "bytec_1 // \"total_staked\"",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "tmp%17#0",
+        "\"total_staked\""
+      ]
+    },
+    "655": {
+      "op": "swap",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "\"total_staked\"",
+        "tmp%17#0"
+      ]
+    },
+    "656": {
+      "op": "app_global_put",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0"
+      ]
+    },
+    "657": {
+      "op": "intc_3 // 1",
+      "defined_out": [
+        "1",
+        "amount#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "1"
+      ]
+    },
+    "658": {
+      "op": "return",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0"
+      ]
+    },
+    "659": {
+      "block": "unstake_else_body@7",
+      "stack_in": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0"
+      ],
+      "op": "dig 6",
+      "defined_out": [
+        "new_amount#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "new_amount#0"
+      ]
+    },
+    "661": {
+      "op": "itob",
+      "defined_out": [
+        "aggregate%val_as_bytes%0#0",
+        "new_amount#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "aggregate%val_as_bytes%0#0"
+      ]
+    },
+    "662": {
+      "op": "dig 6",
+      "defined_out": [
+        "aggregate%val_as_bytes%0#0",
+        "new_amount#0",
+        "new_debt#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "aggregate%val_as_bytes%0#0",
+        "new_debt#0"
+      ]
+    },
+    "664": {
+      "op": "itob",
+      "defined_out": [
+        "aggregate%val_as_bytes%0#0",
+        "aggregate%val_as_bytes%1#0",
+        "new_amount#0",
+        "new_debt#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "aggregate%val_as_bytes%0#0",
+        "aggregate%val_as_bytes%1#0"
+      ]
+    },
+    "665": {
+      "op": "concat",
+      "defined_out": [
+        "aggregate%head%1#0",
+        "new_amount#0",
+        "new_debt#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "aggregate%head%1#0"
+      ]
+    },
+    "666": {
+      "op": "dig 3",
+      "defined_out": [
+        "aggregate%head%1#0",
+        "box_prefixed_key%0#0",
+        "new_amount#0",
+        "new_debt#0"
+      ],
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "aggregate%head%1#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "668": {
+      "op": "swap",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0",
+        "box_prefixed_key%0#0",
+        "aggregate%head%1#0"
+      ]
+    },
+    "669": {
+      "op": "box_put",
+      "stack_out": [
+        "new_amount#0",
+        "new_debt#0",
+        "amount#0",
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "pending#0"
+      ]
+    },
+    "670": {
+      "op": "b unstake_after_if_else@8"
+    },
+    "673": {
+      "subroutine": "contract.StakingContract.claim[routing]",
+      "params": {},
+      "block": "claim",
+      "stack_in": [],
+      "callsub": "contract.StakingContract._update_pool",
+      "op": "callsub _update_pool"
+    },
+    "676": {
+      "op": "txn Sender"
+    },
+    "678": {
+      "op": "bytec 6 // \"user_stakes\""
+    },
+    "680": {
+      "op": "txn Sender",
+      "defined_out": [
+        "\"user_stakes\"",
+        "sender#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "\"user_stakes\"",
+        "sender#0"
+      ]
+    },
+    "682": {
+      "op": "concat",
+      "defined_out": [
+        "box_prefixed_key%0#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "683": {
+      "op": "dupn 2",
+      "defined_out": [
+        "box_prefixed_key%0#0",
+        "box_prefixed_key%0#0 (copy)",
+        "sender#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "box_prefixed_key%0#0",
+        "box_prefixed_key%0#0 (copy)"
+      ]
+    },
+    "685": {
+      "op": "box_len",
+      "defined_out": [
+        "_%0#0",
+        "box_prefixed_key%0#0",
+        "maybe_exists%0#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "box_prefixed_key%0#0",
+        "_%0#0",
+        "maybe_exists%0#0"
+      ]
+    },
+    "686": {
+      "op": "bury 1",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "box_prefixed_key%0#0",
+        "maybe_exists%0#0"
+      ]
+    },
+    "688": {
+      "error": "No stake found",
+      "op": "assert // No stake found",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "689": {
+      "op": "box_get",
+      "defined_out": [
+        "aggregate%box_get%1#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "aggregate%box_get%1#0"
+      ]
+    },
+    "690": {
+      "op": "pop",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0"
+      ]
+    },
+    "691": {
+      "op": "dup",
+      "defined_out": [
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "current_stake#0 (copy)",
+        "sender#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "current_stake#0 (copy)"
+      ]
+    },
+    "692": {
+      "op": "extract 0 8",
+      "defined_out": [
+        "aggregate%extract%0#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "aggregate%extract%0#0"
+      ]
+    },
+    "695": {
+      "op": "swap",
+      "defined_out": [
+        "aggregate%extract%0#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "current_stake#0"
+      ]
+    },
+    "696": {
+      "op": "dup",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "current_stake#0",
+        "current_stake#0 (copy)"
+      ]
+    },
+    "697": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "current_stake#0",
+        "current_stake#0 (copy)",
+        "0"
+      ]
+    },
+    "698": {
+      "op": "extract_uint64",
+      "defined_out": [
+        "aggregate%extract%0#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%1#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "current_stake#0",
+        "tmp%1#0"
+      ]
+    },
+    "699": {
+      "op": "dup",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "current_stake#0",
+        "tmp%1#0",
+        "tmp%1#0"
+      ]
+    },
+    "700": {
+      "op": "cover 2",
+      "defined_out": [
+        "aggregate%extract%0#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%1#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "current_stake#0",
+        "tmp%1#0"
+      ]
+    },
+    "702": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "current_stake#0",
+        "tmp%1#0",
+        "0"
+      ]
+    },
+    "703": {
+      "op": "bytec_0 // \"rewards_per_share\"",
+      "defined_out": [
+        "\"rewards_per_share\"",
+        "0",
+        "aggregate%extract%0#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%1#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "current_stake#0",
+        "tmp%1#0",
+        "0",
+        "\"rewards_per_share\""
+      ]
+    },
+    "704": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "aggregate%extract%0#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "maybe_exists%1#0",
+        "maybe_value%0#0",
+        "sender#0",
+        "tmp%1#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "current_stake#0",
+        "tmp%1#0",
+        "maybe_value%0#0",
+        "maybe_exists%1#0"
+      ]
+    },
+    "705": {
+      "error": "check self.rewards_per_share exists",
+      "op": "assert // check self.rewards_per_share exists",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "current_stake#0",
+        "tmp%1#0",
+        "maybe_value%0#0"
+      ]
+    },
+    "706": {
+      "op": "*",
+      "defined_out": [
+        "aggregate%extract%0#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%1#0",
+        "tmp%2#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "current_stake#0",
+        "tmp%2#0"
+      ]
+    },
+    "707": {
+      "op": "intc_2 // 1000000000000",
+      "defined_out": [
+        "1000000000000",
+        "aggregate%extract%0#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%1#0",
+        "tmp%2#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "current_stake#0",
+        "tmp%2#0",
+        "1000000000000"
+      ]
+    },
+    "708": {
+      "op": "/",
+      "defined_out": [
+        "aggregate%extract%0#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%1#0",
+        "tmp%3#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "current_stake#0",
+        "tmp%3#0"
+      ]
+    },
+    "709": {
+      "op": "swap",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "tmp%3#0",
+        "current_stake#0"
+      ]
+    },
+    "710": {
+      "op": "intc_1 // 8",
+      "defined_out": [
+        "8",
+        "aggregate%extract%0#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "sender#0",
+        "tmp%1#0",
+        "tmp%3#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "tmp%3#0",
+        "current_stake#0",
+        "8"
+      ]
+    },
+    "711": {
+      "op": "extract_uint64",
+      "defined_out": [
+        "aggregate%extract%0#0",
+        "box_prefixed_key%0#0",
+        "sender#0",
+        "tmp%1#0",
+        "tmp%3#0",
+        "tmp%4#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "tmp%3#0",
+        "tmp%4#0"
+      ]
+    },
+    "712": {
+      "op": "-",
+      "defined_out": [
+        "aggregate%extract%0#0",
+        "box_prefixed_key%0#0",
+        "pending#0",
+        "sender#0",
+        "tmp%1#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0"
+      ]
+    },
+    "713": {
+      "op": "dup",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "pending#0"
+      ]
+    },
+    "714": {
+      "op": "bz claim_after_if_else@4",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0"
+      ]
+    },
+    "717": {
+      "op": "itxn_begin"
+    },
+    "718": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "0"
+      ]
+    },
+    "719": {
+      "op": "bytec 4 // \"reward_asset_id\"",
+      "defined_out": [
+        "\"reward_asset_id\"",
+        "0",
+        "aggregate%extract%0#0",
+        "box_prefixed_key%0#0",
+        "pending#0",
+        "sender#0",
+        "tmp%1#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "0",
+        "\"reward_asset_id\""
+      ]
+    },
+    "721": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "aggregate%extract%0#0",
+        "box_prefixed_key%0#0",
+        "maybe_exists%2#0",
+        "maybe_value%1#0",
+        "pending#0",
+        "sender#0",
+        "tmp%1#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "maybe_value%1#0",
+        "maybe_exists%2#0"
+      ]
+    },
+    "722": {
+      "error": "check self.reward_asset_id exists",
+      "op": "assert // check self.reward_asset_id exists",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "maybe_value%1#0"
+      ]
+    },
+    "723": {
+      "op": "dig 1",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "maybe_value%1#0",
+        "pending#0"
+      ]
+    },
+    "725": {
+      "op": "itxn_field AssetAmount",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "maybe_value%1#0"
+      ]
+    },
+    "727": {
+      "op": "dig 5",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "maybe_value%1#0",
+        "sender#0"
+      ]
+    },
+    "729": {
+      "op": "itxn_field AssetReceiver",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "maybe_value%1#0"
+      ]
+    },
+    "731": {
+      "op": "itxn_field XferAsset",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0"
+      ]
+    },
+    "733": {
+      "op": "pushint 4 // axfer",
+      "defined_out": [
+        "aggregate%extract%0#0",
+        "axfer",
+        "box_prefixed_key%0#0",
+        "pending#0",
+        "sender#0",
+        "tmp%1#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "axfer"
+      ]
+    },
+    "735": {
+      "op": "itxn_field TypeEnum",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0"
+      ]
+    },
+    "737": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "0"
+      ]
+    },
+    "738": {
+      "op": "itxn_field Fee",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0"
+      ]
+    },
+    "740": {
+      "op": "itxn_submit"
+    },
+    "741": {
+      "block": "claim_after_if_else@4",
+      "stack_in": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0"
+      ],
+      "op": "intc_0 // 0",
+      "defined_out": [
+        "0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "0"
+      ]
+    },
+    "742": {
+      "op": "bytec_0 // \"rewards_per_share\"",
+      "defined_out": [
+        "\"rewards_per_share\"",
+        "0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "0",
+        "\"rewards_per_share\""
+      ]
+    },
+    "743": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "maybe_exists%3#0",
+        "maybe_value%2#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "maybe_value%2#0",
+        "maybe_exists%3#0"
+      ]
+    },
+    "744": {
+      "error": "check self.rewards_per_share exists",
+      "op": "assert // check self.rewards_per_share exists",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "maybe_value%2#0"
+      ]
+    },
+    "745": {
+      "op": "dig 2",
+      "defined_out": [
+        "maybe_value%2#0",
+        "tmp%1#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "maybe_value%2#0",
+        "tmp%1#0"
+      ]
+    },
+    "747": {
+      "op": "*",
+      "defined_out": [
+        "tmp%1#0",
+        "tmp%8#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "tmp%8#0"
+      ]
+    },
+    "748": {
+      "op": "intc_2 // 1000000000000",
+      "defined_out": [
+        "1000000000000",
+        "tmp%1#0",
+        "tmp%8#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "tmp%8#0",
+        "1000000000000"
+      ]
+    },
+    "749": {
+      "op": "/",
+      "defined_out": [
+        "new_debt#0",
+        "tmp%1#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "new_debt#0"
+      ]
+    },
+    "750": {
+      "op": "itob",
+      "defined_out": [
+        "aggregate%val_as_bytes%0#0",
+        "tmp%1#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "aggregate%val_as_bytes%0#0"
+      ]
+    },
+    "751": {
+      "op": "dig 3",
+      "defined_out": [
+        "aggregate%extract%0#0",
+        "aggregate%val_as_bytes%0#0",
+        "tmp%1#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "aggregate%val_as_bytes%0#0",
+        "aggregate%extract%0#0"
+      ]
+    },
+    "753": {
+      "op": "swap",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "aggregate%extract%0#0",
+        "aggregate%val_as_bytes%0#0"
+      ]
+    },
+    "754": {
+      "op": "concat",
+      "defined_out": [
+        "aggregate%extract%0#0",
+        "aggregate%head%1#0",
+        "tmp%1#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "aggregate%head%1#0"
+      ]
+    },
+    "755": {
+      "op": "dig 4",
+      "defined_out": [
+        "aggregate%extract%0#0",
+        "aggregate%head%1#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "aggregate%head%1#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "757": {
+      "op": "swap",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "box_prefixed_key%0#0",
+        "aggregate%head%1#0"
+      ]
+    },
+    "758": {
+      "op": "box_put",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0"
+      ]
+    },
+    "759": {
+      "op": "intc_3 // 1",
+      "defined_out": [
+        "1",
+        "aggregate%extract%0#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#0"
+      ],
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0",
+        "1"
+      ]
+    },
+    "760": {
+      "op": "return",
+      "stack_out": [
+        "sender#0",
+        "box_prefixed_key%0#0",
+        "aggregate%extract%0#0",
+        "tmp%1#0",
+        "pending#0"
+      ]
+    },
+    "761": {
+      "subroutine": "contract.StakingContract.get_pending_rewards[routing]",
+      "params": {},
+      "block": "get_pending_rewards",
+      "stack_in": [],
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "current_stake#0"
+      ]
+    },
+    "762": {
+      "op": "pushbytes \"\"",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0"
+      ]
+    },
+    "764": {
+      "op": "txna ApplicationArgs 1",
+      "defined_out": [
+        "user#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "user#0"
+      ]
+    },
+    "767": {
+      "op": "dup",
+      "defined_out": [
+        "user#0",
+        "user#0 (copy)"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "user#0",
+        "user#0 (copy)"
+      ]
+    },
+    "768": {
+      "op": "len",
+      "defined_out": [
+        "len%0#0",
+        "user#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "user#0",
+        "len%0#0"
+      ]
+    },
+    "769": {
+      "op": "pushint 32 // 32",
+      "defined_out": [
+        "32",
+        "len%0#0",
+        "user#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "user#0",
+        "len%0#0",
+        "32"
+      ]
+    },
+    "771": {
+      "op": "==",
+      "defined_out": [
+        "eq%0#0",
+        "user#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "user#0",
+        "eq%0#0"
+      ]
+    },
+    "772": {
+      "error": "invalid number of bytes for arc4.static_array<arc4.uint8, 32>",
+      "op": "assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "user#0"
+      ]
+    },
+    "773": {
+      "op": "bytec 6 // \"user_stakes\"",
+      "defined_out": [
+        "\"user_stakes\"",
+        "user#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "user#0",
+        "\"user_stakes\""
+      ]
+    },
+    "775": {
+      "op": "swap",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "\"user_stakes\"",
+        "user#0"
+      ]
+    },
+    "776": {
+      "op": "concat",
+      "defined_out": [
+        "box_prefixed_key%0#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "777": {
+      "op": "dup",
+      "defined_out": [
+        "box_prefixed_key%0#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "778": {
+      "op": "box_len",
+      "defined_out": [
+        "_%0#0",
+        "box_prefixed_key%0#0",
+        "maybe_exists%0#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "_%0#0",
+        "maybe_exists%0#0"
+      ]
+    },
+    "779": {
+      "op": "bury 1",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "maybe_exists%0#0"
+      ]
+    },
+    "781": {
+      "op": "bnz get_pending_rewards_after_if_else@3",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "784": {
+      "op": "intc_0 // 0",
+      "defined_out": [
+        "box_prefixed_key%0#0",
+        "tmp%2#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%2#0"
+      ]
+    },
+    "785": {
+      "block": "get_pending_rewards_after_inlined_contract.StakingContract.get_pending_rewards@7",
+      "stack_in": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%2#0"
+      ],
+      "op": "itob",
+      "defined_out": [
+        "aggregate%val_as_bytes%0#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "aggregate%val_as_bytes%0#0"
+      ]
+    },
+    "786": {
+      "op": "pushbytes 0x151f7c75",
+      "defined_out": [
+        "0x151f7c75",
+        "aggregate%val_as_bytes%0#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "aggregate%val_as_bytes%0#0",
+        "0x151f7c75"
+      ]
+    },
+    "792": {
+      "op": "swap",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "0x151f7c75",
+        "aggregate%val_as_bytes%0#0"
+      ]
+    },
+    "793": {
+      "op": "concat",
+      "defined_out": [
+        "tmp%4#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%4#0"
+      ]
+    },
+    "794": {
+      "op": "log",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "795": {
+      "op": "intc_3 // 1",
+      "defined_out": [
+        "1"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "1"
+      ]
+    },
+    "796": {
+      "op": "return",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "797": {
+      "block": "get_pending_rewards_after_if_else@3",
+      "stack_in": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0"
+      ],
+      "op": "dup",
+      "defined_out": [
+        "box_prefixed_key%0#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "798": {
+      "op": "box_get",
+      "defined_out": [
+        "aggregate%box_get%1#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "aggregate%box_get%1#0"
+      ]
+    },
+    "799": {
+      "op": "swap",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "aggregate%box_get%1#0",
+        "current_stake#0"
+      ]
+    },
+    "800": {
+      "op": "bury 4",
+      "defined_out": [
+        "aggregate%box_get%1#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "aggregate%box_get%1#0"
+      ]
+    },
+    "802": {
+      "error": "check self.user_stakes entry exists",
+      "op": "assert // check self.user_stakes entry exists",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "803": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "0"
+      ]
+    },
+    "804": {
+      "op": "bytec_0 // \"rewards_per_share\"",
+      "defined_out": [
+        "\"rewards_per_share\"",
+        "0",
+        "box_prefixed_key%0#0",
+        "current_stake#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "0",
+        "\"rewards_per_share\""
+      ]
+    },
+    "805": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "maybe_exists%1#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "acc_rewards_per_share#0",
+        "maybe_exists%1#0"
+      ]
+    },
+    "806": {
+      "op": "swap",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "maybe_exists%1#0",
+        "acc_rewards_per_share#0"
+      ]
+    },
+    "807": {
+      "op": "bury 3",
+      "defined_out": [
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "maybe_exists%1#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "maybe_exists%1#0"
+      ]
+    },
+    "809": {
+      "error": "check self.rewards_per_share exists",
+      "op": "assert // check self.rewards_per_share exists",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "810": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "0"
+      ]
+    },
+    "811": {
+      "op": "bytec_1 // \"total_staked\"",
+      "defined_out": [
+        "\"total_staked\"",
+        "0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "0",
+        "\"total_staked\""
+      ]
+    },
+    "812": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "maybe_exists%2#0",
+        "maybe_value%1#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "maybe_value%1#0",
+        "maybe_exists%2#0"
+      ]
+    },
+    "813": {
+      "error": "check self.total_staked exists",
+      "op": "assert // check self.total_staked exists",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "maybe_value%1#0"
+      ]
+    },
+    "814": {
+      "op": "bz get_pending_rewards_after_if_else@6",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "817": {
+      "op": "global LatestTimestamp",
+      "defined_out": [
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1"
+      ]
+    },
+    "819": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "0"
+      ]
+    },
+    "820": {
+      "op": "bytec_2 // \"last_update_time\"",
+      "defined_out": [
+        "\"last_update_time\"",
+        "0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "0",
+        "\"last_update_time\""
+      ]
+    },
+    "821": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "maybe_exists%3#0",
+        "maybe_value%2#0",
+        "tmp%1#1"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "maybe_value%2#0",
+        "maybe_exists%3#0"
+      ]
+    },
+    "822": {
+      "error": "check self.last_update_time exists",
+      "op": "assert // check self.last_update_time exists",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%1#1",
+        "maybe_value%2#0"
+      ]
+    },
+    "823": {
+      "op": ">",
+      "defined_out": [
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "tmp%2#1"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%2#1"
+      ]
+    },
+    "824": {
+      "op": "bz get_pending_rewards_after_if_else@6",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "827": {
+      "op": "global LatestTimestamp",
+      "defined_out": [
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "tmp%3#1"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%3#1"
+      ]
+    },
+    "829": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%3#1",
+        "0"
+      ]
+    },
+    "830": {
+      "op": "bytec_2 // \"last_update_time\"",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%3#1",
+        "0",
+        "\"last_update_time\""
+      ]
+    },
+    "831": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "maybe_exists%4#0",
+        "maybe_value%3#0",
+        "tmp%3#1"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%3#1",
+        "maybe_value%3#0",
+        "maybe_exists%4#0"
+      ]
+    },
+    "832": {
+      "error": "check self.last_update_time exists",
+      "op": "assert // check self.last_update_time exists",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%3#1",
+        "maybe_value%3#0"
+      ]
+    },
+    "833": {
+      "op": "-",
+      "defined_out": [
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "time_diff#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "time_diff#0"
+      ]
+    },
+    "834": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "time_diff#0",
+        "0"
+      ]
+    },
+    "835": {
+      "op": "bytec 5 // \"reward_rate\"",
+      "defined_out": [
+        "\"reward_rate\"",
+        "0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "time_diff#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "time_diff#0",
+        "0",
+        "\"reward_rate\""
+      ]
+    },
+    "837": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "maybe_exists%5#0",
+        "maybe_value%4#0",
+        "time_diff#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "time_diff#0",
+        "maybe_value%4#0",
+        "maybe_exists%5#0"
+      ]
+    },
+    "838": {
+      "error": "check self.reward_rate exists",
+      "op": "assert // check self.reward_rate exists",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "time_diff#0",
+        "maybe_value%4#0"
+      ]
+    },
+    "839": {
+      "op": "*",
+      "defined_out": [
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "reward_amt#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "reward_amt#0"
+      ]
+    },
+    "840": {
+      "op": "intc_2 // 1000000000000",
+      "defined_out": [
+        "1000000000000",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "reward_amt#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "reward_amt#0",
+        "1000000000000"
+      ]
+    },
+    "841": {
+      "op": "*",
+      "defined_out": [
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "tmp%6#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%6#0"
+      ]
+    },
+    "842": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%6#0",
+        "0"
+      ]
+    },
+    "843": {
+      "op": "bytec_1 // \"total_staked\"",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%6#0",
+        "0",
+        "\"total_staked\""
+      ]
+    },
+    "844": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "maybe_exists%6#0",
+        "maybe_value%5#0",
+        "tmp%6#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%6#0",
+        "maybe_value%5#0",
+        "maybe_exists%6#0"
+      ]
+    },
+    "845": {
+      "error": "check self.total_staked exists",
+      "op": "assert // check self.total_staked exists",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%6#0",
+        "maybe_value%5#0"
+      ]
+    },
+    "846": {
+      "op": "/",
+      "defined_out": [
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "tmp%7#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%7#0"
+      ]
+    },
+    "847": {
+      "op": "dig 2",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%7#0",
+        "acc_rewards_per_share#0"
+      ]
+    },
+    "849": {
+      "op": "+",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "acc_rewards_per_share#0"
+      ]
+    },
+    "850": {
+      "op": "bury 2",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0"
+      ]
+    },
+    "852": {
+      "block": "get_pending_rewards_after_if_else@6",
+      "stack_in": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0"
+      ],
+      "op": "dig 2",
+      "defined_out": [
+        "current_stake#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0"
+      ]
+    },
+    "854": {
+      "op": "dup",
+      "defined_out": [
+        "current_stake#0",
+        "current_stake#0 (copy)"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "current_stake#0 (copy)"
+      ]
+    },
+    "855": {
+      "op": "intc_0 // 0",
+      "defined_out": [
+        "0",
+        "current_stake#0",
+        "current_stake#0 (copy)"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "current_stake#0 (copy)",
+        "0"
+      ]
+    },
+    "856": {
+      "op": "extract_uint64",
+      "defined_out": [
+        "amount#0",
+        "current_stake#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "current_stake#0",
+        "amount#0"
+      ]
+    },
+    "857": {
+      "op": "swap",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "current_stake#0"
+      ]
+    },
+    "858": {
+      "op": "intc_1 // 8",
+      "defined_out": [
+        "8",
+        "amount#0",
+        "current_stake#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "current_stake#0",
+        "8"
+      ]
+    },
+    "859": {
+      "op": "extract_uint64",
+      "defined_out": [
+        "amount#0",
+        "current_stake#0",
+        "debt#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "amount#0",
+        "debt#0"
+      ]
+    },
+    "860": {
+      "op": "swap",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "debt#0",
+        "amount#0"
+      ]
+    },
+    "861": {
+      "op": "dig 3",
+      "defined_out": [
+        "acc_rewards_per_share#0",
+        "amount#0",
+        "current_stake#0",
+        "debt#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "debt#0",
+        "amount#0",
+        "acc_rewards_per_share#0"
+      ]
+    },
+    "863": {
+      "op": "*",
+      "defined_out": [
+        "acc_rewards_per_share#0",
+        "current_stake#0",
+        "debt#0",
+        "tmp%11#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "debt#0",
+        "tmp%11#0"
+      ]
+    },
+    "864": {
+      "op": "intc_2 // 1000000000000",
+      "defined_out": [
+        "1000000000000",
+        "acc_rewards_per_share#0",
+        "current_stake#0",
+        "debt#0",
+        "tmp%11#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "debt#0",
+        "tmp%11#0",
+        "1000000000000"
+      ]
+    },
+    "865": {
+      "op": "/",
+      "defined_out": [
+        "acc_rewards_per_share#0",
+        "current_stake#0",
+        "debt#0",
+        "total_reward#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "debt#0",
+        "total_reward#0"
+      ]
+    },
+    "866": {
+      "op": "swap",
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "total_reward#0",
+        "debt#0"
+      ]
+    },
+    "867": {
+      "op": "-",
+      "defined_out": [
+        "acc_rewards_per_share#0",
+        "current_stake#0",
+        "tmp%2#0"
+      ],
+      "stack_out": [
+        "current_stake#0",
+        "acc_rewards_per_share#0",
+        "box_prefixed_key%0#0",
+        "tmp%2#0"
+      ]
+    },
+    "868": {
+      "op": "b get_pending_rewards_after_inlined_contract.StakingContract.get_pending_rewards@7"
+    },
+    "871": {
+      "subroutine": "contract.StakingContract._update_pool",
+      "params": {},
+      "block": "_update_pool",
+      "stack_in": [],
+      "op": "global LatestTimestamp",
+      "defined_out": [
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "tmp%0#0"
+      ]
+    },
+    "873": {
+      "op": "intc_0 // 0",
+      "defined_out": [
+        "0",
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "tmp%0#0",
+        "0"
+      ]
+    },
+    "874": {
+      "op": "bytec_2 // \"last_update_time\"",
+      "defined_out": [
+        "\"last_update_time\"",
+        "0",
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "tmp%0#0",
+        "0",
+        "\"last_update_time\""
+      ]
+    },
+    "875": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "maybe_exists%0#0",
+        "maybe_value%0#0",
+        "tmp%0#0"
+      ],
+      "stack_out": [
+        "tmp%0#0",
+        "maybe_value%0#0",
+        "maybe_exists%0#0"
+      ]
+    },
+    "876": {
+      "error": "check self.last_update_time exists",
+      "op": "assert // check self.last_update_time exists",
+      "stack_out": [
+        "tmp%0#0",
+        "maybe_value%0#0"
+      ]
+    },
+    "877": {
+      "op": "<=",
+      "defined_out": [
+        "tmp%1#0"
+      ],
+      "stack_out": [
+        "tmp%1#0"
+      ]
+    },
+    "878": {
+      "op": "bz _update_pool_after_if_else@2",
+      "stack_out": []
+    },
+    "881": {
+      "retsub": true,
+      "op": "retsub"
+    },
+    "882": {
+      "block": "_update_pool_after_if_else@2",
+      "stack_in": [],
+      "op": "intc_0 // 0",
+      "defined_out": [
+        "0"
+      ],
+      "stack_out": [
+        "0"
+      ]
+    },
+    "883": {
+      "op": "bytec_1 // \"total_staked\"",
+      "defined_out": [
+        "\"total_staked\"",
+        "0"
+      ],
+      "stack_out": [
+        "0",
+        "\"total_staked\""
+      ]
+    },
+    "884": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "maybe_exists%1#0",
+        "maybe_value%1#0"
+      ],
+      "stack_out": [
+        "maybe_value%1#0",
+        "maybe_exists%1#0"
+      ]
+    },
+    "885": {
+      "error": "check self.total_staked exists",
+      "op": "assert // check self.total_staked exists",
+      "stack_out": [
+        "maybe_value%1#0"
+      ]
+    },
+    "886": {
+      "op": "bnz _update_pool_after_if_else@4",
+      "stack_out": []
+    },
+    "889": {
+      "op": "bytec_2 // \"last_update_time\"",
+      "defined_out": [
+        "\"last_update_time\""
+      ],
+      "stack_out": [
+        "\"last_update_time\""
+      ]
+    },
+    "890": {
+      "op": "global LatestTimestamp",
+      "defined_out": [
+        "\"last_update_time\"",
+        "tmp%3#0"
+      ],
+      "stack_out": [
+        "\"last_update_time\"",
+        "tmp%3#0"
+      ]
+    },
+    "892": {
+      "op": "app_global_put",
+      "stack_out": []
+    },
+    "893": {
+      "retsub": true,
+      "op": "retsub"
+    },
+    "894": {
+      "block": "_update_pool_after_if_else@4",
+      "stack_in": [],
+      "op": "global LatestTimestamp",
+      "defined_out": [
+        "tmp%4#0"
+      ],
+      "stack_out": [
+        "tmp%4#0"
+      ]
+    },
+    "896": {
+      "op": "intc_0 // 0",
+      "defined_out": [
+        "0",
+        "tmp%4#0"
+      ],
+      "stack_out": [
+        "tmp%4#0",
+        "0"
+      ]
+    },
+    "897": {
+      "op": "bytec_2 // \"last_update_time\"",
+      "defined_out": [
+        "\"last_update_time\"",
+        "0",
+        "tmp%4#0"
+      ],
+      "stack_out": [
+        "tmp%4#0",
+        "0",
+        "\"last_update_time\""
+      ]
+    },
+    "898": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "maybe_exists%2#0",
+        "maybe_value%2#0",
+        "tmp%4#0"
+      ],
+      "stack_out": [
+        "tmp%4#0",
+        "maybe_value%2#0",
+        "maybe_exists%2#0"
+      ]
+    },
+    "899": {
+      "error": "check self.last_update_time exists",
+      "op": "assert // check self.last_update_time exists",
+      "stack_out": [
+        "tmp%4#0",
+        "maybe_value%2#0"
+      ]
+    },
+    "900": {
+      "op": "-",
+      "defined_out": [
+        "time_diff#0"
+      ],
+      "stack_out": [
+        "time_diff#0"
+      ]
+    },
+    "901": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "time_diff#0",
+        "0"
+      ]
+    },
+    "902": {
+      "op": "bytec 5 // \"reward_rate\"",
+      "defined_out": [
+        "\"reward_rate\"",
+        "0",
+        "time_diff#0"
+      ],
+      "stack_out": [
+        "time_diff#0",
+        "0",
+        "\"reward_rate\""
+      ]
+    },
+    "904": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "maybe_exists%3#0",
+        "maybe_value%3#0",
+        "time_diff#0"
+      ],
+      "stack_out": [
+        "time_diff#0",
+        "maybe_value%3#0",
+        "maybe_exists%3#0"
+      ]
+    },
+    "905": {
+      "error": "check self.reward_rate exists",
+      "op": "assert // check self.reward_rate exists",
+      "stack_out": [
+        "time_diff#0",
+        "maybe_value%3#0"
+      ]
+    },
+    "906": {
+      "op": "*",
+      "defined_out": [
+        "reward_amt#0"
+      ],
+      "stack_out": [
+        "reward_amt#0"
+      ]
+    },
+    "907": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "reward_amt#0",
+        "0"
+      ]
+    },
+    "908": {
+      "op": "bytec_0 // \"rewards_per_share\"",
+      "defined_out": [
+        "\"rewards_per_share\"",
+        "0",
+        "reward_amt#0"
+      ],
+      "stack_out": [
+        "reward_amt#0",
+        "0",
+        "\"rewards_per_share\""
+      ]
+    },
+    "909": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "maybe_exists%4#0",
+        "maybe_value%4#0",
+        "reward_amt#0"
+      ],
+      "stack_out": [
+        "reward_amt#0",
+        "maybe_value%4#0",
+        "maybe_exists%4#0"
+      ]
+    },
+    "910": {
+      "error": "check self.rewards_per_share exists",
+      "op": "assert // check self.rewards_per_share exists",
+      "stack_out": [
+        "reward_amt#0",
+        "maybe_value%4#0"
+      ]
+    },
+    "911": {
+      "op": "swap",
+      "stack_out": [
+        "maybe_value%4#0",
+        "reward_amt#0"
+      ]
+    },
+    "912": {
+      "op": "intc_2 // 1000000000000",
+      "defined_out": [
+        "1000000000000",
+        "maybe_value%4#0",
+        "reward_amt#0"
+      ],
+      "stack_out": [
+        "maybe_value%4#0",
+        "reward_amt#0",
+        "1000000000000"
+      ]
+    },
+    "913": {
+      "op": "*",
+      "defined_out": [
+        "maybe_value%4#0",
+        "tmp%7#0"
+      ],
+      "stack_out": [
+        "maybe_value%4#0",
+        "tmp%7#0"
+      ]
+    },
+    "914": {
+      "op": "intc_0 // 0",
+      "stack_out": [
+        "maybe_value%4#0",
+        "tmp%7#0",
+        "0"
+      ]
+    },
+    "915": {
+      "op": "bytec_1 // \"total_staked\"",
+      "defined_out": [
+        "\"total_staked\"",
+        "0",
+        "maybe_value%4#0",
+        "tmp%7#0"
+      ],
+      "stack_out": [
+        "maybe_value%4#0",
+        "tmp%7#0",
+        "0",
+        "\"total_staked\""
+      ]
+    },
+    "916": {
+      "op": "app_global_get_ex",
+      "defined_out": [
+        "maybe_exists%5#0",
+        "maybe_value%4#0",
+        "maybe_value%5#0",
+        "tmp%7#0"
+      ],
+      "stack_out": [
+        "maybe_value%4#0",
+        "tmp%7#0",
+        "maybe_value%5#0",
+        "maybe_exists%5#0"
+      ]
+    },
+    "917": {
+      "error": "check self.total_staked exists",
+      "op": "assert // check self.total_staked exists",
+      "stack_out": [
+        "maybe_value%4#0",
+        "tmp%7#0",
+        "maybe_value%5#0"
+      ]
+    },
+    "918": {
+      "op": "/",
+      "defined_out": [
+        "maybe_value%4#0",
+        "tmp%8#0"
+      ],
+      "stack_out": [
+        "maybe_value%4#0",
+        "tmp%8#0"
+      ]
+    },
+    "919": {
+      "op": "+",
+      "defined_out": [
+        "tmp%9#0"
+      ],
+      "stack_out": [
+        "tmp%9#0"
+      ]
+    },
+    "920": {
+      "op": "bytec_0 // \"rewards_per_share\"",
+      "stack_out": [
+        "tmp%9#0",
+        "\"rewards_per_share\""
+      ]
+    },
+    "921": {
+      "op": "swap",
+      "stack_out": [
+        "\"rewards_per_share\"",
+        "tmp%9#0"
+      ]
+    },
+    "922": {
+      "op": "app_global_put",
+      "stack_out": []
+    },
+    "923": {
+      "op": "bytec_2 // \"last_update_time\"",
+      "stack_out": [
+        "\"last_update_time\""
+      ]
+    },
+    "924": {
+      "op": "global LatestTimestamp",
+      "defined_out": [
+        "\"last_update_time\"",
+        "tmp%10#0"
+      ],
+      "stack_out": [
+        "\"last_update_time\"",
+        "tmp%10#0"
+      ]
+    },
+    "926": {
+      "op": "app_global_put",
+      "stack_out": []
+    },
+    "927": {
+      "retsub": true,
+      "op": "retsub"
+    }
+  }
+}
