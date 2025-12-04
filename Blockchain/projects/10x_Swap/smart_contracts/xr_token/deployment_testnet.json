@@ -1,0 +1,10 @@
+{
+  "asset_id": 751369844,
+  "name": "10x Reward Token",
+  "unit_name": "XR",
+  "decimals": 6,
+  "total_supply": 1000000,
+  "deployer": "M4QPAJAMJ7MNCVMCO3O4QZZVV7E2RW2WNDW2VC3JEIJRUS5OMBLS6HNPLE",
+  "tx_id": "FBLBM4SJ553XET7NGH7WP5O5X344MVXIRDMU6DMWEJAEOQLTJIDQ",
+  "network": "testnet"
+}

@@ -1,9 +1,27 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, createContext, useContext } from "react"
 import { usePathname } from "next/navigation"
 import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
 import { RewardsSlidingPanel, RewardsFloatingButton } from "@/components/features/rewards/rewards-sliding-panel"
+import { fetchRewardsSummary } from "@/lib/rewards/client"
+
+// Context to expose openRewardsPanel function
+interface RewardsContextType {
+  openRewardsPanel: () => void
+  closeRewardsPanel: () => void
+  isPanelOpen: boolean
+  refreshRewards: () => void
+}
+
+const RewardsContext = createContext<RewardsContextType>({
+  openRewardsPanel: () => {},
+  closeRewardsPanel: () => {},
+  isPanelOpen: false,
+  refreshRewards: () => {}
+})
+
+export const useRewardsPanel = () => useContext(RewardsContext)
 
 // Pages where the rewards floating button should be visible
 const REWARDS_VISIBLE_PAGES = ['/portfolio', '/launchpad', '/trade']
@@ -12,10 +30,16 @@ export function RewardsProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const [hasClaimable, setHasClaimable] = useState(false)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
   const { activeAccount } = useWalletConnection()
+  const lastLoginSyncKey = useRef<string | null>(null)
 
   // Check if rewards button should be visible on current page
   const showRewardsButton = REWARDS_VISIBLE_PAGES.some(page => pathname?.startsWith(page))
+
+  const openRewardsPanel = () => setIsPanelOpen(true)
+  const closeRewardsPanel = () => setIsPanelOpen(false)
+  const refreshRewards = () => setRefreshTrigger(prev => prev + 1)
 
   // Check for claimable quests
   useEffect(() => {
@@ -43,18 +67,19 @@ export function RewardsProvider({ children }: { children: React.ReactNode }) {
   }, [activeAccount])
 
   return (
-    <>
+    <RewardsContext.Provider value={{ openRewardsPanel, closeRewardsPanel, isPanelOpen, refreshRewards }}>
       {children}
       {showRewardsButton && (
         <RewardsFloatingButton 
-          onClick={() => setIsPanelOpen(true)} 
+          onClick={openRewardsPanel} 
           hasClaimable={hasClaimable} 
         />
       )}
       <RewardsSlidingPanel 
         isOpen={isPanelOpen} 
-        onClose={() => setIsPanelOpen(false)} 
+        onClose={closeRewardsPanel}
+        refreshTrigger={refreshTrigger}
       />
-    </>
+    </RewardsContext.Provider>
   )
 }
