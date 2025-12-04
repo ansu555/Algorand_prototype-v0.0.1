@@ -1,0 +1,16 @@
+{
+  "asaId": 750589647,
+  "name": "X Token",
+  "symbol": "X",
+  "decimals": 6,
+  "totalSupply": 1000000000,
+  "creatorAddress": "5IZJEVVOAVXOVCN35JQ5PBDBDAPEBUTKST7GDGUGEBP5QNY7S5YWDYSME4",
+  "treasuryAddress": "5IZJEVVOAVXOVCN35JQ5PBDBDAPEBUTKST7GDGUGEBP5QNY7S5YWDYSME4",
+  "txId": "EDXHCNYZJBIEZO2EBHPIAWQMPSBMKGAD76DYQJW2IOYCPVTDZOFA",
+  "network": "testnet",
+  "deployedAt": "2025-11-30T21:39:02.029Z",
+  "urls": {
+    "asset": "https://testnet.algoexplorer.io/asset/750589647",
+    "transaction": "https://testnet.algoexplorer.io/tx/EDXHCNYZJBIEZO2EBHPIAWQMPSBMKGAD76DYQJW2IOYCPVTDZOFA"
+  }
+}

@@ -30,7 +30,9 @@ export const ALGORAND_ASSETS = {
     ALGO: { id: 0, symbol: 'ALGO', decimals: 6, name: 'Algorand' },
     USDC: { id: 10458941, symbol: 'USDC', decimals: 6, name: 'USDC (Testnet)' },
     USDT: { id: 67396430, symbol: 'USDT', decimals: 6, name: 'USDt (Testnet)' },
-    ALGF: { id: 70283957, symbol: 'ALGF', decimals: 6, name: 'AlgoFund (Testnet)' }
+    ALGF: { id: 70283957, symbol: 'ALGF', decimals: 6, name: 'AlgoFund (Testnet)' },
+    // X Token - 10xSwap Reward Token (ID updated after deployment)
+    X: { id: parseInt(process.env.NEXT_PUBLIC_X_TOKEN_ASA_ID || '0', 10), symbol: 'X', decimals: 6, name: 'X Token' }
   }
 }
 
