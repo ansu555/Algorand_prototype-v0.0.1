@@ -13,9 +13,10 @@ import { cn } from "@/lib/utils"
 interface RewardsSlidingPanelProps {
   isOpen: boolean
   onClose: () => void
+  refreshTrigger?: number
 }
 
-export function RewardsSlidingPanel({ isOpen, onClose }: RewardsSlidingPanelProps) {
+export function RewardsSlidingPanel({ isOpen, onClose, refreshTrigger }: RewardsSlidingPanelProps) {
   const { activeAccount } = useWalletConnection()
   const [rewards, setRewards] = useState<UserRewards | null>(null)
   const [quests, setQuests] = useState<Quest[]>([])
@@ -34,7 +35,7 @@ export function RewardsSlidingPanel({ isOpen, onClose }: RewardsSlidingPanelProp
       await loadRewards()
       await loadQuests()
     })()
-  }, [activeAccount, isOpen, mounted])
+  }, [activeAccount, isOpen, mounted, refreshTrigger])
 
   const loadRewards = async () => {
     if (!activeAccount?.address) return
