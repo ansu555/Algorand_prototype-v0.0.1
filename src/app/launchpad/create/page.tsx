@@ -379,37 +379,43 @@ export default function CreateProjectPage() {
       // Step 5: Save to database
       setBlockchainStep('Saving project details...')
 
+      // Build payload with all BigInts pre-converted to strings
+      const maxBuyPerTxValue = BigInt(Math.floor(Number(formData.maxPurchasePerTx) * Number(formData.totalSupply) / 100)) * BigInt(1_000_000)
+      const maxBuyPerUserValue = BigInt(Math.floor(Number(formData.maxPurchasePerUser) * Number(formData.totalSupply) / 100)) * BigInt(1_000_000)
+
+      const projectPayload = {
+        creatorAddress: activeAccount.address,
+        tokenName: formData.tokenName,
+        tokenSymbol: formData.tokenSymbol,
+        totalSupply: formData.totalSupply,
+        tokensForSale: formData.tokensForSale,
+        description: formData.description || undefined,
+        logoUrl: logoUrl,
+        websiteUrl: formData.websiteUrl || undefined,
+        twitterUrl: formData.twitterUrl || undefined,
+        telegramUrl: formData.telegramUrl || undefined,
+        curveType: formData.curveType,
+        basePrice: Math.floor(Number(formData.basePrice) * 1_000_000).toString(),
+        maxPrice: Math.floor(Number(formData.maxPrice) * 1_000_000).toString(),
+        bondingTarget: Math.floor(Number(formData.bondingTarget) * 1_000_000).toString(),
+        dexChoice: formData.dexChoice,
+        lpLockDays: Number(formData.lpLockDays),
+        // Blockchain references (ensure all are strings, not BigInt)
+        asaId: typeof asaId === 'bigint' ? asaId.toString() : String(asaId),
+        appId: typeof appId === 'bigint' ? appId.toString() : String(appId),
+        configTxId: String(configTxId),
+        bootstrapTxId: String(bootstrapTxId),
+        fundingTxId: String(fundingTxId),
+        status: 'active', // Mark as active since it's on blockchain
+        maxBuyPerTx: maxBuyPerTxValue.toString(),
+        maxBuyPerUser: maxBuyPerUserValue.toString(),
+        cooldownBlocks: formData.cooldownBlocks,
+      }
+
       const res = await fetch('/api/launchpad/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          creatorAddress: activeAccount.address,
-          tokenName: formData.tokenName,
-          tokenSymbol: formData.tokenSymbol,
-          totalSupply: formData.totalSupply,
-          tokensForSale: formData.tokensForSale,
-          description: formData.description || undefined,
-          logoUrl: logoUrl,
-          websiteUrl: formData.websiteUrl || undefined,
-          twitterUrl: formData.twitterUrl || undefined,
-          telegramUrl: formData.telegramUrl || undefined,
-          curveType: formData.curveType,
-          basePrice: Math.floor(Number(formData.basePrice) * 1_000_000).toString(),
-          maxPrice: Math.floor(Number(formData.maxPrice) * 1_000_000).toString(),
-          bondingTarget: Math.floor(Number(formData.bondingTarget) * 1_000_000).toString(),
-          dexChoice: formData.dexChoice,
-          lpLockDays: Number(formData.lpLockDays),
-          // Blockchain references
-          asaId: asaId,
-          appId: appId,  // ← Store the new contract's App ID
-          configTxId: configTxId,
-          bootstrapTxId: bootstrapTxId,
-          fundingTxId: fundingTxId,
-          status: 'active', // Mark as active since it's on blockchain
-          maxBuyPerTx: (BigInt(Math.floor(Number(formData.maxPurchasePerTx) * Number(formData.totalSupply) / 100)) * BigInt(1_000_000)).toString(),
-          maxBuyPerUser: (BigInt(Math.floor(Number(formData.maxPurchasePerUser) * Number(formData.totalSupply) / 100)) * BigInt(1_000_000)).toString(),
-          cooldownBlocks: formData.cooldownBlocks,
-        })
+        body: JSON.stringify(projectPayload)
       })
 
       const data = await res.json()
