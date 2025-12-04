@@ -61,9 +61,9 @@ export const Header = () => {
   const navItems = [
     { name: "Home", href: "/" },
     { name: "Trade", href: "/trade" },
-    { name: "Stake", href: "/staking" },
+    { name: "Stake", href: "/staking", disabled: true },
     { name: "Launchpad", href: "/launchpad" },
-    { name: "Bridge", href: "/bridge" },
+    { name: "Bridge", href: "/bridge", disabled: true },
     { name: "Portfolio", href: "/portfolio" },
     { name: "Developers", href: "/developers" },
   ];
@@ -142,13 +142,15 @@ export const Header = () => {
           {navItems.slice(1).map((item) => (
             <Link
               key={item.href}
-              href={item.href}
+              href={item.disabled ? "#" : item.href}
               className={cn(
                 "relative text-foreground/80 hover:text-foreground transition-all duration-300 group px-3 py-1 rounded-lg hover:bg-foreground/5 transform hover:scale-110 hover:rotate-1 hover:skew-x-1 font-mono uppercase text-sm whitespace-nowrap",
-                pathname === item.href && "text-primary dark:text-[#F3C623]"
+                pathname === item.href && "text-primary dark:text-[#F3C623]",
+                item.disabled && "opacity-40 cursor-not-allowed pointer-events-none"
               )}
               onMouseEnter={playHoverSound}
               onFocus={playHoverSound}
+              onClick={(e) => item.disabled && e.preventDefault()}
             >
               {item.name}
               <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-primary transition-all duration-200 group-hover:w-4" />
