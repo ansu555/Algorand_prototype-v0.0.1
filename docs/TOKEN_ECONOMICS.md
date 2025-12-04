@@ -87,6 +87,92 @@ ENABLE_X_TOKEN_DISTRIBUTION=true
 
 ---
 
+## XR Token Overview
+
+### XR Token Properties
+
+| Property | Value |
+|----------|-------|
+| **Token Name** | 10x Reward Token |
+| **Symbol** | XR |
+| **Blockchain** | Algorand (ASA) |
+| **Decimals** | 6 |
+| **Total Supply** | 1,000,000 (1 million - limited supply) |
+| **Distribution** | 100% via staking rewards |
+| **TestNet ASA ID** | [751369844](https://testnet.algoexplorer.io/asset/751369844) |
+| **Creator Address** | M4QPAJAMJ7MNCVMCO3O4QZZVV7E2RW2WNDW2VC3JEIJRUS5OMBLS6HNPLE |
+
+### XR Token Purpose
+
+XR Token is the **governance and utility token** of the 10xSwap ecosystem. Unlike X tokens which are earned through quests and activities, XR tokens are exclusively earned by staking X tokens in the StakingContract.
+
+**Key Differences:**
+
+| Feature | X Token | XR Token |
+|---------|---------|----------|
+| **Supply** | 1 billion (inflationary) | 1 million (limited) |
+| **Earning** | Quests, activities, referrals | Staking X tokens only |
+| **Purpose** | Rewards, incentives | Governance, premium benefits |
+| **Distribution** | Active participation | Passive staking |
+| **Scarcity** | Abundant | Scarce |
+| **Utility** | Platform rewards | Governance & VIP access |
+
+### XR Token Utility
+
+1. **Governance Voting** (Future)
+   - Vote on protocol parameters
+   - Propose new features
+   - Approve DEX integrations
+   - Control treasury allocation
+   - Voting power: 1 XR = 1 vote
+
+2. **Premium Benefits**
+   - **Fee Discounts:** Up to 90% off trading fees
+   - **Launch Priority:** Guaranteed allocation in high-demand launches
+   - **VIP Support:** Priority customer service
+   - **Exclusive Features:** Early access to new platform features
+
+3. **Staking Multipliers**
+   - Hold XR to boost X token staking rewards
+   - XR holders earn additional XR at higher rates
+   - Create compound growth opportunities
+
+4. **Liquidity Mining** (Future)
+   - Provide XR/ALGO liquidity to earn fees
+   - Earn additional X token rewards
+   - Bootstrap XR token liquidity
+
+### XR Token Distribution Schedule
+
+| Phase | Duration | XR Distributed | Daily Rate |
+|-------|----------|----------------|------------|
+| Phase 1 (Launch) | 90 days | 250,000 XR | ~2,778 XR/day |
+| Phase 2 | 180 days | 300,000 XR | ~1,667 XR/day |
+| Phase 3 | 365 days | 300,000 XR | ~822 XR/day |
+| Phase 4+ | Ongoing | 150,000 XR | Variable (decreasing) |
+
+**Total:** 1,000,000 XR distributed over ~2.5 years through staking.
+
+### How to Earn XR Tokens
+
+1. **Earn X Tokens** - Complete quests and activities
+2. **Stake X Tokens** - Deposit into StakingContract
+3. **Accumulate XR** - Rewards earned every second
+4. **Claim or Compound** - Withdraw or restake for growth
+5. **Participate in Governance** - Use XR for voting (future)
+
+### XR Token Value Proposition
+
+**Scarcity:** With only 1 million total supply vs. 1 billion X tokens, XR tokens are 1,000x more scarce, creating potential value appreciation.
+
+**Utility:** XR tokens unlock premium features that X tokens cannot, making them more valuable for serious platform users.
+
+**Governance:** Future protocol decisions require XR tokens, giving holders direct influence over platform evolution.
+
+**Long-term Alignment:** XR rewards long-term stakers who believe in the platform's future, not just short-term participants.
+
+---
+
 ## Token Distribution
 
 ### Earning Methods
@@ -185,18 +271,95 @@ Random X token rewards for active users:
 | Platinum | 20,000-49,999 X | 50% (0.15%) |
 | Diamond | 50,000+ X | 75% (0.075%) |
 
-### 2. Staking Rewards (Coming Soon)
+### 2. Staking Rewards
 
-Stake X tokens to earn passive income:
+Stake X tokens to earn XR token rewards through the deployed StakingContract:
 
-**Base Staking APY: 15%**
+**Deployed Contract Information:**
+- **Contract:** StakingContract (ready for deployment)
+- **Staked Asset:** X Token (ASA ID: 750589647)
+- **Reward Asset:** XR Token (ASA ID: 751369844)
+- **Network:** Testnet (Mainnet TBD)
 
-Lock periods with multipliers:
-- **No Lock** (flexible): 15% APY
-- **30 Days**: 18% APY (+3%)
-- **90 Days**: 22% APY (+7%)
-- **180 Days**: 28% APY (+13%)
-- **365 Days**: 40% APY (+25%)
+**How Staking Works:**
+
+1. **Flexible Staking** - No lock periods, stake and unstake anytime
+2. **Real-Time Rewards** - XR tokens accumulate every second
+3. **Proportional Distribution** - Rewards based on your share of total staked
+4. **Compound Growth** - Claim and restake rewards for compound effects
+
+**Reward Calculation:**
+```
+Your Pending XR = (Your Staked X * Time Staked * Reward Rate) / Total Staked X
+```
+
+**Staking Actions:**
+
+| Action | Description | Gas Cost |
+|--------|-------------|----------|
+| **Stake** | Deposit X tokens to start earning XR | ~0.002 ALGO |
+| **Claim** | Collect earned XR without unstaking | ~0.001 ALGO |
+| **Unstake** | Withdraw X tokens + claim pending XR | ~0.002 ALGO |
+| **View Rewards** | Check pending XR (free, read-only) | Free |
+
+**Example Reward Scenarios:**
+
+*Scenario 1: Early Staker*
+- Stake: 10,000 X tokens
+- Time: 30 days
+- Total Staked: 100,000 X (your 10% share)
+- Reward Rate: 1 XR/second
+- Earnings: ~259 XR tokens (10% of 2,592,000 seconds)
+
+*Scenario 2: Late Staker*
+- Stake: 10,000 X tokens  
+- Time: 30 days
+- Total Staked: 1,000,000 X (your 1% share)
+- Reward Rate: 1 XR/second
+- Earnings: ~26 XR tokens (1% of 2,592,000 seconds)
+
+**XR Token Benefits:**
+
+Once earned, XR tokens provide:
+- **Governance Rights:** Vote on protocol parameters (future)
+- **Fee Discounts:** Reduced trading fees on 10xSwap
+- **VIP Access:** Early access to token launches
+- **Exclusive Features:** Priority customer support
+- **Staking Multipliers:** Higher tiers unlock better rewards
+
+**Staking Tiers (Based on Staked X):**
+
+| Tier | X Tokens Staked | XR Earnings Boost | Additional Benefits |
+|------|----------------|-------------------|---------------------|
+| Bronze | 1,000-4,999 X | Standard | Basic staking |
+| Silver | 5,000-19,999 X | +10% | Priority support |
+| Gold | 20,000-49,999 X | +25% | Launch early access (1 hour) |
+| Platinum | 50,000-99,999 X | +50% | Launch early access (3 hours) |
+| Diamond | 100,000+ X | +100% | Launch early access (6 hours) + governance |
+
+**Technical Details:**
+
+The StakingContract uses a sophisticated "rewards per share" algorithm:
+- **Precision:** 12 decimals to prevent rounding errors
+- **Box Storage:** User stakes stored in Algorand boxes
+- **Gas Efficient:** Optimized for low transaction costs
+- **Admin Controlled:** Reward rate adjustable by platform
+- **Trustless:** No ability to withdraw user stakes
+
+**Getting Started:**
+
+1. **Opt-in to XR Token** - One-time ASA opt-in (0.1 ALGO MBR)
+2. **Approve Staking Contract** - Allow contract interaction
+3. **Stake X Tokens** - Transfer X tokens to contract
+4. **Earn XR** - Rewards accumulate automatically
+5. **Claim or Compound** - Withdraw or restake rewards
+
+**Safety Features:**
+- ✅ No lock periods - withdraw anytime
+- ✅ Trustless design - admin cannot touch user stakes
+- ✅ Real-time tracking - always see pending rewards
+- ✅ Box storage - efficient on-chain data management
+- ✅ Audited code - open-source AlgoPy contract
 
 **VIP Staking Benefits:**
 - Priority access to new token launches
