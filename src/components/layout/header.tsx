@@ -61,7 +61,7 @@ export const Header = () => {
   const navItems = [
     { name: "Home", href: "/" },
     { name: "Trade", href: "/trade" },
-    { name: "Stake", href: "/stake" },
+    { name: "Stake", href: "/staking" },
     { name: "Launchpad", href: "/launchpad" },
     { name: "Bridge", href: "/bridge" },
     { name: "Portfolio", href: "/portfolio" },

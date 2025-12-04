@@ -5,12 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { RouteDisplay, type QuoteResponse, type RouteQuote } from '@/components/shared/route-display'
-import { useWalletSigner } from '@/components/providers/txnlab-wallet-provider'
+import { useWalletSigner, useWalletConnection } from '@/components/providers/txnlab-wallet-provider'
 import algosdk from 'algosdk'
 import { parseUnits } from 'viem'
 import { createMultiDexAggregator, type AggregatorQuote } from '@/lib/dex/aggregator'
 import type { QuoteRequest, Asset, PoolInfo } from '@/lib/dex/types'
 import { resolveTokenBySymbol } from '@/lib/tokens'
+import { trackRewardsAction } from '@/lib/rewards/client'
 
 // Algorand-focused token list (testnet): ALGO and USDC
 
@@ -28,6 +29,7 @@ export const SwapInterface: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
 
   const walletSigner = useWalletSigner()
+  const { activeAccount } = useWalletConnection()
 
   const algodClient = useMemo(
     () => new algosdk.Algodv2('', 'https://testnet-api.algonode.cloud', ''),
@@ -144,6 +146,21 @@ export const SwapInterface: React.FC = () => {
       alert(
         `Swap executed successfully!\nTx Hash: ${result.txId}\nOutput: ${Number(result.amountOut) / 1_000_000} ${tokenOut}`
       )
+
+      if (activeAccount?.address) {
+        trackRewardsAction({
+          userId: activeAccount.address,
+          actionType: 'swap',
+          metadata: {
+            txId: result.txId,
+            amountIn: amount,
+            tokenIn,
+            tokenOut,
+          }
+        }).catch((rewardError) => {
+          console.error('Failed to record swap reward:', rewardError)
+        })
+      }
 
       const route = toRouteQuote(freshQuote)
       const updatedQuote: QuoteResponse = {

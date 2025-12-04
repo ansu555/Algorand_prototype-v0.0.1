@@ -19,6 +19,7 @@ echo
 mkdir -p "$ARTIFACTS_DIR/multihop_swap"
 mkdir -p "$ARTIFACTS_DIR/autopilot_rule"
 mkdir -p "$ARTIFACTS_DIR/liquidity_pool"
+mkdir -p "$ARTIFACTS_DIR/staking"
 
 # Compile MultihopSwapRouter
 echo "📦 Compiling MultihopSwapRouter..."
@@ -102,6 +103,21 @@ if [ -f "LiquidityPoolContract.approval.teal" ]; then
     echo "✅ LiquidityPoolContract compiled and moved to artifacts/liquidity_pool/"
 else
     echo "❌ LiquidityPoolContract compilation failed"
+fi
+
+echo
+
+# Compile StakingContract
+echo "📦 Compiling StakingContract..."
+cd "$SCRIPT_DIR/staking"
+algokit compile py contract.py
+
+# Move artifacts
+if [ -f "StakingContract.approval.teal" ]; then
+    mv StakingContract.* "$ARTIFACTS_DIR/staking/"
+    echo "✅ StakingContract compiled and moved to artifacts/staking/"
+else
+    echo "❌ StakingContract compilation failed"
 fi
 
 echo
