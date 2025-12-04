@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,10 +14,11 @@ import { SearchBar } from "@/components/shared/search-bar"
 import {
   Rocket, TrendingUp, Users, Shield, Clock, Target,
   Flame, AlertTriangle, CheckCircle2, ArrowLeft, ExternalLink,
-  Zap, Gift, Lock, Copy, Globe, Twitter, Send, Loader2
+  Zap, Gift, Lock, Copy, Globe, Twitter, Send, Loader2, Wallet, Coins
 } from "lucide-react"
 import Link from "next/link"
 import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
+import { useRewardsPanel } from "@/components/providers/rewards-provider"
 import { useWallet } from "@txnlab/use-wallet-react"
 import * as blockchain from "@/lib/launchpad/blockchain"
 import algosdk from "algosdk"
@@ -64,9 +65,19 @@ interface PriceQuote {
 }
 
 interface UserPoints {
-  totalPoints: string
-  claimablePoints: string
-  claimedPoints: string
+  totalPoints: number
+  claimablePoints: number
+  claimedPoints: number
+  xTokensClaimable: number
+}
+
+interface LaunchpadRewards {
+  totalPoints: number
+  totalClaimable: number
+  totalClaimed: number
+  totalXTokensClaimable: number
+  xTokenAsaId: number | null
+  conversionRate: number
 }
 
 interface ProjectTransactionEntry {
@@ -88,9 +99,13 @@ interface ProjectHolderEntry {
 
 export default function ProjectDetailPage() {
   const params = useParams()
+  const { openRewardsPanel, refreshRewards } = useRewardsPanel()
   const { activeAccount } = useWalletConnection()
   const { signTransactions } = useWallet()
   const [project, setProject] = useState<Project | null>(null)
+  const [livePrice, setLivePrice] = useState<number | null>(null)
+  const [launchpadRewards, setLaunchpadRewards] = useState<LaunchpadRewards | null>(null)
+  const [claimingRewards, setClaimingRewards] = useState(false)
 
   // Wallet transaction signer wrapper to filter out nulls
   const walletSigner = async (
@@ -197,14 +212,65 @@ export default function ProjectDetailPage() {
         return
       }
 
-      const res = await fetch(`/api/launchpad/user?action=points&projectId=${params.projectId}&userAddress=${activeAccount?.address}`)
+      // Load launchpad rewards from new API
+      const res = await fetch(`/api/launchpad/rewards?userAddress=${activeAccount?.address}&projectId=${params.projectId}`)
       const data = await res.json()
 
-      if (data.success) {
-        setUserPoints(data.data)
+      if (data.success && data.data) {
+        setLaunchpadRewards(data.data)
+        
+        // Find this project's points
+        const projectPoints = data.data.projects?.find((p: any) => p.projectId === params.projectId)
+        if (projectPoints) {
+          setUserPoints({
+            totalPoints: projectPoints.totalPoints,
+            claimablePoints: projectPoints.claimablePoints,
+            claimedPoints: projectPoints.claimedPoints,
+            xTokensClaimable: projectPoints.xTokensClaimable
+          })
+        }
       }
     } catch (error) {
       console.error('Failed to load user points:', error)
+    }
+  }
+
+  const handleClaimRewards = async () => {
+    if (!activeAccount?.address || !project || !userPoints || userPoints.claimablePoints <= 0) {
+      // Just open the panel if nothing to claim
+      openRewardsPanel()
+      return
+    }
+    
+    setClaimingRewards(true)
+    try {
+      // Claim the launchpad rewards as X tokens
+      const res = await fetch('/api/launchpad/rewards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userAddress: activeAccount.address,
+          projectId: project.id
+        })
+      })
+      
+      const data = await res.json()
+      
+      if (data.success) {
+        // Refresh points after claiming
+        await loadUserPoints()
+        // Trigger rewards panel refresh to show updated X token balance
+        refreshRewards()
+      }
+      
+      // Open the rewards panel to show updated balance
+      openRewardsPanel()
+    } catch (error) {
+      console.error('Claim rewards error:', error)
+      // Still open the panel even if there's an error
+      openRewardsPanel()
+    } finally {
+      setClaimingRewards(false)
     }
   }
 
@@ -472,11 +538,18 @@ export default function ProjectDetailPage() {
           <div className="flex items-center gap-8 text-sm">
             <div>
               <p className="text-muted-foreground text-xs">Current Price</p>
-              <p className="font-mono font-bold text-green-500">${formatAlgo(project.basePrice)} ALGO</p>
+              <p className="font-mono font-bold text-green-500">
+                {livePrice ? livePrice.toFixed(6) : formatAlgo(project.basePrice)} ALGO
+              </p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Market Cap</p>
-              <p className="font-mono font-bold">${formatAlgo((BigInt(project.basePrice) * BigInt(project.totalSupply) / 1000000n).toString())}</p>
+              <p className="font-mono font-bold">
+                {livePrice 
+                  ? (livePrice * Number(project.totalSupply) / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 2 })
+                  : formatAlgo((BigInt(project.basePrice) * BigInt(project.totalSupply) / 1000000n).toString())
+                } ALGO
+              </p>
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Created</p>
@@ -491,7 +564,11 @@ export default function ProjectDetailPage() {
         <div className="lg:col-span-9 space-y-4">
           {/* Chart Area */}
           <div className="h-[600px] w-full bg-card border border-border rounded-lg overflow-hidden">
-            <TokenPriceChart projectId={project.id} tokenSymbol={project.tokenSymbol} />
+            <TokenPriceChart 
+              projectId={project.id} 
+              tokenSymbol={project.tokenSymbol} 
+              onPriceUpdate={(price) => setLivePrice(price)}
+            />
           </div>
 
           {/* Bottom Tabs: Details, Transactions, Holders */}
@@ -517,27 +594,109 @@ export default function ProjectDetailPage() {
                   </p>
 
                   <div className="mt-6 space-y-3">
+                    {/* Contract/Pool Address */}
                     <div className="flex justify-between py-2 border-b border-border">
-                      <span className="text-muted-foreground">Token ID (ASA)</span>
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Wallet className="h-3 w-3" /> Contract Address
+                      </span>
                       <div className="flex items-center gap-2 font-mono text-sm">
-                        {project.asaId || 'Not deployed'}
-                        {project.asaId && (
-                          <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => copyToClipboard(project.asaId?.toString() || '')}>
-                            <Copy className="h-3 w-3" />
-                          </Button>
+                        {project.appId ? (
+                          (() => {
+                            const appAddress = algosdk.getApplicationAddress(BigInt(project.appId)).toString()
+                            return (
+                              <>
+                                {appAddress.substring(0, 8)}...{appAddress.substring(appAddress.length - 6)}
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-4 w-4" 
+                                  onClick={() => copyToClipboard(appAddress)}
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                                <a 
+                                  href={`https://testnet.algoexplorer.io/address/${appAddress}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                >
+                                  <Button variant="ghost" size="icon" className="h-4 w-4">
+                                    <ExternalLink className="h-3 w-3" />
+                                  </Button>
+                                </a>
+                              </>
+                            )
+                          })()
+                        ) : (
+                          <span className="text-muted-foreground">Not deployed</span>
                         )}
                       </div>
                     </div>
+                    
+                    {/* App ID */}
+                    <div className="flex justify-between py-2 border-b border-border">
+                      <span className="text-muted-foreground">App ID</span>
+                      <div className="flex items-center gap-2 font-mono text-sm">
+                        {project.appId || 'Not deployed'}
+                        {project.appId && (
+                          <>
+                            <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => copyToClipboard(project.appId?.toString() || '')}>
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                            <a 
+                              href={`https://testnet.algoexplorer.io/application/${project.appId}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                            >
+                              <Button variant="ghost" size="icon" className="h-4 w-4">
+                                <ExternalLink className="h-3 w-3" />
+                              </Button>
+                            </a>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Token ASA ID */}
+                    <div className="flex justify-between py-2 border-b border-border">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Coins className="h-3 w-3" /> Token ID (ASA)
+                      </span>
+                      <div className="flex items-center gap-2 font-mono text-sm">
+                        {project.asaId || 'Not deployed'}
+                        {project.asaId && (
+                          <>
+                            <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => copyToClipboard(project.asaId?.toString() || '')}>
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                            <a 
+                              href={`https://testnet.algoexplorer.io/asset/${project.asaId}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                            >
+                              <Button variant="ghost" size="icon" className="h-4 w-4">
+                                <ExternalLink className="h-3 w-3" />
+                              </Button>
+                            </a>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    
                     <div className="flex justify-between py-2 border-b border-border">
                       <span className="text-muted-foreground">Creator Wallet</span>
                       <div className="flex items-center gap-2 font-mono text-sm">
                         {project.creatorAddress ? `${project.creatorAddress.substring(0, 8)}...${project.creatorAddress.substring(project.creatorAddress.length - 6)}` : 'Unknown'}
                         {project.creatorAddress && (
-                          <a href={`https://testnet.algoexplorer.io/address/${project.creatorAddress}`} target="_blank" rel="noopener noreferrer">
-                            <Button variant="ghost" size="icon" className="h-4 w-4">
-                              <ExternalLink className="h-3 w-3" />
+                          <>
+                            <Button variant="ghost" size="icon" className="h-4 w-4" onClick={() => copyToClipboard(project.creatorAddress)}>
+                              <Copy className="h-3 w-3" />
                             </Button>
-                          </a>
+                            <a href={`https://testnet.algoexplorer.io/address/${project.creatorAddress}`} target="_blank" rel="noopener noreferrer">
+                              <Button variant="ghost" size="icon" className="h-4 w-4">
+                                <ExternalLink className="h-3 w-3" />
+                              </Button>
+                            </a>
+                          </>
                         )}
                       </div>
                     </div>
@@ -546,8 +705,20 @@ export default function ProjectDetailPage() {
                       <span className="font-mono">{formatAlgo(project.basePrice)} ALGO</span>
                     </div>
                     <div className="flex justify-between py-2 border-b border-border">
+                      <span className="text-muted-foreground">Target Price</span>
+                      <span className="font-mono">{formatAlgo(project.maxPrice)} ALGO</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-border">
                       <span className="text-muted-foreground">Graduation Target</span>
                       <span className="font-mono">{formatAlgo(project.bondingTarget)} ALGO</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-border">
+                      <span className="text-muted-foreground">Total Supply</span>
+                      <span className="font-mono">{formatTokens(project.totalSupply)} {project.tokenSymbol}</span>
+                    </div>
+                    <div className="flex justify-between py-2 border-b border-border">
+                      <span className="text-muted-foreground">Tokens For Sale</span>
+                      <span className="font-mono">{formatTokens(project.tokensForSale)} {project.tokenSymbol}</span>
                     </div>
                   </div>
                 </div>
@@ -563,6 +734,36 @@ export default function ProjectDetailPage() {
                     <p className="text-xs text-muted-foreground">
                       When the market cap reaches {formatAlgo(project.bondingTarget)} ALGO, all liquidity will be deposited into Tinyman and burned.
                     </p>
+                  </div>
+                  
+                  {/* Price Info Box */}
+                  <div className="mt-4 bg-muted/30 p-4 rounded-lg border border-border space-y-3">
+                    <h4 className="font-medium text-sm">Price Information</h4>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-muted-foreground text-xs">Start Price</p>
+                        <p className="font-mono">{formatAlgo(project.basePrice)} ALGO</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-xs">Target Price</p>
+                        <p className="font-mono">{formatAlgo(project.maxPrice)} ALGO</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-xs">Current Price</p>
+                        <p className="font-mono text-green-500">
+                          {livePrice ? livePrice.toFixed(6) : formatAlgo(project.basePrice)} ALGO
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-xs">Price Change</p>
+                        <p className={`font-mono ${livePrice && livePrice > Number(project.basePrice) / 1_000_000 ? 'text-green-500' : 'text-muted-foreground'}`}>
+                          {livePrice 
+                            ? `+${((livePrice / (Number(project.basePrice) / 1_000_000) - 1) * 100).toFixed(2)}%`
+                            : '0.00%'
+                          }
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -869,8 +1070,8 @@ export default function ProjectDetailPage() {
           {/* User Points */}
           {activeAccount && userPoints && (
             <Card className="border-amber-500/20 bg-amber-500/5">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
                   <span className="text-sm font-medium flex items-center gap-1">
                     <Gift className="h-4 w-4 text-amber-500" /> Your Rewards
                   </span>
@@ -878,9 +1079,78 @@ export default function ProjectDetailPage() {
                     {userPoints.totalPoints} pts
                   </Badge>
                 </div>
-                <Button variant="outline" size="sm" className="w-full border-amber-500/50 hover:bg-amber-500/10">
-                  Claim Rewards
+                
+                {/* Points breakdown */}
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Total Earned</span>
+                    <span className="font-mono">{userPoints.totalPoints} pts</span>
+                  </div>
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Already Claimed</span>
+                    <span className="font-mono">{userPoints.claimedPoints} pts</span>
+                  </div>
+                  <div className="flex justify-between font-medium">
+                    <span>Claimable</span>
+                    <span className="font-mono text-amber-500">{userPoints.claimablePoints} pts</span>
+                  </div>
+                </div>
+                
+                {/* X Token conversion info */}
+                {userPoints.xTokensClaimable > 0 && (
+                  <div className="bg-amber-500/10 rounded-lg p-2 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">You will receive</span>
+                      <span className="font-mono font-bold text-amber-500">
+                        {userPoints.xTokensClaimable.toFixed(2)} X Tokens
+                      </span>
+                    </div>
+                    {launchpadRewards?.xTokenAsaId && (
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        ASA: {launchpadRewards.xTokenAsaId} • Rate: {launchpadRewards.conversionRate} X per point
+                      </p>
+                    )}
+                  </div>
+                )}
+                
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full border-amber-500/50 hover:bg-amber-500/10 text-amber-500"
+                  onClick={handleClaimRewards}
+                  disabled={claimingRewards}
+                >
+                  {claimingRewards ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Claiming...
+                    </>
+                  ) : userPoints.claimablePoints > 0 ? (
+                    <>
+                      <Gift className="h-4 w-4 mr-2" />
+                      Claim {userPoints.xTokensClaimable.toFixed(0)} X Tokens
+                    </>
+                  ) : (
+                    <>
+                      <Gift className="h-4 w-4 mr-2" />
+                      View Rewards
+                    </>
+                  )}
                 </Button>
+                
+                <p className="text-[10px] text-muted-foreground text-center">
+                  Points are earned by buying tokens early. Claim them as X Tokens!
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          
+          {/* Show prompt to connect wallet if not connected */}
+          {!activeAccount && (
+            <Card className="border-border/50 bg-muted/10">
+              <CardContent className="p-4 text-center">
+                <Gift className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Connect wallet to view your rewards</p>
               </CardContent>
             </Card>
           )}
