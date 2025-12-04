@@ -43,8 +43,9 @@ export const MobileMenu = () => {
     const navItems = [
         { name: "Home", href: "/" },
         { name: "Trade", href: "/trade" },
-        { name: "Stake", href: "/stake" },
+        { name: "Stake", href: "/stake", disabled: true },
         { name: "Launchpad", href: "/launchpad" },
+        { name: "Bridge", href: "/bridge", disabled: true },
         { name: "Portfolio", href: "/portfolio" },
     ];
 
@@ -108,13 +109,15 @@ export const MobileMenu = () => {
                         {navItems.slice(1).map((item) => (
                             <Link
                                 key={item.href}
-                                href={item.href}
+                                href={item.disabled ? "#" : item.href}
                                 className={cn(
                                     "text-sm font-medium transition-colors py-2 px-2 rounded-md",
                                     pathname === item.href
                                         ? "text-primary dark:text-[#F3C623] bg-primary/10 dark:bg-[#F3C623]/10"
-                                        : "text-foreground/80 hover:text-primary hover:bg-primary/5"
+                                        : "text-foreground/80 hover:text-primary hover:bg-primary/5",
+                                    item.disabled && "opacity-40 cursor-not-allowed pointer-events-none"
                                 )}
+                                onClick={(e) => item.disabled && e.preventDefault()}
                             >
                                 {item.name}
                             </Link>

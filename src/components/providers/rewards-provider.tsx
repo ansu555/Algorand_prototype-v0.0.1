@@ -4,6 +4,7 @@ import { useState, useEffect, createContext, useContext } from "react"
 import { usePathname } from "next/navigation"
 import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
 import { RewardsSlidingPanel, RewardsFloatingButton } from "@/components/features/rewards/rewards-sliding-panel"
+import { fetchRewardsSummary } from "@/lib/rewards/client"
 
 // Context to expose openRewardsPanel function
 interface RewardsContextType {
@@ -31,6 +32,7 @@ export function RewardsProvider({ children }: { children: React.ReactNode }) {
   const [hasClaimable, setHasClaimable] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const { activeAccount } = useWalletConnection()
+  const lastLoginSyncKey = useRef<string | null>(null)
 
   // Check if rewards button should be visible on current page
   const showRewardsButton = REWARDS_VISIBLE_PAGES.some(page => pathname?.startsWith(page))
