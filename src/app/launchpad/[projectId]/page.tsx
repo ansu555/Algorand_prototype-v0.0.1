@@ -283,6 +283,42 @@ export default function ProjectDetailPage() {
         return
       }
 
+      // Step 2.5: Check if user has opted into the token ASA
+      const isOptedIn = await blockchain.hasOptedInToAsset(
+        activeAccount.address,
+        Number(project.asaId)
+      )
+
+      if (!isOptedIn) {
+        console.log('📝 User needs to opt-in to ASA:', project.asaId)
+        const confirmOptIn = confirm(
+          `You need to opt-in to ${project.tokenSymbol} before purchasing.\n\n` +
+          `This requires a small transaction (0.1 ALGO minimum balance).\n\n` +
+          `Click OK to opt-in now.`
+        )
+
+        if (!confirmOptIn) {
+          alert('Purchase cancelled. You must opt-in to the token before buying.')
+          return
+        }
+
+        try {
+          console.log('🔐 Opting in to ASA...')
+          const optInTxId = await blockchain.optInToASA(
+            {
+              userAddress: activeAccount.address,
+              asaId: Number(project.asaId)
+            },
+            walletSigner
+          )
+          console.log('✅ Opt-in successful:', optInTxId)
+        } catch (optInError: any) {
+          console.error('❌ Opt-in failed:', optInError)
+          alert(`Failed to opt-in to token: ${optInError.message}`)
+          return
+        }
+      }
+
       // Step 3: Execute real TestNet transaction
       console.log('🔗 Connecting to TestNet for purchase...')
 
