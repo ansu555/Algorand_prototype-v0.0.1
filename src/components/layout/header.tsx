@@ -162,7 +162,7 @@ export const Header = () => {
         {/* Auth */}
         <div className="hidden lg:flex items-center gap-3 flex-shrink-0">
           <AlgorandWalletConnect variant="dropdown" />
-          <ModeToggle />
+          {/* <ModeToggle /> */}
         </div>
 
         {/* Mobile Menu */}
