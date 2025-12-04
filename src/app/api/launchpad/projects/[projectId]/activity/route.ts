@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPurchaseHistory, getProjectHolders } from '@/lib/launchpad/db'
+import type { TokenPurchase, ProjectHolder } from '@/lib/launchpad/types'
 
 export async function GET(request: NextRequest, context: { params: Promise<{ projectId: string }> }) {
   try {
@@ -19,13 +20,13 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
 
     const holders = await getProjectHolders(projectId)
 
-    const totalAlgo = transactions.reduce((acc, tx) => acc + tx.algoPaid, 0n)
-    const totalTokens = transactions.reduce((acc, tx) => acc + tx.tokensAmount, 0n)
+    const totalAlgo = transactions.reduce((acc: bigint, tx: TokenPurchase) => acc + tx.algoPaid, 0n)
+    const totalTokens = transactions.reduce((acc: bigint, tx: TokenPurchase) => acc + tx.tokensAmount, 0n)
 
     return NextResponse.json({
       success: true,
       data: {
-        transactions: transactions.map(tx => ({
+        transactions: transactions.map((tx: TokenPurchase) => ({
           id: tx.id,
           projectId: tx.projectId,
           buyerAddress: tx.buyerAddress,
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ pro
           blockRound: tx.blockRound.toString(),
           timestamp: tx.timestamp,
         })),
-        holders: holders.map(holder => ({
+        holders: holders.map((holder: ProjectHolder) => ({
           buyerAddress: holder.buyerAddress,
           totalTokens: holder.totalTokens.toString(),
           totalAlgo: holder.totalAlgo.toString(),
