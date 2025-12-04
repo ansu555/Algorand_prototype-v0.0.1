@@ -161,21 +161,21 @@ export default function CreateProjectPage() {
       return {
         isValid: false,
         expectedTarget,
-        message: `Bonding target is too high. Based on your curve, you'll only raise ~${expectedTarget.toFixed(2)} ALGO when all tokens are sold.`,
+        message: `Bonding target is too high. Based on your curve, you'll only raise ~$${expectedTarget.toFixed(2)} ALGO when all tokens are sold.`,
         severity: 'error'
       }
     } else if (bondingTarget < expectedTarget * 0.3) {
       return {
         isValid: false,
         expectedTarget,
-        message: `Bonding target is very low. You could raise up to ~${expectedTarget.toFixed(2)} ALGO with your current settings.`,
+        message: `Bonding target is very low. You could raise up to ~$${expectedTarget.toFixed(2)} ALGO with your current settings.`,
         severity: 'warning'
       }
     } else if (percentDiff > 20) {
       return {
         isValid: true,
         expectedTarget,
-        message: `Suggested: ~${expectedTarget.toFixed(2)} ALGO based on your pricing curve.`,
+        message: `Suggested: ~$${expectedTarget.toFixed(2)} ALGO based on your pricing curve.`,
         severity: 'info'
       }
     }
@@ -183,7 +183,7 @@ export default function CreateProjectPage() {
     return {
       isValid: true,
       expectedTarget,
-      message: `Looks good! Expected range: ${(expectedTarget * 0.7).toFixed(2)} - ${(expectedTarget * 1.2).toFixed(2)} ALGO`,
+      message: `Looks good! Expected range: $${(expectedTarget * 0.7).toFixed(2)} - $${(expectedTarget * 1.2).toFixed(2)} ALGO`,
       severity: 'info'
     }
   }
@@ -379,43 +379,37 @@ export default function CreateProjectPage() {
       // Step 5: Save to database
       setBlockchainStep('Saving project details...')
 
-      // Build payload with all BigInts pre-converted to strings
-      const maxBuyPerTxValue = BigInt(Math.floor(Number(formData.maxPurchasePerTx) * Number(formData.totalSupply) / 100)) * BigInt(1_000_000)
-      const maxBuyPerUserValue = BigInt(Math.floor(Number(formData.maxPurchasePerUser) * Number(formData.totalSupply) / 100)) * BigInt(1_000_000)
-
-      const projectPayload = {
-        creatorAddress: activeAccount.address,
-        tokenName: formData.tokenName,
-        tokenSymbol: formData.tokenSymbol,
-        totalSupply: formData.totalSupply,
-        tokensForSale: formData.tokensForSale,
-        description: formData.description || undefined,
-        logoUrl: logoUrl,
-        websiteUrl: formData.websiteUrl || undefined,
-        twitterUrl: formData.twitterUrl || undefined,
-        telegramUrl: formData.telegramUrl || undefined,
-        curveType: formData.curveType,
-        basePrice: Math.floor(Number(formData.basePrice) * 1_000_000).toString(),
-        maxPrice: Math.floor(Number(formData.maxPrice) * 1_000_000).toString(),
-        bondingTarget: Math.floor(Number(formData.bondingTarget) * 1_000_000).toString(),
-        dexChoice: formData.dexChoice,
-        lpLockDays: Number(formData.lpLockDays),
-        // Blockchain references (ensure all are strings, not BigInt)
-        asaId: typeof asaId === 'bigint' ? asaId.toString() : String(asaId),
-        appId: typeof appId === 'bigint' ? appId.toString() : String(appId),
-        configTxId: String(configTxId),
-        bootstrapTxId: String(bootstrapTxId),
-        fundingTxId: String(fundingTxId),
-        status: 'active', // Mark as active since it's on blockchain
-        maxBuyPerTx: maxBuyPerTxValue.toString(),
-        maxBuyPerUser: maxBuyPerUserValue.toString(),
-        cooldownBlocks: formData.cooldownBlocks,
-      }
-
       const res = await fetch('/api/launchpad/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(projectPayload)
+        body: JSON.stringify({
+          creatorAddress: activeAccount.address,
+          tokenName: formData.tokenName,
+          tokenSymbol: formData.tokenSymbol,
+          totalSupply: formData.totalSupply,
+          tokensForSale: formData.tokensForSale,
+          description: formData.description || undefined,
+          logoUrl: logoUrl,
+          websiteUrl: formData.websiteUrl || undefined,
+          twitterUrl: formData.twitterUrl || undefined,
+          telegramUrl: formData.telegramUrl || undefined,
+          curveType: formData.curveType,
+          basePrice: Math.floor(Number(formData.basePrice) * 1_000_000).toString(),
+          maxPrice: Math.floor(Number(formData.maxPrice) * 1_000_000).toString(),
+          bondingTarget: Math.floor(Number(formData.bondingTarget) * 1_000_000).toString(),
+          dexChoice: formData.dexChoice,
+          lpLockDays: Number(formData.lpLockDays),
+          // Blockchain references
+          asaId: asaId,
+          appId: appId,  // ← Store the new contract's App ID
+          configTxId: configTxId,
+          bootstrapTxId: bootstrapTxId,
+          fundingTxId: fundingTxId,
+          status: 'active', // Mark as active since it's on blockchain
+          maxBuyPerTx: (BigInt(Math.floor(Number(formData.maxPurchasePerTx) * Number(formData.totalSupply) / 100)) * BigInt(1_000_000)).toString(),
+          maxBuyPerUser: (BigInt(Math.floor(Number(formData.maxPurchasePerUser) * Number(formData.totalSupply) / 100)) * BigInt(1_000_000)).toString(),
+          cooldownBlocks: formData.cooldownBlocks,
+        })
       })
 
       const data = await res.json()

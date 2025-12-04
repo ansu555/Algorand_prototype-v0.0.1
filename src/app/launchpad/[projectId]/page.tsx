@@ -337,7 +337,7 @@ export default function ProjectDetailPage() {
         loadUserPoints()
       } else {
         // Transaction succeeded on chain but failed to record in DB
-        alert(`⚠️ Purchase confirmed on blockchain (Tx: ${txId}) but failed to update database. Please contact support.`)
+        alert(`⚠ Purchase confirmed on blockchain (Tx: ${txId}) but failed to update database. Please contact support.`)
       }
     } catch (error: any) {
       console.error('Purchase failed:', error)
