@@ -10,12 +10,13 @@
 4. [Multi-DEX Aggregation](#multi-dex-aggregation)
 5. [Token Launchpad Architecture](#token-launchpad-architecture)
 6. [Rewards System Architecture](#rewards-system-architecture)
-7. [Smart Contracts](#smart-contracts)
-8. [Price Oracle & Market Data](#price-oracle--market-data)
-9. [Data Flow Diagrams](#data-flow-diagrams)
-10. [Technology Stack](#technology-stack)
-11. [Network Configuration](#network-configuration)
-12. [Database Schema](#database-schema)
+7. [Staking System Architecture](#staking-system-architecture)
+8. [Smart Contracts](#smart-contracts)
+9. [Price Oracle & Market Data](#price-oracle--market-data)
+10. [Data Flow Diagrams](#data-flow-diagrams)
+11. [Technology Stack](#technology-stack)
+12. [Network Configuration](#network-configuration)
+13. [Database Schema](#database-schema)
 
 ---
 
@@ -1220,6 +1221,149 @@ CREATE TABLE reward_transactions (
 
 ---
 
+## Staking System Architecture
+
+### XR Token Staking Contract
+
+The Staking System allows users to stake X tokens to earn XR tokens (governance and utility tokens) over time.
+
+#### Architecture Overview
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                    STAKING SYSTEM ARCHITECTURE                           │
+└───────────────────────────────────┬──────────────────────────────────────┘
+                                    │
+            ┌───────────────────────▼───────────────────────────┐
+            │            FRONTEND (Staking UI)                  │
+            │                                                   │
+            │  ┌──────────┐  ┌──────────┐  ┌──────────────┐   │
+            │  │ Stake    │  │ Unstake  │  │  Claim       │   │
+            │  │ X Tokens │  │ & Claim  │  │  Rewards     │   │
+            │  └────┬─────┘  └────┬─────┘  └──────┬───────┘   │
+            └───────┼─────────────┼────────────────┼───────────┘
+                    │             │                │
+            ┌───────▼─────────────▼────────────────▼───────────┐
+            │            STAKING API LAYER                      │
+            │                                                   │
+            │  /api/staking/info      - Contract info & APY    │
+            │  /api/staking/stake     - Build stake txn        │
+            │  /api/staking/unstake   - Build unstake txn      │
+            │  /api/staking/claim     - Build claim txn        │
+            │  /api/staking/pending   - View pending rewards   │
+            └───────┬───────────────────────────────┬───────────┘
+                    │                               │
+        ┌───────────▼──────────┐       ┌───────────▼──────────┐
+        │  Staking Client      │       │  Reward Calculator   │
+        │                      │       │                      │
+        │ • Build transactions │       │ • Calculate APY      │
+        │ • Call contract ABI  │       │ • Track total staked │
+        │ • Handle opt-ins     │       │ • Compute pending    │
+        │ • Sign with wallet   │       │ • Distribution rate  │
+        └───────────┬──────────┘       └───────────┬──────────┘
+                    │                               │
+        ┌───────────▼───────────────────────────────▼──────────┐
+        │              STAKING CONTRACT (On-Chain)              │
+        │                                                       │
+        │  State:                        Methods:               │
+        │  • staked_asset_id             • configure()         │
+        │  • reward_asset_id             • stake(txn)          │
+        │  • reward_rate                 • unstake(amount)     │
+        │  • total_staked                • claim()             │
+        │  • rewards_per_share           • get_pending()       │
+        │  • user_stakes (boxes)         • set_reward_rate()   │
+        └───────────┬───────────────────────────────────────────┘
+                    │
+        ┌───────────▼───────────────────────────────────────────┐
+        │           ALGORAND BLOCKCHAIN                         │
+        │                                                       │
+        │  • X Token (ASA 750589647) - Staked asset            │
+        │  • XR Token (ASA 751369844) - Reward asset           │
+        │  • Box Storage - User stake records                  │
+        │  • Atomic Transactions - Secure operations           │
+        └───────────────────────────────────────────────────────┘
+```
+
+#### Staking Flow
+
+**1. Stake X Tokens:**
+```
+User Action → Build Atomic Group:
+  Txn 0: Asset Transfer (X tokens to contract)
+  Txn 1: App Call (stake method)
+  
+Contract Logic:
+  • Update pool state (accumulate rewards)
+  • Calculate & send pending rewards (if any)
+  • Update user stake amount
+  • Update reward debt
+  • Increase total_staked
+```
+
+**2. Claim Rewards:**
+```
+User Action → App Call (claim method)
+
+Contract Logic:
+  • Update pool state
+  • Calculate pending XR rewards
+  • Transfer XR tokens to user
+  • Update user reward debt
+  • No change to staked amount
+```
+
+**3. Unstake:**
+```
+User Action → App Call (unstake method, specify amount)
+
+Contract Logic:
+  • Update pool state
+  • Calculate pending rewards
+  • Transfer XR rewards to user
+  • Transfer X tokens back to user
+  • Update or delete user stake record
+  • Decrease total_staked
+```
+
+#### Reward Calculation Algorithm
+
+The contract uses a "rewards per share" mechanism with precision scaling:
+
+```python
+PRECISION = 1_000_000_000_000  # 12 decimals
+
+# On pool update (called before any user action):
+time_elapsed = current_timestamp - last_update_time
+if total_staked > 0:
+    new_rewards = time_elapsed * reward_rate
+    rewards_per_share += (new_rewards * PRECISION) / total_staked
+last_update_time = current_timestamp
+
+# Calculate user pending rewards:
+total_reward = (user_stake * rewards_per_share) / PRECISION
+pending = total_reward - user_reward_debt
+
+# On stake/unstake, update debt:
+user_reward_debt = (new_user_stake * rewards_per_share) / PRECISION
+```
+
+**Key Features:**
+- **Fair Distribution:** Proportional to stake size and duration
+- **Precision:** 12-decimal scaling prevents rounding errors
+- **Gas Efficient:** Only updates on user actions
+- **Compound-Friendly:** Claim and restake for compound growth
+
+#### Security Features
+
+- ✅ **Trustless:** Admin cannot withdraw user stakes
+- ✅ **Atomic Operations:** All actions in atomic transaction groups
+- ✅ **Precision Handling:** 12-decimal math prevents loss
+- ✅ **Box Isolation:** Each user's data in separate box
+- ✅ **No Lock Periods:** Users can unstake anytime
+- ✅ **Read-Only Methods:** View rewards without gas costs
+
+---
+
 ## Smart Contracts
 
 ### Deployed Contracts (Testnet)
@@ -1258,6 +1402,27 @@ CREATE TABLE reward_transactions (
 - **Purpose:** WaveBreak token launchpad with bonding curves
 - **Methods:** `create_launch()`, `buy_tokens()`, `graduate()`
 - **Explorer:** [View on Lora](https://lora.algokit.io/testnet/application/750324113)
+
+#### 7. X Token (ASA)
+- **ASA ID:** `750589647`
+- **Purpose:** Platform reward token earned through quests and activities
+- **Type:** Algorand Standard Asset
+- **Supply:** 1,000,000,000 (1 billion)
+- **Explorer:** [View on AlgoExplorer](https://testnet.algoexplorer.io/asset/750589647)
+
+#### 8. XR Token (ASA)
+- **ASA ID:** `751369844`
+- **Purpose:** Governance and utility token earned from staking X tokens
+- **Type:** Algorand Standard Asset
+- **Supply:** 1,000,000 (1 million - limited supply)
+- **Explorer:** [View on AlgoExplorer](https://testnet.algoexplorer.io/asset/751369844)
+
+#### 9. StakingContract
+- **Status:** Ready for deployment (not yet deployed)
+- **Purpose:** Stake X tokens to earn XR token rewards
+- **Staked Asset:** X Token (ASA 750589647)
+- **Reward Asset:** XR Token (ASA 751369844)
+- **Methods:** `configure()`, `stake()`, `unstake()`, `claim()`, `get_pending_rewards()`
 
 ### Contract Architecture
 

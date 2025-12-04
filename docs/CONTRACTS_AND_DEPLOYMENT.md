@@ -16,16 +16,22 @@
 
 ## Overview
 
-10xSwap uses six main smart contracts deployed on Algorand blockchain:
+10xSwap uses nine main smart contracts and tokens deployed on Algorand blockchain:
 
+### Smart Contracts
 1. **MultihopSwapRouter** - Main routing contract for swaps
 2. **TinymanPoolAdapter** - Adapter for Tinyman V2 DEX
 3. **PactPoolAdapter** - Adapter for Pact Finance DEX
 4. **AutoPilotRuleContract** - Automated trading rules
 5. **LiquidityPoolContract** - Custom liquidity pool creation
 6. **TokenLaunchpad** - WaveBreak token launchpad with bonding curves
+7. **StakingContract** - Flexible staking system for earning rewards
 
-All contracts are written in **Python using AlgoPy** and compiled to **TEAL** (Transaction Execution Approval Language).
+### Algorand Standard Assets (ASA)
+8. **X Token** - Platform reward token earned through quests and activities
+9. **XR Token** - Governance and utility token earned from staking
+
+All smart contracts are written in **Python using AlgoPy** and compiled to **TEAL** (Transaction Execution Approval Language).
 
 ---
 
@@ -255,6 +261,213 @@ The TokenLaunchpad contract enables fair token launches using bonding curves wit
 - Contract: `Blockchain/projects/10x_Swap/smart_contracts/token_launchpad/contract.py`
 - TEAL: `artifacts/token_launchpad/TokenLaunchpad.approval.teal`
 - ABI: `artifacts/token_launchpad/TokenLaunchpad.arc56.json`
+
+---
+
+#### 7. X Token (ASA)
+**Platform reward token for the 10xSwap ecosystem**
+
+- **ASA ID:** `750589647`
+- **Network:** Testnet
+- **Name:** X Token
+- **Symbol:** X
+- **Unit Name:** X
+- **Decimals:** 6
+- **Total Supply:** 1,000,000,000 (1 billion tokens)
+- **Creator Address:** `5IZJEVVOAVXOVCN35JQ5PBDBDAPEBUTKST7GDGUGEBP5QNY7S5YWDYSME4`
+- **Treasury Address:** `5IZJEVVOAVXOVCN35JQ5PBDBDAPEBUTKST7GDGUGEBP5QNY7S5YWDYSME4`
+- **Transaction ID:** `EDXHCNYZJBIEZO2EBHPIAWQMPSBMKGAD76DYQJW2IOYCPVTDZOFA`
+- **Deployed At:** 2025-11-30T21:39:02.029Z
+- **Explorer:** [View on AlgoExplorer](https://testnet.algoexplorer.io/asset/750589647)
+
+**Purpose:**
+X Token is the official reward token of the 10xSwap DEX ecosystem. Users earn X tokens by completing quests, participating in platform activities, and contributing to ecosystem growth. The token serves as a medium for rewards distribution and will later enable governance participation.
+
+**Token Properties:**
+- **No Freeze:** Users can always transfer their tokens
+- **No Clawback:** Tokens cannot be revoked once distributed
+- **Decentralized:** Manager address can be removed after deployment
+- **Fast Finality:** ~3 second transaction confirmation on Algorand
+- **Low Fees:** ~0.001 ALGO per transaction
+
+**Treasury Allocation:**
+
+| Pool | Percentage | Tokens | Purpose |
+|------|------------|--------|---------|
+| Rewards Pool | 70% | 700,000,000 | User quest rewards |
+| Liquidity Mining | 15% | 150,000,000 | LP incentives |
+| Development | 10% | 100,000,000 | Platform operations |
+| Reserve | 5% | 50,000,000 | Future use |
+
+**Integration:**
+Users must opt-in to the X Token ASA before receiving rewards. The platform provides automatic opt-in functionality through the rewards interface.
+
+**API Endpoints:**
+- `GET /api/xtoken?address=<addr>` - Get X token balance
+- `GET /api/xtoken?info=true` - Get token information
+- `POST /api/xtoken` - Build opt-in transaction
+- `POST /api/rewards/claim` - Claim rewards (distributes X tokens)
+
+**Source Files:**
+- Deployment Script: `Blockchain/projects/10x_Swap/smart_contracts/x_token/deploy_config.py`
+- Deployment Info: `artifacts/x_token/deployment_testnet.json`
+- README: `Blockchain/projects/10x_Swap/smart_contracts/x_token/README.md`
+
+---
+
+#### 8. XR Token (ASA)
+**Governance and utility token earned from staking**
+
+- **ASA ID:** `751369844`
+- **Network:** Testnet
+- **Name:** 10x Reward Token
+- **Symbol:** XR
+- **Unit Name:** XR
+- **Decimals:** 6
+- **Total Supply:** 1,000,000 (1 million tokens)
+- **Creator Address:** `M4QPAJAMJ7MNCVMCO3O4QZZVV7E2RW2WNDW2VC3JEIJRUS5OMBLS6HNPLE`
+- **Transaction ID:** `FBLBM4SJ553XET7NGH7WP5O5X344MVXIRDMU6DMWEJAEOQLTJIDQ`
+- **Network:** Testnet
+- **URL:** https://10xswap.io/xrtoken
+
+**Purpose:**
+XR Token is the governance and utility token for the 10xSwap ecosystem. Users earn XR tokens by staking X tokens in the Staking Contract. XR token holders will gain governance rights, fee discounts, and access to exclusive platform features.
+
+**Token Properties:**
+- **Earned Through Staking:** Users stake X tokens to earn XR tokens
+- **Governance Rights:** Future voting on protocol parameters and upgrades
+- **Utility Benefits:** Fee discounts, priority access to new features
+- **Limited Supply:** Only 1 million tokens, creating scarcity value
+- **Carbon-Neutral:** Built on Algorand's eco-friendly blockchain
+
+**Earning XR Tokens:**
+Users earn XR tokens by staking X tokens in the StakingContract. The reward rate is configurable by the contract administrator and rewards accumulate over time based on the amount staked.
+
+**Use Cases:**
+1. **Governance Voting:** Participate in protocol decisions (future feature)
+2. **Fee Discounts:** Reduced trading fees on the platform
+3. **VIP Access:** Early access to token launches and new features
+4. **Staking Multipliers:** Higher staking tiers unlock better rewards
+
+**Source Files:**
+- Deployment Script: `Blockchain/projects/10x_Swap/smart_contracts/xr_token/deploy_config.py`
+- Deployment Info: `Blockchain/projects/10x_Swap/smart_contracts/xr_token/deployment_testnet.json`
+
+---
+
+#### 9. StakingContract
+**Flexible staking system for earning XR token rewards**
+
+- **Status:** ⚠️ Ready for deployment (not yet deployed to testnet)
+- **Network:** Testnet / Mainnet
+- **Staked Asset:** X Token (ASA ID: 750589647)
+- **Reward Asset:** XR Token (ASA ID: 751369844)
+
+**Purpose:**
+The StakingContract enables users to stake X tokens and earn XR token rewards over time. The contract uses a sophisticated reward calculation system that distributes rewards proportionally based on stake amount and duration.
+
+**Methods:**
+
+1. **`configure(staked_asset, reward_asset, reward_rate)`** - Initialize staking parameters (admin only)
+   - Sets the staked asset (X Token)
+   - Sets the reward asset (XR Token)
+   - Configures the reward rate (rewards per second)
+   - Opts the contract into both assets
+   
+2. **`set_reward_rate(new_rate)`** - Update reward distribution rate (admin only)
+   - Allows admin to adjust rewards without redeployment
+   - Updates pool state before changing rate
+   
+3. **`stake(txn)`** - Stake X tokens to earn rewards
+   - Accepts asset transfer transaction of X tokens
+   - Calculates and distributes any pending rewards
+   - Updates user's stake amount and reward debt
+   - Increases total staked amount
+   
+4. **`unstake(amount)`** - Withdraw staked tokens and claim rewards
+   - Validates sufficient stake balance
+   - Calculates and sends pending rewards in XR tokens
+   - Returns requested amount of X tokens to user
+   - Updates or removes user stake record
+   
+5. **`claim()`** - Claim pending rewards without unstaking
+   - Calculates accumulated rewards since last action
+   - Sends XR tokens to user
+   - Updates reward debt to prevent double claiming
+   
+6. **`get_pending_rewards(user)`** - View pending rewards (read-only)
+   - Returns the amount of XR tokens user can claim
+   - Includes hypothetical rewards up to current timestamp
+   - Does not modify state
+
+**Reward Calculation:**
+The contract uses a "rewards per share" algorithm with precision scaling:
+
+```
+PRECISION = 1,000,000,000,000
+
+rewards_per_share += (time_elapsed * reward_rate * PRECISION) / total_staked
+pending_rewards = (user_amount * rewards_per_share / PRECISION) - user_reward_debt
+```
+
+This ensures:
+- Fair distribution proportional to stake amount
+- Accurate tracking even with frequent deposits/withdrawals
+- No loss of precision from integer division
+
+**Key Features:**
+- **Flexible Staking:** No lock periods, stake and unstake anytime
+- **Real-Time Rewards:** Rewards accumulate every second
+- **Proportional Distribution:** Fair rewards based on stake size and duration
+- **Precision Handling:** Uses 12-decimal precision to prevent rounding errors
+- **Box Storage:** Uses Algorand boxes for efficient user data storage
+- **Automatic Compounding:** Users can restake rewards for compound growth
+
+**User Flow:**
+1. User opts into X Token and XR Token ASAs
+2. User approves X token transfer and calls `stake()`
+3. Rewards accumulate automatically over time
+4. User can `claim()` rewards while keeping stake active
+5. User can `unstake()` to withdraw principal and rewards
+6. User can restake claimed XR tokens in future staking pools
+
+**Admin Controls:**
+- Initial configuration of assets and reward rate
+- Ability to update reward rate as needed
+- Must fund contract with sufficient XR tokens for rewards
+- No ability to withdraw user stakes (trustless)
+
+**Storage Requirements:**
+- **Box Storage:** Each user stake requires a box (2,500 + data bytes)
+- **MBR Increase:** Users may need to increase account MBR for boxes
+- **Contract Funding:** Contract needs ALGO for box creation and transactions
+
+**Source Files:**
+- Contract: `Blockchain/projects/10x_Swap/smart_contracts/staking/contract.py`
+- TEAL: `artifacts/staking/StakingContract.approval.teal`
+- ABI: `artifacts/staking/StakingContract.arc56.json`
+- Deployment Script: `Blockchain/projects/10x_Swap/smart_contracts/staking/deploy_config.py`
+- Clear Program: `artifacts/staking/StakingContract.clear.teal`
+
+**Deployment Steps:**
+```bash
+cd Blockchain/projects/10x_Swap/smart_contracts/staking
+
+# Deploy contract
+python deploy_config.py
+
+# Configure with X and XR token IDs
+# Set reward rate (e.g., 1 XR token per second = 1_000_000 microXR/sec)
+
+# Fund contract with XR tokens for rewards distribution
+```
+
+**Future Enhancements:**
+- Multiple staking pools with different reward tokens
+- Tiered reward rates based on stake duration
+- Lock periods for boosted rewards
+- Integration with governance voting power
+- Staking NFTs for additional benefits
 
 ---
 
@@ -763,6 +976,22 @@ export function getContracts(): ContractConfig {
       autopilot: {
         appId: 749361072,
         address: 'QHYMQJWOQ7MNWYXHQEDLXLWHPDMLP5A65BLYECZ47RCGZ2YZSYERYRI244'
+      },
+      tokens: {
+        xToken: {
+          asaId: 750589647,
+          name: 'X Token',
+          symbol: 'X'
+        },
+        xrToken: {
+          asaId: 751369844,
+          name: '10x Reward Token',
+          symbol: 'XR'
+        }
+      },
+      staking: {
+        appId: 0, // Deploy staking contract to get this
+        address: ''
       }
     };
   }
@@ -774,7 +1003,12 @@ export function getContracts(): ContractConfig {
       tinyman: { appId: 0, address: '', enabled: false },
       pact: { appId: 0, address: '', enabled: false }
     },
-    autopilot: { appId: 0, address: '' }
+    autopilot: { appId: 0, address: '' },
+    tokens: {
+      xToken: { asaId: 0, name: 'X Token', symbol: 'X' },
+      xrToken: { asaId: 0, name: '10x Reward Token', symbol: 'XR' }
+    },
+    staking: { appId: 0, address: '' }
   };
 }
 ```
@@ -791,6 +1025,17 @@ NEXT_PUBLIC_MULTIHOP_ROUTER_APP_ID=749360450
 NEXT_PUBLIC_TINYMAN_ADAPTER_APP_ID=749360541
 NEXT_PUBLIC_PACT_ADAPTER_APP_ID=749341932
 NEXT_PUBLIC_AUTOPILOT_CONTRACT_APP_ID=749361072
+
+# Token ASA IDs
+NEXT_PUBLIC_X_TOKEN_ASA_ID=750589647
+NEXT_PUBLIC_XR_TOKEN_ASA_ID=751369844
+
+# Token Treasury
+X_TOKEN_TREASURY_ADDRESS=5IZJEVVOAVXOVCN35JQ5PBDBDAPEBUTKST7GDGUGEBP5QNY7S5YWDYSME4
+ENABLE_X_TOKEN_DISTRIBUTION=true
+
+# Staking Contract (deploy to get App ID)
+NEXT_PUBLIC_STAKING_CONTRACT_APP_ID=<to_be_deployed>
 ```
 
 ---
@@ -974,7 +1219,7 @@ Before mainnet deployment:
 
 ---
 
-**Last Updated:** November 28, 2025  
-**Version:** 2.0.0  
+**Last Updated:** December 4, 2025  
+**Version:** 3.0.0  
 **Network:** Testnet  
-**Status:** ✅ All Contracts Deployed & Configured (6 contracts)
+**Status:** ✅ All Contracts Deployed & Configured (9 contracts: 6 smart contracts + 3 token systems)
