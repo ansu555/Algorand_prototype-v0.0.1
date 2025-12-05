@@ -31,6 +31,55 @@ export async function POST(request: NextRequest) {
       new Uint8Array(Buffer.from(txn, 'base64'))
     )
 
+    // Simulate transactions first to catch errors before submission
+    try {
+      console.log('🔍 Simulating transaction group before submission...')
+      const simulateRequest = new algosdk.modelsv2.SimulateRequest({
+        txnGroups: [
+          new algosdk.modelsv2.SimulateRequestTransactionGroup({
+            txns: signedTxnBuffers.map(txn => algosdk.decodeSignedTransaction(txn))
+          })
+        ],
+        allowEmptySignatures: false,
+        allowUnnamedResources: true,
+      })
+      
+      const simulateResponse = await algodClient.simulateTransactions(simulateRequest).do()
+      
+      // Check for simulation failures
+      if (simulateResponse.txnGroups?.[0]?.failureMessage) {
+        const failureMsg = simulateResponse.txnGroups[0].failureMessage
+        console.error('❌ Simulation failed:', failureMsg)
+        
+        // Parse common failure reasons
+        if (failureMsg.includes('assert failed')) {
+          return NextResponse.json(
+            { 
+              success: false,
+              error: 'Swap would fail: Price moved beyond slippage tolerance. Please try again with higher slippage or a fresh quote.',
+              debugInfo: 'The pool reserves changed between quote and execution. This is common on TestNet with low liquidity.',
+              simulationError: failureMsg
+            },
+            { status: 400 }
+          )
+        }
+        
+        return NextResponse.json(
+          { 
+            success: false,
+            error: `Transaction simulation failed: ${failureMsg}`,
+            simulationError: failureMsg
+          },
+          { status: 400 }
+        )
+      }
+      
+      console.log('✅ Simulation passed, proceeding with submission')
+    } catch (simError: any) {
+      console.warn('⚠️ Simulation check failed (proceeding anyway):', simError.message)
+      // Continue with submission even if simulation fails - it might be a simulation API issue
+    }
+
     // Submit transaction group to the network
     const response = await algodClient.sendRawTransaction(signedTxnBuffers).do()
     const txId = response.txid

@@ -148,12 +148,18 @@ export async function POST(request: NextRequest) {
         }
 
         // Generate swap transactions
+        // Use a minimum slippage of 2% to handle TestNet liquidity fluctuations
+        // TestNet pools often have very low liquidity and high price volatility
+        const userSlippage = (slippage || 2.0) / 100
+        const effectiveSlippage = Math.max(userSlippage, 0.02) // Minimum 2% on TestNet
+        console.log('Using slippage:', effectiveSlippage, '(', effectiveSlippage * 100, '%)')
+        
         const swapTxnGroup = await Swap.v2.generateTxns({
           client: algodClient,
           network: 'testnet',
           quote: swapQuote,
           swapType: SwapType.FixedInput,
-          slippage: (slippage || 0.5) / 100,
+          slippage: effectiveSlippage,
           initiatorAddr: userAddress
         })
 

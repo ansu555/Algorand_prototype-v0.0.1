@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, createContext, useContext } from "react"
+import { useState, useEffect, useRef, createContext, useContext } from "react"
 import { usePathname } from "next/navigation"
 import { useWalletConnection } from "@/components/providers/txnlab-wallet-provider"
 import { RewardsSlidingPanel, RewardsFloatingButton } from "@/components/features/rewards/rewards-sliding-panel"

@@ -210,6 +210,15 @@ export class SwapRouter {
     return [];
   }
 
+  // Common bridge tokens for routing (TestNet IDs - update for MainNet)
+  private readonly COMMON_BRIDGE_TOKENS = [
+    0,        // ALGO - most common intermediate
+    10458941, // USDC (TestNet)
+    10459082, // USDT (TestNet) 
+    21582668, // goBTC (TestNet)
+    21583027, // goETH (TestNet)
+  ];
+
   /**
    * Find intermediate assets that connect two assets
    */
@@ -225,6 +234,26 @@ export class SwapRouter {
     for (const asset of connectedToIn) {
       if (connectedToOut.has(asset)) {
         intermediates.push(asset);
+      }
+    }
+
+    // If no direct intermediates found, try common bridge tokens
+    if (intermediates.length === 0) {
+      for (const bridgeToken of this.COMMON_BRIDGE_TOKENS) {
+        // Skip if bridge token is same as input/output
+        if (bridgeToken === assetInId || bridgeToken === assetOutId) continue;
+        
+        // Check if bridge token connects to both assets
+        if (connectedToIn.has(bridgeToken) && connectedToOut.has(bridgeToken)) {
+          intermediates.push(bridgeToken);
+        }
+      }
+    }
+
+    // Also prioritize ALGO (id 0) as intermediate if it's in the graph
+    if (!intermediates.includes(0) && assetInId !== 0 && assetOutId !== 0) {
+      if (connectedToIn.has(0) && connectedToOut.has(0)) {
+        intermediates.unshift(0); // Add ALGO as first choice
       }
     }
 

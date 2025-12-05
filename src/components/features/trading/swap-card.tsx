@@ -37,7 +37,7 @@ export function SwapCard({ onPairChange, onSwapSuccess, initialFromAssetId, init
   const [toToken, setToToken] = useState<AssetInfo | null>(null)
   const [fromAmount, setFromAmount] = useState('')
   const [toAmount, setToAmount] = useState('')
-  const [slippage, setSlippage] = useState('0.5')
+  const [slippage, setSlippage] = useState('2.0') // 2% default for TestNet stability (low liquidity)
   const [showSettings, setShowSettings] = useState(false)
   const [activeTab, setActiveTab] = useState<'swap' | 'limit' | 'buy' | 'sell'>('swap')
   const [isSwapping, setIsSwapping] = useState(false)
@@ -305,6 +305,12 @@ export function SwapCard({ onPairChange, onSwapSuccess, initialFromAssetId, init
 
       if (!submitRes.ok) {
         const errorData = await submitRes.json()
+        // Check if it's a slippage-related error and suggest increasing slippage
+        if (errorData.error?.includes('slippage') || 
+            errorData.error?.includes('Price moved') ||
+            errorData.simulationError?.includes('assert failed')) {
+          throw new Error(`${errorData.error}\n\nTip: Try increasing slippage to 3-5% in Settings (⚙️)`)
+        }
         throw new Error(errorData.error || 'Failed to submit swap')
       }
 
