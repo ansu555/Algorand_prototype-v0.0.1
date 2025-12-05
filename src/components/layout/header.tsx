@@ -26,6 +26,7 @@ export const Header = () => {
   const [lastScrollY, setLastScrollY] = useState(0);
   const { activeAccount } = useWalletConnection();
   const [exploreDropdownOpen, setExploreDropdownOpen] = useState(false);
+  const [tradeDropdownOpen, setTradeDropdownOpen] = useState(false);
 
   // Scroll behavior
   useEffect(() => {
@@ -60,10 +61,7 @@ export const Header = () => {
 
   const navItems = [
     { name: "Home", href: "/" },
-    { name: "Trade", href: "/trade" },
-    { name: "Stake", href: "/staking", disabled: true },
     { name: "Launchpad", href: "/launchpad" },
-    { name: "Bridge", href: "/bridge", disabled: true },
     { name: "Portfolio", href: "/portfolio" },
     { name: "Developers", href: "/developers" },
   ];
@@ -72,6 +70,12 @@ export const Header = () => {
     { name: "Tokens", href: "/cryptocurrencies" },
     { name: "Pool", href: "/pool" },
     { name: "Transaction", href: "/transactions" },
+  ];
+
+  const tradeItems = [
+    { name: "Swap", href: "/trade" },
+    { name: "Stake", href: "/staking", disabled: true },
+    { name: "Bridge", href: "/bridge", disabled: true },
   ];
 
   return (
@@ -130,6 +134,44 @@ export const Header = () => {
                     className={cn(
                       "w-full cursor-pointer",
                       pathname === item.href && "text-primary dark:text-[#F3C623] font-semibold"
+                    )}
+                  >
+                    {item.name}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Trade Dropdown */}
+          <DropdownMenu open={tradeDropdownOpen} onOpenChange={setTradeDropdownOpen}>
+            <DropdownMenuTrigger
+              className={cn(
+                "relative text-foreground/80 hover:text-foreground transition-all duration-300 group px-3 py-1 rounded-lg hover:bg-foreground/5 transform hover:scale-110 font-mono uppercase text-sm whitespace-nowrap flex items-center gap-1",
+                ["/trade", "/staking", "/bridge"].includes(pathname) && "text-primary dark:text-[#F3C623]"
+              )}
+              onMouseEnter={() => setTradeDropdownOpen(true)}
+              onMouseLeave={() => setTradeDropdownOpen(false)}
+              onFocus={playHoverSound}
+            >
+              Trade
+              <ChevronDown className="h-3 w-3" />
+              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-primary transition-all duration-200 group-hover:w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="center"
+              className="w-44"
+              onMouseEnter={() => setTradeDropdownOpen(true)}
+              onMouseLeave={() => setTradeDropdownOpen(false)}
+            >
+              {tradeItems.map((item) => (
+                <DropdownMenuItem key={item.href} asChild disabled={item.disabled}>
+                  <Link
+                    href={item.disabled ? "#" : item.href}
+                    className={cn(
+                      "w-full cursor-pointer",
+                      pathname === item.href && "text-primary dark:text-[#F3C623] font-semibold",
+                      item.disabled && "opacity-50 cursor-not-allowed pointer-events-none"
                     )}
                   >
                     {item.name}
