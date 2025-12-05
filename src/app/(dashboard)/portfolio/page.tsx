@@ -6,14 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { formatTrigger, type Rule, describeRule } from "@/lib/shared/rules"
 import { forceRunPoller, useAgentData } from "@/features/agent/hooks/useAgentData"
 import { deleteRule as apiDeleteRule, createRule } from "@/features/agent/api/client"
-import { ChevronDown, ChevronUp, Play, Trash2, Eye, RefreshCw, Zap, Activity, Clock, Target, TrendingUp, AlertCircle, CheckCircle2, XCircle, Pause, DollarSign, TrendingDown, BarChart3, Lock, Wallet, Plus, Loader2 } from "lucide-react"
+import { ChevronDown, ChevronUp, Play, Trash2, Eye, RefreshCw, Zap, Activity, Clock, Target, TrendingUp, AlertCircle, CheckCircle2, XCircle, Pause, DollarSign, TrendingDown, BarChart3, Lock, Wallet, Plus, Loader2, Info } from "lucide-react"
 import { useWalletConnection, useWalletActions } from '@/components/providers/txnlab-wallet-provider'
 import algosdk from 'algosdk'
 import RuleBuilderModal from "@/components/features/rules/rule-builder-modal"
@@ -74,6 +74,8 @@ export default function PortfolioPage() {
   const [rechargeAmount, setRechargeAmount] = useState<string>("")
   const [rechargeDialogOpen, setRechargeDialogOpen] = useState(false)
   const [rechargingWallet, setRechargingWallet] = useState(false)
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
+  const [detailsRule, setDetailsRule] = useState<any>(null)
 
   useEffect(() => {
     if (!rules.length) return
@@ -390,6 +392,15 @@ export default function PortfolioPage() {
     )
   }
 
+  const openRuleDetails = (rule: Rule | any) => {
+    setDetailsRule(rule)
+    setDetailsDialogOpen(true)
+  }
+
+  const sentimentSource = detailsRule?.sentimentSource ?? detailsRule?.sentiment_source
+  const sentimentAccount = detailsRule?.sentimentAccount ?? detailsRule?.sentiment_account
+  const sentimentScore = detailsRule?.sentimentScore ?? detailsRule?.sentiment_score
+
   // Activity list: collapsed shows 3 recent; expand to see all
   const [activityExpanded, setActivityExpanded] = useState(false)
   const sortedLogs = [...logs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -485,6 +496,104 @@ export default function PortfolioPage() {
             </Card>
 
             {/* Agent Wallet Card */}
+
+          <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+            <DialogContent className="max-w-3xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3">
+                  <Info className="h-5 w-5 text-primary" />
+                  Rule Details
+                  {detailsRule?.id && (
+                    <span className="font-mono text-xs text-muted-foreground">#{detailsRule.id}</span>
+                  )}
+                  {detailsRule?.status && (
+                    <Badge variant={detailsRule.status === 'paused' ? 'secondary' : 'default'} className="ml-auto text-[10px] h-5">
+                      {detailsRule.status}
+                    </Badge>
+                  )}
+                </DialogTitle>
+                <DialogDescription>
+                  Full rule configuration with structured fields and sentiment signals.
+                </DialogDescription>
+              </DialogHeader>
+
+              {detailsRule && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-lg border bg-muted/40 p-3">
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Type</p>
+                      <p className="text-sm font-semibold uppercase">{detailsRule.type}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Trigger</p>
+                      <p className="text-sm font-mono break-all">
+                        {detailsRule.trigger?.type === 'price_drop_pct' && `Price drop ≥ ${detailsRule.trigger.value}%`}
+                        {detailsRule.trigger?.type === 'trend_pct' && `Trend ≥ ${detailsRule.trigger.value}% (${detailsRule.trigger.window})`}
+                        {detailsRule.trigger?.type === 'momentum' && `Momentum ≥ ${detailsRule.trigger.value}% (${detailsRule.trigger.lookbackDays}d)`}
+                        {!detailsRule.trigger && '—'}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Targets</p>
+                      <p className="text-sm">{Array.isArray(detailsRule.targets) ? detailsRule.targets.join(', ') : '—'}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Spend / Slippage / Cooldown</p>
+                      <p className="text-sm font-mono">
+                        ${detailsRule.maxSpendUSD ?? detailsRule.maxSpendUsd ?? '—'} • {detailsRule.maxSlippage ?? detailsRule.maxSlippagePercent ?? '—'}% • {detailsRule.cooldownMinutes ?? '—'}m
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border bg-primary/5 p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-primary" />
+                      <p className="text-sm font-semibold">Sentiment Signals</p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Source</p>
+                        <p className="font-medium">{sentimentSource ? sentimentSource.toString() : 'Not configured'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Account / Channel</p>
+                        <p className="font-medium break-all">{sentimentAccount || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Last Score</p>
+                        <p className="font-medium">{sentimentScore !== undefined ? sentimentScore : 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="rounded-lg border bg-card/70 p-3 space-y-1">
+                      <p className="text-xs text-muted-foreground">Rule ID</p>
+                      <p className="font-mono text-sm break-all">{detailsRule.id}</p>
+                    </div>
+                    <div className="rounded-lg border bg-card/70 p-3 space-y-1">
+                      <p className="text-xs text-muted-foreground">Owner</p>
+                      <p className="font-mono text-sm break-all">{detailsRule.ownerAddress || detailsRule.owner || '—'}</p>
+                    </div>
+                    <div className="rounded-lg border bg-card/70 p-3 space-y-1">
+                      <p className="text-xs text-muted-foreground">Created</p>
+                      <p className="text-sm">{detailsRule.createdAt ? new Date(detailsRule.createdAt).toLocaleString() : '—'}</p>
+                    </div>
+                    <div className="rounded-lg border bg-card/70 p-3 space-y-1">
+                      <p className="text-xs text-muted-foreground">Status</p>
+                      <p className="text-sm capitalize">{detailsRule.status || '—'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter className="mt-2">
+                <Button variant="outline" onClick={() => setDetailsDialogOpen(false)}>
+                  Close
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
             <Card className="border-border/50 shadow-xl">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -884,6 +993,9 @@ export default function PortfolioPage() {
                               </div>
                               
                               <div className="flex items-center gap-2">
+                                <Button size="sm" variant="ghost" onClick={() => openRuleDetails(rule)}>
+                                  <Info className="h-4 w-4" />
+                                </Button>
                                 <Button size="sm" variant="ghost" onClick={() => executeNow(rule)}>
                                   <Play className="h-4 w-4" />
                                 </Button>

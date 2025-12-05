@@ -50,6 +50,7 @@ import {
   DollarSign,
   Clock,
   Zap,
+  Info,
 } from "lucide-react"
 import { useWalletConnection, useWalletActions } from "@/components/providers/txnlab-wallet-provider"
 import { AutoPilotRuleClient } from "@/lib/contracts/autopilot-client"
@@ -87,6 +88,8 @@ export function AutoPilotRulesList() {
   const [executeAmount, setExecuteAmount] = useState<string>("")
   const [selectedAssetOut, setSelectedAssetOut] = useState<string>("")
   const [isExecuting, setIsExecuting] = useState(false)
+  const [ruleToView, setRuleToView] = useState<RuleWithId | null>(null)
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
 
   // Initialize autopilot client
   const autopilotClient = useMemo(() => {
@@ -448,6 +451,16 @@ export function AutoPilotRulesList() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setRuleToView(rule)
+                              setIsDetailsDialogOpen(true)
+                            }}
+                          >
+                            <Info className="w-4 h-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           {rule.status === STATUS_ACTIVE && (
                             <>
                               <DropdownMenuItem
@@ -521,6 +534,140 @@ export function AutoPilotRulesList() {
           </div>
         )}
       </CardContent>
+      
+      {/* Rule Details Dialog */}
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Rule Details
+              {ruleToView && (
+                <span className="ml-2 font-mono text-sm text-muted-foreground">
+                  #{ruleToView.ruleId.toString()}
+                </span>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              Complete information about this autopilot trading rule
+            </DialogDescription>
+          </DialogHeader>
+          {ruleToView && (
+            <div className="space-y-4">
+              {/* Status Badge */}
+              <div className="flex items-center gap-2">
+                <Badge variant={getStatusBadgeVariant(ruleToView.status)}>
+                  {formatRuleStatus(ruleToView.status)}
+                </Badge>
+                <Badge variant="outline">
+                  {getRuleTypeLabel(ruleToView.rule_type)}
+                </Badge>
+              </div>
+
+              {/* Strategy Details */}
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-muted-foreground">Strategy</h4>
+                  <p className="text-sm">
+                    <span className="font-medium">{getRuleTypeLabel(ruleToView.rule_type)}</span>
+                    {ruleToView.rule_type === RULE_TYPE_DCA && " - Dollar Cost Averaging"}
+                    {ruleToView.rule_type === RULE_TYPE_REBALANCE && " - Portfolio Rebalancing"}
+                    {ruleToView.rule_type === RULE_TYPE_ROTATE && " - Rotate into Top N trending assets"}
+                  </p>
+                </div>
+
+                {/* Trigger Details */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-muted-foreground">Trigger</h4>
+                  <p className="text-sm">
+                    <span className="font-medium">{getTriggerTypeLabel(ruleToView.trigger_type)}</span>
+                    {ruleToView.trigger_type === TRIGGER_PRICE_DROP && 
+                      ` - Executes when price drops by ${bpsToPercent(ruleToView.trigger_param_1)}%`}
+                    {ruleToView.trigger_type === TRIGGER_TREND && 
+                      ` - Executes based on ${ruleToView.trigger_param_1 === 1 ? '24h' : ruleToView.trigger_param_1 === 7 ? '7d' : '30d'} trend exceeding ${bpsToPercent(ruleToView.trigger_param_2)}%`}
+                    {ruleToView.trigger_type === TRIGGER_MOMENTUM && 
+                      ` - Executes based on ${ruleToView.trigger_param_1}-day momentum exceeding ${bpsToPercent(ruleToView.trigger_param_2)}%`}
+                  </p>
+                </div>
+
+                {/* Target Assets */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-muted-foreground">Target Assets</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {ruleToView.target_assets.map((assetId) => (
+                      <Badge key={assetId.toString()} variant="secondary">
+                        {formatAssetLabel(assetId)}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Risk Controls */}
+                <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Max Spend per Execution</p>
+                    <p className="text-sm font-medium">
+                      {microalgosToAlgo(Number(ruleToView.max_spend_microalgos))} ALGO
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Max Slippage</p>
+                    <p className="text-sm font-medium">
+                      {bpsToPercent(ruleToView.max_slippage_bps)}%
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Cooldown Period</p>
+                    <p className="text-sm font-medium">
+                      {ruleToView.cooldown_seconds / 60} minutes
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Total Executions</p>
+                    <p className="text-sm font-medium">
+                      {ruleToView.total_executions}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Execution Stats */}
+                <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Total Spent</p>
+                    <p className="text-sm font-medium text-orange-600 dark:text-orange-400">
+                      {microalgosToAlgo(Number(ruleToView.total_spent_microalgos))} ALGO
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs text-muted-foreground">Last Executed</p>
+                    <p className="text-sm font-medium">
+                      {formatTimestamp(ruleToView.last_execution_time)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Owner */}
+                <div className="space-y-1 pt-2 border-t">
+                  <p className="text-xs text-muted-foreground">Rule Owner</p>
+                  <p className="text-xs font-mono break-all">
+                    {ruleToView.owner}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDetailsDialogOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Execute Rule Dialog */}
       <Dialog
         open={isExecuteDialogOpen}
         onOpenChange={(open) => {

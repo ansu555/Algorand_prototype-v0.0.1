@@ -74,6 +74,8 @@ export type BuiltRule = {
   maxSpendUsd: number
   maxSlippagePercent: number
   cooldownMinutes: number
+  sentimentSource?: "twitter" | "reddit" | "telegram"
+  sentimentAccount?: string
 }
 
 const schema = z
@@ -97,6 +99,8 @@ const schema = z
       .min(0, { message: "Must be >= 0" })
       .max(100, { message: "Must be <= 100" }),
     cooldownMinutes: z.number().min(5, { message: "Must be >= 5 minutes" }),
+    sentimentSource: z.enum(["twitter", "reddit", "telegram"]).optional(),
+    sentimentAccount: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     // Conditional requirements based on trigger
@@ -216,6 +220,8 @@ export function RuleBuilderModal(props: RuleBuilderModalProps) {
       maxSpendUsd: defaultValues?.maxSpendUsd ?? 100,
       maxSlippagePercent: defaultValues?.maxSlippagePercent ?? 0.5,
       cooldownMinutes: defaultValues?.cooldownMinutes ?? 60,
+      sentimentSource: defaultValues?.sentimentSource,
+      sentimentAccount: defaultValues?.sentimentAccount ?? "",
     },
   })
 
@@ -485,6 +491,70 @@ export function RuleBuilderModal(props: RuleBuilderModalProps) {
                 )}
               />
             )}
+
+            {/* Sentiment Source */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="sentimentSource"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Add Your Sentiment Source (Optional)</FormLabel>
+                    <FormControl>
+                      <Select
+                        value={field.value || ""}
+                        onValueChange={(v) => field.onChange(v || undefined)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select sentiment source" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="twitter">Twitter Account</SelectItem>
+                          <SelectItem value="reddit">Reddit Account</SelectItem>
+                          <SelectItem value="telegram">Telegram Channel</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormDescription>
+                      Monitor sentiment from social media to enhance trading signals
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {values.sentimentSource && (
+                <FormField
+                  control={form.control}
+                  name="sentimentAccount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        {values.sentimentSource === "twitter" && "Twitter Handle"}
+                        {values.sentimentSource === "reddit" && "Reddit Username"}
+                        {values.sentimentSource === "telegram" && "Telegram Channel"}
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="text"
+                          placeholder={
+                            values.sentimentSource === "twitter" ? "@username" :
+                            values.sentimentSource === "reddit" ? "u/username" :
+                            "@channelname"
+                          }
+                          value={field.value || ""}
+                          onChange={(e) => field.onChange(e.target.value)}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        The account/channel to monitor for sentiment analysis
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
 
             {/* Rotate Top N */}
             {values.strategy === "ROTATE" && (
